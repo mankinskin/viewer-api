@@ -1,0 +1,44 @@
+name: viewer-api
+version: "0.1.0"
+description: >
+  Shared server infrastructure for viewer tools in the context-engine project.
+  Provides common HTTP and MCP server capabilities, tracing configuration,
+  and reusable utilities for building viewer applications.
+
+modules:
+  - name: lib
+    path: lib
+    description: Main library with server configuration and utilities
+
+exported_items:
+  types:
+    - ServerConfig: Server configuration (name, port, host, static dir)
+    - ServerArgs: Parsed CLI arguments (--http, --mcp)
+    - TracingConfig: Tracing/logging configuration
+    - McpServerFactory: Factory type for creating MCP servers
+  traits: []
+  macros: []
+  functions:
+    - run_server: Main server entry point supporting HTTP and MCP modes
+    - init_tracing_full: Initialize tracing with file and console output
+    - to_unix_path: Convert path to Unix-style string
+    - display_host: Convert 0.0.0.0 to localhost for display
+
+dependencies:
+  - axum: HTTP framework (re-exported)
+  - tower-http: HTTP middleware (re-exported)
+  - tokio: Async runtime (re-exported)
+  - tracing: Logging framework (re-exported)
+  - tracing-appender: Log file rotation (re-exported)
+  - rmcp: MCP protocol (re-exported)
+
+features:
+  - HTTP server with CORS and static file serving
+  - MCP server support via rmcp
+  - Command-line flag parsing (--http, --mcp)
+  - Tracing initialization (console and file logging)
+  - Path utilities for cross-platform compatibility
+  - Shared types and re-exports for viewer applications
+
+source_files:
+  - src/lib.rs

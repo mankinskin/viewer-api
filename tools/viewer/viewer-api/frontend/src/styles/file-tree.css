@@ -1,0 +1,55 @@
+/* Shared file tree shell styles */
+
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.file-tree .tree-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.file-tree__loading,
+.file-tree__empty {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Sort header */
+.file-tree__sort-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--sidebar-bg, transparent);
+  flex-shrink: 0;
+}
+
+.file-tree__sort-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.file-tree__sort-btn:hover {
+  border-color: var(--border-color, rgba(255, 255, 255, 0.15));
+  color: var(--text-color, inherit);
+}
+
+.file-tree__sort-btn--active {
+  border-color: var(--accent-color, #4a9eff);
+  color: var(--accent-color, #4a9eff);
+}
+

@@ -1,0 +1,60 @@
+.scene3d-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* Transparent so the shared WgpuOverlay canvas shows through */
+    background: transparent;
+    touch-action: none; /* Prevent browser gestures; handled by touch handlers */
+}
+
+.scene3d-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.scene3d-hud {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    pointer-events: none;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.scene3d-hud .scene3d-reset {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    font-family: inherit;
+    padding: 2px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.scene3d-hud .scene3d-reset:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.scene3d-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    font-family: var(--font-mono, monospace);
+}

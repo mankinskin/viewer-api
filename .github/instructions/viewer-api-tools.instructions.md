@@ -1,6 +1,6 @@
 ---
 description: "Use when editing viewer-api-driven tools (viewer-api, log-viewer, doc-viewer, ticket-viewer). Covers frontend conventions and integration boundaries with context-api, ticket-api, and filesystem-backed sources."
-applyTo: "tools/viewer-api/**,tools/log-viewer/**,tools/doc-viewer/**,tools/ticket-viewer/**"
+applyTo: "tools/viewer/viewer-api/**,tools/viewer/log-viewer/**,tools/viewer/doc-viewer/**,tools/viewer/ticket-viewer/**"
 ---
 
 # Viewer API Tools Guidance
@@ -33,7 +33,7 @@ Applies to viewer-api-driven HTTP/SPA tools and shared frontend packages.
 
 ## Frontend Rules
 
-- Reuse shared UI primitives/styles from `tools/viewer-api/frontend` where possible.
+- Reuse shared UI primitives/styles from `tools/viewer/viewer-api/frontend` where possible.
 - Keep viewer-specific features modular; avoid duplicating shared components.
 - Prefer explicit loading/error/empty states for all async data views.
 - Keep theme/effects integration centralized so log-viewer and ticket-viewer can share behavior.

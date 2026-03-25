@@ -1,0 +1,24 @@
+name: lib
+description: Main library with server configuration and utilities
+
+files:
+  - name: lib.rs
+    description: Shared server infrastructure, HTTP/MCP server runner, tracing initialization
+  - name: session.rs
+    description: Session management with per-client configuration
+
+key_types:
+  - ServerConfig: Server configuration (name, port, host, static dir)
+  - ServerArgs: Parsed CLI arguments (--http, --mcp)
+  - TracingConfig: Tracing/logging configuration
+  - McpServerFactory: Factory type for creating MCP servers
+  - run_server: Main server entry point
+  - init_tracing_full: Initialize tracing with file and console output
+  - SessionStore: Thread-safe session storage
+  - SessionConfig: Per-client session settings
+
+submodules: []
+source_files:
+  - src/lib.rs
+  - src/session.rs
+last_synced: null
