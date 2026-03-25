@@ -34,3 +34,12 @@ export * from './components/WgpuOverlay/element-types';
 export * from './components/Scene3D/Scene3D';
 export * from './utils/math3d';
 export * from './effects/palette';
+
+// Re-export Graph3DView component and public types
+export { Graph3DView } from './components/Graph3DView/Graph3DView';
+export type { Graph3DNode, Graph3DEdge, Graph3DViewProps } from './components/Graph3DView/types';
+
+// Re-export shared ThemeSettings component and store types
+export { ThemeSettings } from './components/ThemeSettings/ThemeSettings';
+export type { ThemeSettingsStore, SavedTheme, ColorTheme, EffectTheme } from './store/theme';
+export { DEFAULT_EFFECT_SETTINGS_OFF } from './store/theme';

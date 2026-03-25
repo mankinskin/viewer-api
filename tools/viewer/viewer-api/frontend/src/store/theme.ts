@@ -127,13 +127,33 @@ export const DEFAULT_THEME: ThemeColors = {
   smokeMoss: '#e8f0fa',
 };
 
-// ── Preset type ──────────────────────────────────────────────────────────────
+// ── Preset types ─────────────────────────────────────────────────────────────
 
-export interface ThemePreset {
+/** A named color-only theme; covers backgrounds, text, borders and accents. */
+export interface ColorTheme {
   name: string;
   description: string;
   colors: ThemeColors;
 }
+
+/** A named set of GPU particle / background effect settings. */
+export interface EffectTheme {
+  name: string;
+  description: string;
+  effects: EffectSettings;
+}
+
+/**
+ * A full theme preset composed of a ColorTheme plus an optional EffectTheme.
+ * Viewers may extend this with viewer-specific fields (e.g. LogViewerPreset).
+ */
+export interface ThemePreset extends ColorTheme {
+  /** Optional effect overrides to apply alongside the color theme. */
+  effectTheme?: EffectTheme;
+}
+
+/** @deprecated Use `ColorTheme` instead. Kept for backward compatibility. */
+export type LegacyThemePreset = ThemePreset;
 
 // ── Color utilities ──────────────────────────────────────────────────────────
 
@@ -432,3 +452,86 @@ export const DEFAULT_EFFECT_SETTINGS: EffectSettings = {
   cinderSize: 70,
   cinderEnabled: true,
 };
+
+/**
+ * All GPU effects disabled — safe default for viewers that opt into effects only on demand.
+ * Preserves glass/blur at low values to keep the UI from looking broken in GPU mode.
+ */
+export const DEFAULT_EFFECT_SETTINGS_OFF: EffectSettings = {
+  glassOpacity: 0,
+  glassBlur: 0,
+  crtEnabled: false,
+  crtScanlinesH: 0,
+  crtScanlinesV: 0,
+  crtEdgeShadow: 0,
+  crtFlicker: 0,
+  crtLineWidth: 50,
+  crtColor: [100, 80, 60] as [number, number, number],
+  smokeEnabled: false,
+  smokeIntensity: 0,
+  smokeSpeed: 50,
+  smokeWarmScale: 100,
+  smokeCoolScale: 100,
+  smokeMossScale: 100,
+  grainIntensity: 0,
+  grainCoarseness: 40,
+  grainSize: 35,
+  vignetteStrength: 0,
+  underglowStrength: 0,
+  sparkSpeed: 70,
+  sparksEnabled: false,
+  emberSpeed: 70,
+  embersEnabled: false,
+  beamSpeed: 50,
+  beamsEnabled: false,
+  glitterSpeed: 60,
+  glitterEnabled: false,
+  beamHeight: 35,
+  beamDrift: 80,
+  beamCount: 48,
+  sparkCount: 40,
+  sparkSize: 70,
+  emberCount: 40,
+  emberSize: 70,
+  glitterCount: 40,
+  glitterSize: 60,
+  cinderSize: 70,
+  cinderEnabled: false,
+};
+
+// ── SavedTheme / ThemeSettingsStore ──────────────────────────────────────────
+
+/** A user-saved theme snapshot (colors + effects + optional thumbnail). */
+export interface SavedTheme {
+  id: string;
+  name: string;
+  colors: ThemeColors;
+  effects?: EffectSettings;
+  thumbnail?: string;
+  createdAt: number;
+}
+
+/**
+ * Interface for the store object accepted by the shared `ThemeSettings` component.
+ * Each viewer creates its own implementation and passes it as a prop.
+ */
+export interface ThemeSettingsStore {
+  themeColors: Signal<ThemeColors>;
+  effectSettings: Signal<EffectSettings>;
+  /** Ordered preset list shown in the preset grid. */
+  presets: ThemePreset[];
+  defaultTheme: ThemeColors;
+  updateColor: <K extends keyof ThemeColors>(key: K, value: string) => void;
+  applyPreset: (preset: ThemePreset) => void;
+  resetTheme: () => void;
+  randomizeTheme?: () => void;
+  savedThemes: Signal<SavedTheme[]>;
+  saveTheme: (name: string, thumbnail?: string) => void;
+  deleteTheme: (id: string) => void;
+  applySavedTheme: (theme: SavedTheme) => void;
+  updateSavedTheme: (id: string, thumbnail?: string) => void;
+  renameSavedTheme: (id: string, newName: string) => void;
+  updateEffect: <K extends keyof EffectSettings>(key: K, value: EffectSettings[K]) => void;
+  exportTheme: (name?: string) => void;
+  importTheme: (file: File) => Promise<string | null>;
+}
