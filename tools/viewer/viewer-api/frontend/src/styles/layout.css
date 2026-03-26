@@ -239,6 +239,51 @@
 
 /* ── Sidebar overlay (mobile full-screen) ── */
 
+/* ── Panel ── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-secondary);
+  transition: width 0.2s ease, height 0.2s ease;
+  will-change: width, height;
+}
+
+.panel.panel-resizing {
+  transition: none !important;
+}
+
+.panel-left,
+.panel-right {
+  height: 100%;
+}
+
+.panel-right {
+  border-left: 1px solid var(--border-color);
+}
+
+.panel-left {
+  border-right: 1px solid var(--border-color);
+}
+
+.panel-top,
+.panel-bottom {
+  width: 100%;
+}
+
+.panel-bottom {
+  border-top: 1px solid var(--border-color);
+}
+
+.panel-top {
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ── Sidebar overlay (mobile full-screen) ── */
+
 .sidebar-overlay {
   display: none;
 }

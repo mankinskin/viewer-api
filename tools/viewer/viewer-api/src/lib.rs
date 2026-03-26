@@ -375,6 +375,15 @@ pub fn default_cors() -> CorsLayer {
         .allow_headers(Any)
 }
 
+/// Wait for a Ctrl+C signal, then return.
+///
+/// Use with `axum::serve(...).with_graceful_shutdown(shutdown_signal())` so the
+/// server shuts down cleanly and `Drop` impls (e.g. `DevServer`) run properly.
+pub async fn shutdown_signal() {
+    let _ = tokio::signal::ctrl_c().await;
+    info!("Received shutdown signal");
+}
+
 /// Create a router with static file serving
 pub fn with_static_files(
     router: Router,
@@ -526,7 +535,9 @@ where
         config.get_display_addr()
     );
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
     Ok(())
 }
