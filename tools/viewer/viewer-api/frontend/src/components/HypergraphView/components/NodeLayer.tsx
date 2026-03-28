@@ -9,6 +9,7 @@
  * rendered for children shown inside expanded parents. Originals that
  * have active duplicates are dimmed.
  */
+import type { ComponentChildren } from 'preact';
 import type { LayoutNode } from '../layout';
 import { nodeWidthClass } from '../utils/nodeStyles';
 import { getNodeVizClasses, type VisualizationState } from '../hooks/useVisualizationState';
@@ -24,9 +25,15 @@ export interface NodeLayerProps {
     duplicatedOriginals?: Set<number>;
     /** Shell parent nodes to render as nesting containers. */
     shells?: ShellNode[];
+    /**
+     * Optional custom renderer for node content.
+     * When provided, replaces the default atom/compound badge+label rendering.
+     * The outer `.hg-node` wrapper (used for 3D positioning) is still rendered.
+     */
+    renderNode?: (node: LayoutNode) => ComponentChildren;
 }
 
-export function NodeLayer({ nodes, maxWidth, vizState, duplicates, duplicatedOriginals, shells }: NodeLayerProps) {
+export function NodeLayer({ nodes, maxWidth, vizState, duplicates, duplicatedOriginals, shells, renderNode }: NodeLayerProps) {
     const nodeMap = new Map<number, LayoutNode>();
     for (const n of nodes) nodeMap.set(n.index, n);
 
@@ -53,18 +60,21 @@ export function NodeLayer({ nodes, maxWidth, vizState, duplicates, duplicatedOri
                 const levelClass = nodeWidthClass(n.width, maxWidth);
                 const vizClasses = getNodeVizClasses(n.index, vizState);
                 const isDimmedOriginal = duplicatedOriginals?.has(n.index);
+                const customClass = renderNode ? 'hg-node--custom' : levelClass;
 
                 return (
                     <div
                         key={n.index}
-                        class={`hg-node ${levelClass} ${n.isAtom ? 'hg-atom' : 'hg-compound'} ${vizClasses}${isDimmedOriginal ? ' hg-has-duplicate' : ''}`}
+                        class={`hg-node ${customClass} ${n.isAtom ? 'hg-atom' : 'hg-compound'} ${vizClasses}${isDimmedOriginal ? ' hg-has-duplicate' : ''}`}
                         data-node-idx={n.index}
                     >
-                        <div class="hg-node-content">
-                            <span class={`level-badge ${levelClass}`}>{n.isAtom ? 'ATOM' : `W${n.width}`}</span>
-                            <span class="hg-node-label">{n.label}</span>
-                            <span class="hg-node-idx">#{n.index}</span>
-                        </div>
+                        {renderNode ? renderNode(n) : (
+                            <div class="hg-node-content">
+                                <span class={`level-badge ${levelClass}`}>{n.isAtom ? 'ATOM' : `W${n.width}`}</span>
+                                <span class="hg-node-label">{n.label}</span>
+                                <span class="hg-node-idx">#{n.index}</span>
+                            </div>
+                        )}
                     </div>
                 );
             })}
@@ -75,20 +85,23 @@ export function NodeLayer({ nodes, maxWidth, vizState, duplicates, duplicatedOri
                 if (!n) return null;
                 const levelClass = nodeWidthClass(n.width, maxWidth);
                 const vizClasses = getNodeVizClasses(n.index, vizState);
+                const customClass = renderNode ? 'hg-node--custom' : levelClass;
 
                 return (
                     <div
                         key={dup.duplicateId}
-                        class={`hg-node hg-duplicate ${levelClass} ${n.isAtom ? 'hg-atom' : 'hg-compound'} ${vizClasses}`}
+                        class={`hg-node hg-duplicate ${customClass} ${n.isAtom ? 'hg-atom' : 'hg-compound'} ${vizClasses}`}
                         data-node-idx={n.index}
                         data-duplicate-id={dup.duplicateId}
                         data-duplicate-parent={dup.parentIdx}
                     >
-                        <div class="hg-node-content">
-                            <span class={`level-badge ${levelClass}`}>{n.isAtom ? 'ATOM' : `W${n.width}`}</span>
-                            <span class="hg-node-label">{n.label}</span>
-                            <span class="hg-node-idx">#{n.index}</span>
-                        </div>
+                        {renderNode ? renderNode(n) : (
+                            <div class="hg-node-content">
+                                <span class={`level-badge ${levelClass}`}>{n.isAtom ? 'ATOM' : `W${n.width}`}</span>
+                                <span class="hg-node-label">{n.label}</span>
+                                <span class="hg-node-idx">#{n.index}</span>
+                            </div>
+                        )}
                     </div>
                 );
             })}

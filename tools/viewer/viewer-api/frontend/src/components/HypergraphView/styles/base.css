@@ -90,6 +90,15 @@
     border-style: dashed;
 }
 
+/* Custom node renderer — remove default padding/sizing so the inner content
+   drives the node dimensions. White-space normal allows card text to wrap. */
+.hg-node.hg-node--custom {
+    padding: 0 !important;
+    max-width: none;
+    white-space: normal;
+    background: rgba(20, 18, 16, 0.85);
+}
+
 /* Level badge inside nodes */
 .hg-node .level-badge {
     font-size: 8px;

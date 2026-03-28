@@ -28,6 +28,7 @@ import {
     computeSearchPathLayout,
     type GraphLayout,
     type FocusedLayoutOffsets,
+    type LayoutNode,
 } from "./layout";
 import type {
     HypergraphViewProps,
@@ -67,6 +68,13 @@ export interface HypergraphViewCoreProps extends HypergraphViewProps {
         nestingSettings: NestingSettings;
         setNestingSettings: (update: Partial<NestingSettings>) => void;
     }) => ComponentChildren;
+    /**
+     * Optional custom renderer for each node's DOM content.
+     * When provided, replaces the default atom/compound badge rendering.
+     * The outer `.hg-node` div (used by the WebGPU overlay for 3D positioning) is
+     * still emitted — only the inner content changes.
+     */
+    renderNode?: (node: LayoutNode) => ComponentChildren;
 }
 
 /**
@@ -137,6 +145,7 @@ export function HypergraphViewCore(props: HypergraphViewCoreProps) {
         snapshotEdges,
         stepKey,
         renderChildren,
+        renderNode,
     } = props;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -376,6 +385,7 @@ export function HypergraphViewCore(props: HypergraphViewCoreProps) {
                         shells={nestShells}
                         duplicates={nestDuplicates}
                         duplicatedOriginals={nestDuplicatedOriginals}
+                        renderNode={renderNode}
                     />
                 )}
             </div>
