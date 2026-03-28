@@ -1,0 +1,1845 @@
+/* ── DOM-mode container: transparent so global WgpuOverlay background shows ── */
+.hypergraph-container.hg-dom-mode {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    cursor: default;
+    user-select: none;
+    touch-action: none; /* Prevent browser gestures; handled by useTouchInteraction */
+}
+
+/* ── Node layer: absolutely positioned, stacks above canvas ── */
+.hg-node-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Depth sorting uses z-index (set per-frame in JS) instead of
+       preserve-3d + translate3d.  This avoids GPU compositing layers
+       which would rasterize nodes at their base CSS size and bitmap-
+       stretch on scale() — causing blurry text when zoomed in. */
+}
+
+/* ── Individual DOM node: positioned with CSS transform ── */
+.hg-node {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+    cursor: pointer;
+    transform-origin: center center;
+    white-space: nowrap;
+    transition: opacity 0.15s ease, background 0.15s ease, padding 0.3s linear, max-width 0.3s linear;
+    display: inline-flex !important;
+    padding: 3px 10px !important;
+    border-radius: 4px;
+    min-width: 50px;
+    max-width: 200px;
+    background: rgba(18, 16, 14, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.hg-node:not(.hg-expanded):hover {
+    background: rgba(36, 32, 28, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 10px rgba(200, 150, 80, 0.15);
+}
+
+.hg-node.selected {
+    background: rgba(42, 34, 24, 0.9) !important;
+    border-color: rgba(200, 150, 80, 0.4);
+    box-shadow: 0 0 12px rgba(200, 90, 24, 0.25);
+}
+
+.hg-node .hg-node-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    overflow: hidden;
+    transition: padding 0.3s ease, border-bottom-color 0.3s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.hg-node .hg-node-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.85);
+    flex: 1;
+}
+
+.hg-node .hg-node-idx {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+/* Atom vs compound visual distinction */
+.hg-node.hg-atom {
+    border-style: solid;
+}
+.hg-node.hg-compound {
+    border-style: dashed;
+}
+
+/* Level badge inside nodes */
+.hg-node .level-badge {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.hg-node .level-badge.level-error {
+    background: rgba(255, 80, 60, 0.25);
+    color: #ff7060;
+}
+.hg-node .level-badge.level-warn {
+    background: rgba(255, 180, 60, 0.25);
+    color: #ffb840;
+}
+.hg-node .level-badge.level-info {
+    background: rgba(80, 160, 255, 0.2);
+    color: #60a8ff;
+}
+.hg-node .level-badge.level-debug {
+    background: rgba(100, 200, 120, 0.15);
+    color: #70c880;
+}
+
+.hypergraph-hud {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    pointer-events: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.hypergraph-hud .hg-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    font-family: inherit;
+    padding: 2px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.hypergraph-hud .hg-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.hypergraph-hud .hg-toggle {
+    pointer-events: auto;
+    padding: 2px 10px;
+    font-size: 10px;
+    border-radius: 3px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.hypergraph-hud .hg-toggle-on {
+    background: rgba(40, 180, 255, 0.2);
+    border-color: rgba(40, 180, 255, 0.5);
+    color: rgba(40, 180, 255, 0.9);
+}
+
+.hypergraph-hud .hg-toggle-on:hover {
+    background: rgba(40, 180, 255, 0.3);
+    color: rgba(40, 180, 255, 1.0);
+}
+
+.hypergraph-info {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    pointer-events: none;
+    min-width: 140px;
+    z-index: 20;
+}
+
+/* ── Selected Node Info Panel (right side) ── */
+.node-info-panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    pointer-events: auto;
+    min-width: 200px;
+    max-width: 280px;
+    backdrop-filter: blur(8px);
+}
+
+.node-info-panel .nip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.node-info-panel .nip-title {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.node-info-panel .nip-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.node-info-panel .nip-badge.atom {
+    background: rgba(100, 180, 255, 0.25);
+    color: rgba(140, 200, 255, 0.95);
+}
+
+.node-info-panel .nip-badge.compound {
+    background: rgba(255, 180, 100, 0.25);
+    color: rgba(255, 200, 140, 0.95);
+}
+
+.node-info-panel .nip-section {
+    margin-bottom: 8px;
+}
+
+.node-info-panel .nip-section-title {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.node-info-panel .nip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+}
+
+.node-info-panel .nip-label {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.node-info-panel .nip-value {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+}
+
+.node-info-panel .nip-indices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.node-info-panel .nip-idx {
+    font-size: 10px;
+    padding: 2px 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.node-info-panel .nip-link {
+    cursor: pointer;
+    color: rgba(100, 180, 255, 0.9);
+    background: rgba(100, 180, 255, 0.15);
+    transition: all 0.15s ease;
+}
+
+.node-info-panel .nip-link:hover {
+    background: rgba(100, 180, 255, 0.3);
+    color: #64c8ff;
+    transform: scale(1.05);
+}
+
+.node-info-panel .nip-viz-state {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.node-info-panel .nip-viz-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.node-info-panel .nip-viz-badge.start { background: rgba(0, 180, 220, 0.3); color: #60d8ff; }
+.node-info-panel .nip-viz-badge.root { background: rgba(255, 200, 80, 0.3); color: #ffc850; }
+.node-info-panel .nip-viz-badge.candidate-parent { background: rgba(255, 160, 80, 0.3); color: #ffa050; }
+.node-info-panel .nip-viz-badge.candidate-child { background: rgba(180, 120, 255, 0.3); color: #b478ff; }
+.node-info-panel .nip-viz-badge.matched { background: rgba(80, 220, 120, 0.3); color: #50dc78; }
+.node-info-panel .nip-viz-badge.mismatched { background: rgba(255, 90, 70, 0.3); color: #ff5a46; }
+.node-info-panel .nip-viz-badge.path { background: rgba(100, 200, 255, 0.3); color: #64c8ff; }
+.node-info-panel .nip-viz-badge.completed { background: rgba(80, 200, 120, 0.3); color: #50c878; }
+.node-info-panel .nip-viz-badge.pending-parent { background: rgba(255, 160, 80, 0.2); color: #ffa050; }
+.node-info-panel .nip-viz-badge.pending-child { background: rgba(180, 120, 255, 0.2); color: #b478ff; }
+
+.hypergraph-info .hg-title {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.hypergraph-info .hg-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 2px;
+}
+
+.hypergraph-info .hg-label {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.hypergraph-info .hg-value {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.hypergraph-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-family: var(--font-mono, monospace);
+}
+
+.hypergraph-empty .hg-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 420px;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.hypergraph-empty code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.hypergraph-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(10, 10, 14, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 5px;
+    padding: 6px 10px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    z-index: 100;
+    transform: translate(-50%, 0%);
+    margin-top: 12px;
+}
+
+.hypergraph-tooltip .tt-label {
+    font-weight: 600;
+    color: #fff;
+}
+
+.hypergraph-tooltip .tt-detail {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* ── Search State Panel: floating list of search algorithm steps ── */
+.search-state-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    max-width: 320px;
+    max-height: calc(100% - 80px);
+    background: rgba(10, 10, 14, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.search-state-panel .ssp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-state-panel .ssp-title {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+}
+
+.search-state-panel .ssp-count {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+}
+
+.search-state-panel .ssp-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.search-state-panel .ssp-list:focus {
+    outline: 1px solid var(--accent-blue, #5af);
+    outline-offset: -1px;
+}
+
+.search-state-panel .ssp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: var(--font-mono, monospace);
+}
+
+.search-state-panel .ssp-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-state-panel .ssp-item.active {
+    background: rgba(80, 160, 255, 0.12);
+    border-left: 2px solid #60a8ff;
+    padding-left: 10px;
+}
+
+.search-state-panel .ssp-step {
+    flex-shrink: 0;
+    min-width: 28px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
+.search-state-panel .ssp-item.active .ssp-step {
+    background: rgba(80, 160, 255, 0.25);
+    color: #80c0ff;
+}
+
+.search-state-panel .ssp-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-state-panel .ssp-phase {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.search-state-panel .ssp-phase.phase-init { color: #60d8ff; }
+.search-state-panel .ssp-phase.phase-candidatemismatch { color: #ffa860; }
+.search-state-panel .ssp-phase.phase-compare { color: #ffdc60; }
+.search-state-panel .ssp-phase.phase-candidatematch { color: #c090ff; }
+.search-state-panel .ssp-phase.phase-parentexplore { color: #ff9070; }
+.search-state-panel .ssp-phase.phase-done { color: #80ff80; }
+
+.search-state-panel .ssp-desc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Navigation controls at bottom of panel */
+.search-state-panel .ssp-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-state-panel .ssp-btn {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+    font-family: var(--font-mono, monospace);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.search-state-panel .ssp-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.search-state-panel .ssp-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.search-state-panel .ssp-position {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: var(--font-mono, monospace);
+    min-width: 60px;
+    text-align: center;
+}
+
+/* ── Path Group Styles ── */
+.search-state-panel .ssp-groups-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.search-state-panel .ssp-path-group {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.search-state-panel .ssp-path-group:last-child {
+    border-bottom: none;
+}
+
+.search-state-panel .ssp-path-group.active-group {
+    background: rgba(80, 160, 255, 0.04);
+}
+
+/* Insert path groups — warm orange accent instead of blue */
+.search-state-panel .ssp-path-group.ssp-op-insert {
+    border-left: 2px solid rgba(255, 140, 50, 0.4);
+}
+
+.search-state-panel .ssp-path-group.ssp-op-insert.active-group {
+    background: rgba(255, 140, 50, 0.06);
+    border-left-color: rgba(255, 160, 80, 0.7);
+}
+
+/* Read path groups — subtle blue-grey accent */
+.search-state-panel .ssp-path-group.ssp-op-read {
+    border-left: 2px solid rgba(140, 160, 200, 0.3);
+}
+
+.search-state-panel .ssp-path-group.ssp-op-read.active-group {
+    background: rgba(140, 160, 200, 0.04);
+    border-left-color: rgba(160, 180, 220, 0.6);
+}
+
+.search-state-panel .ssp-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: var(--font-mono, monospace);
+}
+
+.search-state-panel .ssp-group-header:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-state-panel .ssp-group-chevron {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+}
+
+.search-state-panel .ssp-group-id {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(120, 180, 255, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-state-panel .active-group .ssp-group-id {
+    color: #80c0ff;
+}
+
+.search-state-panel .ssp-group-count {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.search-state-panel .ssp-group-list {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 2px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.search-state-panel .ssp-group-list:focus {
+    outline: 1px solid var(--accent-blue, #5af);
+    outline-offset: -1px;
+}
+
+.search-state-panel .ssp-path-trans {
+    font-size: 9px;
+    color: rgba(180, 140, 255, 0.7);
+    margin-top: 1px;
+    font-style: italic;
+}
+
+/* ── Node Group Styles (within path groups) ── */
+
+.search-state-panel .ssp-node-group {
+    border-left: 2px solid rgba(255, 255, 255, 0.06);
+    margin-left: 6px;
+}
+
+.search-state-panel .ssp-node-group.active-node-group {
+    border-left-color: rgba(80, 160, 255, 0.3);
+}
+
+.search-state-panel .ssp-node-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: var(--font-mono, monospace);
+}
+
+.search-state-panel .ssp-node-group-header:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-state-panel .ssp-node-group-chevron {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
+    width: 10px;
+    text-align: center;
+}
+
+.search-state-panel .ssp-node-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(160, 210, 255, 0.8);
+    white-space: nowrap;
+}
+
+.search-state-panel .ssp-node-group-range {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+    flex: 1;
+    text-align: right;
+}
+
+.search-state-panel .ssp-node-group-count {
+    flex-shrink: 0;
+    padding: 0px 5px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.search-state-panel .ssp-node-group-items {
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.search-state-panel .ssp-item.ssp-item-indented {
+    padding-left: 20px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Visualization State Styles — node highlighting for search/insert operations
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* -- Dim all non-involved nodes when a viz state is active -- */
+.hg-node.viz-dimmed {
+    opacity: 0.2 !important;
+    filter: saturate(0.3);
+    transition: opacity 0.3s, filter 0.3s;
+}
+
+/* -- Query token nodes — subtle dashed border to show input pattern -- */
+.hg-node.viz-query-token {
+    border: 2px dashed rgba(180, 120, 255, 0.6) !important;
+    opacity: 0.7;
+    transition: opacity 0.3s, border-color 0.3s;
+}
+
+/* -- Active query token — the token currently being compared -- */
+.hg-node.viz-query-active {
+    border: 2px solid rgba(255, 200, 60, 0.9) !important;
+    box-shadow: 0 0 10px rgba(255, 200, 60, 0.5);
+    opacity: 1 !important;
+}
+
+/* -- Start node — bright cyan with pulsing glow -- */
+.hg-node.viz-start {
+    background: rgba(0, 180, 220, 0.3) !important;
+    border-color: rgba(0, 220, 255, 0.9) !important;
+    box-shadow:
+        0 0 14px rgba(0, 220, 255, 0.6),
+        0 0 28px rgba(0, 180, 220, 0.3);
+    animation: viz-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes viz-pulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(0, 220, 255, 0.6), 0 0 28px rgba(0, 180, 220, 0.3); }
+    50% { box-shadow: 0 0 22px rgba(0, 220, 255, 0.8), 0 0 36px rgba(0, 180, 220, 0.5); }
+}
+
+/* -- Selected node (the node being acted upon this step) — white highlight -- */
+.hg-node.viz-selected {
+    background: rgba(220, 240, 255, 0.25) !important;
+    border-color: rgba(200, 230, 255, 0.85) !important;
+    box-shadow:
+        0 0 12px rgba(200, 230, 255, 0.5),
+        0 0 24px rgba(200, 230, 255, 0.2);
+}
+
+/* -- Candidate root — gold ring indicator -- */
+.hg-node.viz-root {
+    border-color: rgba(255, 200, 80, 0.8) !important;
+    box-shadow:
+        0 0 10px rgba(255, 200, 80, 0.5),
+        inset 0 0 8px rgba(255, 200, 80, 0.1);
+}
+
+.hg-node.viz-root::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid rgba(255, 200, 80, 0.6);
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+/* -- Tentative root — dimmed gold with pulse (awaiting confirmation) -- */
+.hg-node.viz-root-tentative {
+    border-color: rgba(255, 200, 80, 0.5) !important;
+    box-shadow:
+        0 0 8px rgba(255, 200, 80, 0.3),
+        inset 0 0 6px rgba(255, 200, 80, 0.05);
+    animation: viz-root-tentative-pulse 1.5s ease-in-out infinite;
+}
+
+.hg-node.viz-root-tentative::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px dashed rgba(255, 200, 80, 0.4);
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+@keyframes viz-root-tentative-pulse {
+    0%, 100% {
+        opacity: 0.7;
+        box-shadow:
+            0 0 8px rgba(255, 200, 80, 0.3),
+            inset 0 0 6px rgba(255, 200, 80, 0.05);
+    }
+    50% {
+        opacity: 1;
+        box-shadow:
+            0 0 12px rgba(255, 200, 80, 0.4),
+            inset 0 0 8px rgba(255, 200, 80, 0.1);
+    }
+}
+
+/* -- Candidate parent — prominent orange with pulse -- */
+.hg-node.viz-candidate-parent {
+    background: rgba(255, 140, 50, 0.35) !important;
+    border-color: rgba(255, 180, 80, 0.95) !important;
+    border-width: 2px !important;
+    box-shadow:
+        0 0 16px rgba(255, 160, 80, 0.7),
+        0 0 32px rgba(255, 140, 50, 0.4),
+        inset 0 0 10px rgba(255, 180, 80, 0.15);
+    animation: viz-candidate-parent-pulse 1.2s ease-in-out infinite;
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+@keyframes viz-candidate-parent-pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 16px rgba(255, 160, 80, 0.7),
+            0 0 32px rgba(255, 140, 50, 0.4),
+            inset 0 0 10px rgba(255, 180, 80, 0.15);
+    }
+    50% {
+        box-shadow:
+            0 0 24px rgba(255, 180, 80, 0.9),
+            0 0 48px rgba(255, 140, 50, 0.6),
+            inset 0 0 14px rgba(255, 200, 100, 0.25);
+    }
+}
+
+/* -- Candidate child — prominent purple with pulse -- */
+.hg-node.viz-candidate-child {
+    background: rgba(160, 100, 255, 0.35) !important;
+    border-color: rgba(200, 140, 255, 0.95) !important;
+    border-width: 2px !important;
+    box-shadow:
+        0 0 16px rgba(180, 120, 255, 0.7),
+        0 0 32px rgba(160, 100, 255, 0.4),
+        inset 0 0 10px rgba(200, 140, 255, 0.15);
+    animation: viz-candidate-child-pulse 1.2s ease-in-out infinite;
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+@keyframes viz-candidate-child-pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 16px rgba(180, 120, 255, 0.7),
+            0 0 32px rgba(160, 100, 255, 0.4),
+            inset 0 0 10px rgba(200, 140, 255, 0.15);
+    }
+    50% {
+        box-shadow:
+            0 0 24px rgba(200, 140, 255, 0.9),
+            0 0 48px rgba(160, 100, 255, 0.6),
+            inset 0 0 14px rgba(220, 160, 255, 0.25);
+    }
+}
+
+/* -- Matched child — green success -- */
+.hg-node.viz-matched {
+    background: rgba(80, 220, 120, 0.25) !important;
+    border-color: rgba(80, 240, 120, 0.8) !important;
+    box-shadow: 0 0 12px rgba(80, 220, 120, 0.45);
+}
+
+/* -- Mismatched child — red failure -- */
+.hg-node.viz-mismatched {
+    background: rgba(255, 90, 70, 0.2) !important;
+    border-color: rgba(255, 100, 80, 0.7) !important;
+    box-shadow: 0 0 10px rgba(255, 90, 70, 0.4);
+}
+
+/* -- Path nodes — current exploration trace (blue breadcrumb trail) -- */
+.hg-node.viz-path {
+    background: rgba(80, 180, 255, 0.22) !important;
+    border-color: rgba(100, 200, 255, 0.75) !important;
+    box-shadow:
+        0 0 10px rgba(100, 200, 255, 0.5),
+        0 0 20px rgba(80, 180, 255, 0.25);
+}
+
+/* -- Completed/confirmed nodes — explored and matched (green) -- */
+.hg-node.viz-completed {
+    background: rgba(60, 200, 110, 0.22) !important;
+    border-color: rgba(80, 220, 120, 0.7) !important;
+    box-shadow:
+        0 0 10px rgba(80, 220, 120, 0.45),
+        0 0 20px rgba(60, 200, 110, 0.2);
+}
+
+/* -- Pending parent queue — dim orange -- */
+.hg-node.viz-pending-parent {
+    background: rgba(255, 160, 80, 0.1) !important;
+    border-color: rgba(255, 160, 80, 0.35) !important;
+    box-shadow: 0 0 4px rgba(255, 160, 80, 0.2);
+}
+
+/* -- Pending child queue — dim purple -- */
+.hg-node.viz-pending-child {
+    background: rgba(180, 120, 255, 0.1) !important;
+    border-color: rgba(180, 120, 255, 0.35) !important;
+    box-shadow: 0 0 4px rgba(180, 120, 255, 0.2);
+}
+
+/* Combination: selected + root */
+.hg-node.viz-selected.viz-root {
+    border-color: rgba(255, 220, 100, 0.8) !important;
+    box-shadow:
+        0 0 12px rgba(200, 230, 255, 0.5),
+        0 0 24px rgba(255, 200, 80, 0.3);
+}
+
+/* Combination: start node is always prominent */
+.hg-node.viz-start.viz-root {
+    border-color: rgba(0, 220, 255, 0.9) !important;
+    box-shadow:
+        0 0 14px rgba(0, 220, 255, 0.6),
+        0 0 28px rgba(255, 200, 80, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Search Path Styles — VizPathGraph-based node highlighting
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* -- Start path nodes (upward exploration) — warm orange breadcrumb -- */
+.hg-node.viz-sp-start-path {
+    background: rgba(240, 140, 40, 0.22) !important;
+    border-color: rgba(255, 170, 80, 0.75) !important;
+    box-shadow:
+        0 0 10px rgba(255, 160, 60, 0.45),
+        0 0 20px rgba(240, 140, 40, 0.2);
+}
+
+/* -- End path nodes (downward comparison) — cool cyan breadcrumb -- */
+.hg-node.viz-sp-end-path {
+    background: rgba(30, 170, 230, 0.22) !important;
+    border-color: rgba(80, 200, 255, 0.75) !important;
+    box-shadow:
+        0 0 10px rgba(80, 200, 255, 0.45),
+        0 0 20px rgba(30, 170, 230, 0.2);
+}
+
+/* -- Search path start node — bright cyan, declared after start-path so it wins -- */
+.hg-node.viz-sp-start {
+    background: rgba(0, 180, 220, 0.3) !important;
+    border-color: rgba(0, 220, 255, 0.85) !important;
+    box-shadow:
+        0 0 12px rgba(0, 220, 255, 0.5),
+        0 0 24px rgba(0, 180, 220, 0.25);
+}
+
+/* -- Search path root — gold ring, declared after start-path so it wins -- */
+.hg-node.viz-sp-root {
+    border-color: rgba(255, 200, 80, 0.85) !important;
+    box-shadow:
+        0 0 10px rgba(255, 200, 80, 0.5),
+        inset 0 0 8px rgba(255, 200, 80, 0.1);
+}
+
+.hg-node.viz-sp-root::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid rgba(255, 200, 80, 0.5);
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Insert Operation Node Styles — split/join/create phases
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* -- Split source — warm orange, the node being split -- */
+.hg-node.viz-split-source {
+    background: rgba(255, 140, 50, 0.3) !important;
+    border-color: rgba(255, 160, 80, 0.9) !important;
+    box-shadow:
+        0 0 14px rgba(255, 140, 50, 0.6),
+        0 0 28px rgba(255, 100, 20, 0.3);
+    animation: viz-insert-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes viz-insert-pulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(255, 140, 50, 0.6), 0 0 28px rgba(255, 100, 20, 0.3); }
+    50% { box-shadow: 0 0 22px rgba(255, 160, 80, 0.8), 0 0 36px rgba(255, 120, 30, 0.5); }
+}
+
+/* -- Split left fragment — orange-left tint -- */
+.hg-node.viz-split-left {
+    background: rgba(255, 180, 60, 0.25) !important;
+    border-color: rgba(255, 200, 80, 0.85) !important;
+    box-shadow:
+        0 0 10px rgba(255, 180, 60, 0.45),
+        0 0 20px rgba(255, 160, 40, 0.2);
+}
+
+/* -- Split right fragment — orange-right tint -- */
+.hg-node.viz-split-right {
+    background: rgba(255, 120, 40, 0.25) !important;
+    border-color: rgba(255, 140, 60, 0.85) !important;
+    box-shadow:
+        0 0 10px rgba(255, 120, 40, 0.45),
+        0 0 20px rgba(255, 100, 20, 0.2);
+}
+
+/* -- Join left / right — cool blue inputs -- */
+.hg-node.viz-join-left,
+.hg-node.viz-join-right {
+    background: rgba(100, 160, 255, 0.22) !important;
+    border-color: rgba(130, 180, 255, 0.8) !important;
+    box-shadow:
+        0 0 10px rgba(100, 160, 255, 0.4),
+        0 0 20px rgba(80, 140, 240, 0.2);
+}
+
+/* -- Join result — green output -- */
+.hg-node.viz-join-result {
+    background: rgba(80, 220, 130, 0.25) !important;
+    border-color: rgba(100, 240, 150, 0.85) !important;
+    box-shadow:
+        0 0 12px rgba(80, 220, 130, 0.5),
+        0 0 24px rgba(60, 200, 110, 0.25);
+    animation: viz-join-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes viz-join-glow {
+    0%, 100% { box-shadow: 0 0 12px rgba(80, 220, 130, 0.5), 0 0 24px rgba(60, 200, 110, 0.25); }
+    50% { box-shadow: 0 0 18px rgba(100, 240, 150, 0.7), 0 0 32px rgba(80, 220, 130, 0.4); }
+}
+
+/* -- New pattern parent — yellow glow for pattern host -- */
+.hg-node.viz-new-pattern {
+    background: rgba(255, 220, 80, 0.22) !important;
+    border-color: rgba(255, 230, 100, 0.8) !important;
+    box-shadow:
+        0 0 10px rgba(255, 220, 80, 0.4),
+        0 0 20px rgba(255, 200, 60, 0.2);
+}
+
+/* -- New pattern child — lighter yellow subtlety -- */
+.hg-node.viz-new-pattern-child {
+    background: rgba(255, 240, 130, 0.18) !important;
+    border-color: rgba(255, 240, 130, 0.65) !important;
+    box-shadow:
+        0 0 8px rgba(255, 240, 130, 0.35),
+        0 0 16px rgba(255, 220, 80, 0.15);
+}
+
+/* -- New root — bright white-gold for newly created root -- */
+.hg-node.viz-new-root {
+    background: rgba(255, 250, 200, 0.25) !important;
+    border-color: rgba(255, 250, 200, 0.9) !important;
+    box-shadow:
+        0 0 16px rgba(255, 250, 200, 0.6),
+        0 0 32px rgba(255, 230, 150, 0.3);
+    animation: viz-insert-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Operation Timeline Phase Badges ── */
+.ssp-phase.phase-start_node,
+.ssp-phase.phase-startnode { color: #60d8ff; }
+.ssp-phase.phase-visit_parent,
+.ssp-phase.phase-visitparent { color: #ffa860; }
+.ssp-phase.phase-visit_child,
+.ssp-phase.phase-visitchild { color: #c090ff; }
+.ssp-phase.phase-child_match,
+.ssp-phase.phase-childmatch { color: #70e080; }
+.ssp-phase.phase-child_mismatch,
+.ssp-phase.phase-childmismatch { color: #ff7060; }
+.ssp-phase.phase-dequeue,
+.ssp-phase.phase-candidate_mismatch,
+.ssp-phase.phase-candidatemismatch { color: #ffa860; }
+.ssp-phase.phase-root_explore,
+.ssp-phase.phase-rootexplore,
+.ssp-phase.phase-candidate_match,
+.ssp-phase.phase-candidatematch { color: #c090ff; }
+.ssp-phase.phase-match_advance,
+.ssp-phase.phase-matchadvance { color: #70e080; }
+.ssp-phase.phase-parent_explore,
+.ssp-phase.phase-parentexplore { color: #ff9070; }
+.ssp-phase.phase-split_start,
+.ssp-phase.phase-splitstart { color: #ff9070; }
+.ssp-phase.phase-split_complete,
+.ssp-phase.phase-splitcomplete { color: #70e080; }
+.ssp-phase.phase-join_start,
+.ssp-phase.phase-joinstart { color: #c090ff; }
+.ssp-phase.phase-join_step,
+.ssp-phase.phase-joinstep { color: #a0c0ff; }
+.ssp-phase.phase-join_complete,
+.ssp-phase.phase-joincomplete { color: #70e080; }
+.ssp-phase.phase-create_pattern,
+.ssp-phase.phase-createpattern { color: #ffdc60; }
+.ssp-phase.phase-create_root,
+.ssp-phase.phase-createroot { color: #ffa860; }
+.ssp-phase.phase-update_pattern,
+.ssp-phase.phase-updatepattern { color: #a0c0ff; }
+
+/* Search path info badge colors */
+.node-info-panel .nip-viz-badge.sp-start { background: rgba(0, 180, 220, 0.3); color: #60d8ff; }
+.node-info-panel .nip-viz-badge.sp-root { background: rgba(255, 200, 80, 0.3); color: #ffc850; }
+.node-info-panel .nip-viz-badge.sp-start-path { background: rgba(240, 140, 40, 0.3); color: #f0a040; }
+.node-info-panel .nip-viz-badge.sp-end-path { background: rgba(30, 170, 230, 0.3); color: #50c8ff; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Path Chain Panel — breadcrumb visualization of search path
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.path-chain-panel {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 22, 28, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 6px 12px;
+    pointer-events: auto;
+    z-index: 50;
+    max-width: 90%;
+    backdrop-filter: blur(8px);
+}
+
+.pc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 10px;
+}
+
+.pc-title {
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.pc-status {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.pc-status-active { background: rgba(100, 160, 255, 0.2); color: #80b0ff; }
+.pc-status-match { background: rgba(80, 200, 100, 0.2); color: #60e060; }
+.pc-status-mismatch { background: rgba(255, 80, 60, 0.2); color: #ff6050; }
+
+.pc-chain {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+.pc-segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.pc-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    line-height: 1.3;
+    transition: background 0.15s, border-color 0.15s;
+}
+.pc-node:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.pc-node-idx { font-weight: 600; }
+.pc-node-width { font-size: 9px; color: rgba(255, 255, 255, 0.4); }
+
+/* Node role colors */
+.pc-node-start {
+    border-color: rgba(0, 220, 255, 0.6);
+    background: rgba(0, 180, 220, 0.2);
+    color: #60d8ff;
+}
+.pc-node-start-path {
+    border-color: rgba(255, 170, 80, 0.5);
+    background: rgba(240, 140, 40, 0.15);
+    color: #ffa860;
+}
+.pc-node-root {
+    border-color: rgba(255, 200, 80, 0.6);
+    background: rgba(255, 200, 80, 0.15);
+    color: #ffc850;
+    font-weight: 700;
+}
+.pc-node-end-path {
+    border-color: rgba(80, 200, 255, 0.5);
+    background: rgba(30, 170, 230, 0.15);
+    color: #50c8ff;
+}
+
+/* Arrow styles */
+.pc-arrow {
+    font-size: 12px;
+    line-height: 1;
+    padding: 0 1px;
+}
+.pc-arrow-up { color: rgba(255, 170, 80, 0.7); }
+.pc-arrow-down { color: rgba(80, 200, 255, 0.7); }
+.pc-arrow-root { color: rgba(255, 200, 80, 0.8); font-size: 10px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Insert State Panel — dedicated panel for insert operation details
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.insert-state-panel {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(20, 22, 28, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    pointer-events: auto;
+    z-index: 50;
+    max-width: 320px;
+    min-width: 200px;
+    backdrop-filter: blur(8px);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.isp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.isp-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.isp-step {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.isp-detail {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    border-left: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.isp-description {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+/* ── Delta Section ── */
+
+.isp-delta-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+}
+
+.isp-delta-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.isp-delta-title {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.isp-delta-summary {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.isp-delta-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.isp-badge-add {
+    background: rgba(80, 220, 130, 0.2);
+    color: #60e080;
+}
+
+.isp-badge-remove {
+    background: rgba(255, 90, 70, 0.2);
+    color: #ff6050;
+}
+
+.isp-badge-update {
+    background: rgba(100, 160, 255, 0.2);
+    color: #80b0ff;
+}
+
+.isp-delta-ops {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.isp-delta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.isp-delta-row.isp-delta-add {
+    color: #60e080;
+    background: rgba(80, 220, 130, 0.06);
+}
+
+.isp-delta-row.isp-delta-remove {
+    color: #ff6050;
+    background: rgba(255, 90, 70, 0.06);
+}
+
+.isp-delta-row.isp-delta-update {
+    color: #80b0ff;
+    background: rgba(100, 160, 255, 0.06);
+}
+
+.isp-delta-icon {
+    font-size: 11px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.isp-delta-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   QueryPathPanel — query token strip with cursor & match highlighting
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.qp-panel {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(18, 18, 24, 0.92);
+    border: 1px solid rgba(100, 100, 140, 0.35);
+    border-radius: 10px;
+    padding: 8px 14px 10px;
+    min-width: 200px;
+    max-width: 70vw;
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.qp-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(180, 180, 200, 0.85);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.qp-progress-label {
+    font-size: 10px;
+    color: rgba(140, 140, 170, 0.7);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Thin progress bar */
+.qp-progress-bar {
+    height: 3px;
+    background: rgba(60, 60, 80, 0.5);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.qp-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0, 200, 255, 0.7), rgba(100, 255, 180, 0.7));
+    border-radius: 2px;
+    transition: width 0.25s ease-out;
+}
+
+/* Token strip */
+.qp-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.qp-token {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px 7px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    line-height: 1.3;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    cursor: default;
+}
+
+.qp-token-label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.qp-token-width {
+    font-size: 9px;
+    opacity: 0.5;
+}
+
+/* Token states */
+.qp-token-idle {
+    background: rgba(60, 60, 80, 0.4);
+    color: rgba(160, 160, 180, 0.7);
+}
+
+.qp-token-cursor {
+    background: rgba(0, 180, 220, 0.15);
+    border-color: rgba(0, 220, 255, 0.6);
+    color: rgba(0, 220, 255, 0.95);
+    box-shadow: 0 0 6px rgba(0, 220, 255, 0.3);
+}
+
+.qp-token-matched {
+    background: rgba(60, 200, 120, 0.15);
+    border-color: rgba(60, 200, 120, 0.5);
+    color: rgba(100, 240, 160, 0.9);
+}
+
+.qp-token-active-match {
+    background: rgba(60, 240, 120, 0.2);
+    border-color: rgba(60, 255, 120, 0.7);
+    color: rgba(120, 255, 180, 1);
+    box-shadow: 0 0 8px rgba(60, 255, 120, 0.4);
+    animation: qp-pulse-match 0.6s ease-out;
+}
+
+.qp-token-active-mismatch {
+    background: rgba(240, 60, 80, 0.2);
+    border-color: rgba(255, 80, 100, 0.7);
+    color: rgba(255, 120, 140, 1);
+    box-shadow: 0 0 8px rgba(255, 60, 80, 0.4);
+    animation: qp-pulse-mismatch 0.4s ease-out;
+}
+
+.qp-token-compared {
+    box-shadow: 0 0 0 2px rgba(255, 200, 60, 0.6);
+}
+
+@keyframes qp-pulse-match {
+    0% { transform: scale(1.15); box-shadow: 0 0 14px rgba(60, 255, 120, 0.6); }
+    100% { transform: scale(1); }
+}
+
+@keyframes qp-pulse-mismatch {
+    0% { transform: translateX(-3px); }
+    25% { transform: translateX(3px); }
+    50% { transform: translateX(-2px); }
+    75% { transform: translateX(1px); }
+    100% { transform: translateX(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Decomposition patterns — child tokens rendered inside expanded parent node
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* When a compound node is selected, it expands to show decomposition rows.
+   pointer-events:none on the parent prevents its :hover from firing when
+   hovering inline children; children re-enable pointer-events individually.
+
+   On collapse, hg-collapsing keeps the parent in column layout while the
+   empty container shrinks via CSS transition, then gets removed. */
+
+/* Expanded state — full content visible */
+.hg-node.hg-expanded {
+    display: flex !important;
+    flex-direction: column;
+    white-space: normal;
+    max-width: 400px !important;
+    padding: 0 !important;
+    gap: 0;
+    pointer-events: auto;
+    overflow: visible;
+}
+
+/* Collapsing state — same layout as expanded while empty container shrinks */
+.hg-node.hg-collapsing {
+    display: flex !important;
+    flex-direction: column;
+    white-space: normal;
+    max-width: 400px !important;
+    padding: 0 !important;
+    gap: 0;
+    pointer-events: auto;
+    overflow: visible;
+}
+.hg-node.hg-collapsing .decomp-patterns {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0;
+    gap: 0;
+}
+
+/* Subtle selected state for expanded parent — don't overwhelm children */
+.hg-node.hg-expanded.selected,
+.hg-node.hg-collapsing.selected {
+    background: rgba(30, 26, 20, 0.85) !important;
+    border-color: rgba(200, 150, 80, 0.25);
+    box-shadow: 0 0 8px rgba(200, 90, 24, 0.12);
+}
+
+/* Header row: the node's own label serves as a section title */
+.hg-node.hg-expanded > .hg-node-content,
+.hg-node.hg-collapsing > .hg-node-content {
+    display: flex;
+    width: 100%;
+    padding: 5px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    font-weight: 600;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.decomp-patterns {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 3px;
+    /* Smooth height + opacity transition for expand/collapse */
+    transition: max-height 0.3s linear, opacity 0.2s linear, padding 0.3s linear, gap 0.3s linear;
+}
+
+.decomp-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.decomp-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    padding: 3px 4px;
+    min-width: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.decomp-tokens {
+    display: flex;
+    flex: 1;
+}
+
+/* Reparented child nodes inside decomposition rows */
+.hg-decomp-child.hg-node {
+    position: relative !important;
+    transform: none !important;
+    display: flex !important;
+    align-items: center;
+    padding: 3px 3px;
+    min-width: min-content;
+    overflow: hidden;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0;
+    margin: 0;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    /* Reset 3D positioning styles */
+    left: auto !important;
+    top: auto !important;
+    z-index: auto !important;
+}
+
+.hg-decomp-child.hg-node > .hg-node-content {
+    flex: 1;
+    min-width: min-content;
+    overflow: visible;
+}
+
+/* Let labels inside decomp children show their full text for min-content sizing */
+.hg-decomp-child.hg-node .hg-node-label {
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.hg-decomp-child.hg-node:last-child {
+    border-right: none;
+}
+
+.hg-decomp-child.hg-node:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Highlight decomp child when it matches the graph selection */
+.hg-decomp-child.hg-node.selected {
+    background: rgba(200, 150, 80, 0.2) !important;
+    border-color: rgba(200, 150, 80, 0.4);
+    box-shadow: 0 0 6px rgba(200, 90, 24, 0.2);
+}
+
+.hg-decomp-child.hg-node.span-highlighted {
+    background: rgba(180, 160, 100, 0.15) !important;
+}
+
+.decomp-token {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px 3px;
+    cursor: pointer;
+    overflow: hidden;
+    min-width: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.decomp-token:last-child {
+    border-right: none;
+}
+
+.decomp-token:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Re-use level classes for token coloring */
+.decomp-token.level-info {
+    background: rgba(80, 160, 255, 0.08);
+}
+.decomp-token.level-info:hover {
+    background: rgba(80, 160, 255, 0.18);
+}
+
+.decomp-token.level-debug {
+    background: rgba(100, 200, 120, 0.06);
+}
+.decomp-token.level-debug:hover {
+    background: rgba(100, 200, 120, 0.15);
+}
+
+.decomp-token.level-warn {
+    background: rgba(255, 180, 60, 0.08);
+}
+.decomp-token.level-warn:hover {
+    background: rgba(255, 180, 60, 0.18);
+}
+
+.decomp-token.level-error {
+    background: rgba(255, 80, 60, 0.08);
+}
+.decomp-token.level-error:hover {
+    background: rgba(255, 80, 60, 0.18);
+}
+
+/* Viz-state highlights on decomposition tokens */
+.decomp-token.viz-selected {
+    box-shadow: inset 0 0 0 2px rgba(200, 150, 80, 0.6);
+}
+
+.decomp-token.viz-matched {
+    box-shadow: inset 0 0 0 2px rgba(60, 255, 120, 0.5);
+}
+
+.decomp-token.viz-mismatched {
+    box-shadow: inset 0 0 0 2px rgba(255, 60, 80, 0.5);
+}
+
+.decomp-token.viz-candidate-child {
+    box-shadow: inset 0 0 0 2px rgba(100, 180, 255, 0.4);
+}
+
+.decomp-token-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 9px;
+}
+
+.decomp-token-idx {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 7px;
+    flex-shrink: 0;
+}
+
+/* ── Nesting View ── */
+
+/* Shell containers (parent nesting) */
+.hg-nesting-shell {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    display: none; /* shown via JS when positioned */
+}
+
+.hg-nesting-shell .hg-shell-label {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}
+
+/* Dimmed originals (have a duplicate visible) */
+.hg-has-duplicate {
+    opacity: 0.35 !important;
+}
+
+/* Duplicate badge */
+.hg-duplicate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none; /* shown via JS when positioned */
+}
+
+.hg-duplicate::after {
+    content: '⤴';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(100, 180, 255, 0.7);
+    color: #fff;
+    font-size: 9px;
+    line-height: 14px;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* Nesting highlight glow on nodes with hidden edges */
+.hg-nesting-highlight {
+    box-shadow: 0 0 6px 2px rgba(100, 180, 255, 0.25);
+}
+
+.hg-nesting-highlight-parent {
+    box-shadow: 0 0 8px 3px rgba(255, 200, 100, 0.3);
+}
+
+.hg-nesting-highlight-child {
+    box-shadow: 0 0 6px 2px rgba(100, 220, 160, 0.25);
+}
+
+/* HUD slider controls */
+.hg-slider-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.hg-slider {
+    width: 50px;
+    height: 4px;
+    accent-color: rgba(100, 180, 255, 0.8);
+    cursor: pointer;
+}
+

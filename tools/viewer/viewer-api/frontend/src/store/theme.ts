@@ -127,9 +127,17 @@ export const DEFAULT_THEME: ThemeColors = {
   smokeMoss: '#e8f0fa',
 };
 
-// ── Preset types ─────────────────────────────────────────────────────────────
+// ── Global active theme colors ───────────────────────────────────────────────
 
-/** A named color-only theme; covers backgrounds, text, borders and accents. */
+/**
+ * Global signal holding the currently active theme colors.
+ * Updated whenever a theme store's colors change.
+ * Used by GPU rendering components (e.g. HypergraphViewCore) to apply
+ * the current theme without requiring prop drilling.
+ */
+export const themeColors = signal<ThemeColors>(DEFAULT_THEME);
+
+// ── Preset types ─────────────────────────────────────────────────────────────
 export interface ColorTheme {
   name: string;
   description: string;
@@ -254,10 +262,12 @@ export function createThemeStore(
 
   const colors = signal<ThemeColors>(loadTheme());
 
-  // Persist on change
+  // Persist on change and sync global themeColors signal.
   effect(() => {
+    const c = colors.value;
+    themeColors.value = c;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(colors.value));
+      localStorage.setItem(storageKey, JSON.stringify(c));
     } catch { /* storage full */ }
   });
 

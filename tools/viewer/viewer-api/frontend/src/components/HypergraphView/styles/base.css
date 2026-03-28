@@ -1,0 +1,119 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Base — container, node layer, node elements, level badges
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── DOM-mode container: transparent so global WgpuOverlay background shows ── */
+.hypergraph-container.hg-dom-mode {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    cursor: default;
+    user-select: none;
+    touch-action: none; /* Prevent browser gestures; handled by useTouchInteraction */
+}
+
+/* ── Node layer: absolutely positioned, stacks above canvas ── */
+.hg-node-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Depth sorting uses z-index (set per-frame in JS) instead of
+       preserve-3d + translate3d.  This avoids GPU compositing layers
+       which would rasterize nodes at their base CSS size and bitmap-
+       stretch on scale() — causing blurry text when zoomed in. */
+}
+
+/* ── Individual DOM node: positioned with CSS transform ── */
+.hg-node {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+    cursor: pointer;
+    transform-origin: center center;
+    white-space: nowrap;
+    transition: opacity 0.15s ease, background 0.15s ease, padding 0.3s linear, max-width 0.3s linear;
+    display: inline-flex !important;
+    padding: 3px 10px !important;
+    border-radius: 4px;
+    min-width: 50px;
+    max-width: 200px;
+    background: rgba(18, 16, 14, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.hg-node:not(.hg-expanded):hover {
+    background: rgba(36, 32, 28, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 10px rgba(200, 150, 80, 0.15);
+}
+
+.hg-node.selected {
+    background: rgba(42, 34, 24, 0.9) !important;
+    border-color: rgba(200, 150, 80, 0.4);
+    box-shadow: 0 0 12px rgba(200, 90, 24, 0.25);
+}
+
+.hg-node .hg-node-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    overflow: hidden;
+    transition: padding 0.3s ease, border-bottom-color 0.3s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.hg-node .hg-node-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.85);
+    flex: 1;
+}
+
+.hg-node .hg-node-idx {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+/* Atom vs compound visual distinction */
+.hg-node.hg-atom {
+    border-style: solid;
+}
+.hg-node.hg-compound {
+    border-style: dashed;
+}
+
+/* Level badge inside nodes */
+.hg-node .level-badge {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.hg-node .level-badge.level-error {
+    background: rgba(255, 80, 60, 0.25);
+    color: #ff7060;
+}
+.hg-node .level-badge.level-warn {
+    background: rgba(255, 180, 60, 0.25);
+    color: #ffb840;
+}
+.hg-node .level-badge.level-info {
+    background: rgba(80, 160, 255, 0.2);
+    color: #60a8ff;
+}
+.hg-node .level-badge.level-debug {
+    background: rgba(100, 200, 120, 0.15);
+    color: #70c880;
+}

@@ -1,0 +1,80 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Nesting View — shell containers, connector edges, highlight glow
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Shell containers (parent nesting) */
+.hg-nesting-shell {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    display: none; /* shown via JS when positioned */
+}
+
+.hg-nesting-shell .hg-shell-label {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}
+
+/* Duplicate node (kept for backwards compat — no badge, no special styling) */
+.hg-duplicate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none; /* shown via JS when positioned */
+}
+
+/* SVG connector overlay (edges from originals to clones) */
+.hg-nesting-connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9400;
+    overflow: visible;
+}
+
+.hg-connector-line {
+    stroke: rgba(100, 180, 255, 0.35);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+}
+
+.hg-connector-line.hg-connector-highlighted {
+    stroke: rgba(100, 200, 255, 0.8);
+    stroke-width: 2;
+    stroke-dasharray: none;
+}
+
+.hg-connector-dot {
+    fill: rgba(100, 180, 255, 0.6);
+}
+
+.hg-connector-dot.hg-connector-highlighted {
+    fill: rgba(100, 200, 255, 0.95);
+}
+
+/* Nesting highlight glow on nodes with hidden edges */
+.hg-nesting-highlight {
+    box-shadow: 0 0 6px 2px rgba(100, 180, 255, 0.25);
+}
+
+.hg-nesting-highlight-parent {
+    box-shadow: 0 0 8px 3px rgba(255, 200, 100, 0.3);
+}
+
+.hg-nesting-highlight-child {
+    box-shadow: 0 0 6px 2px rgba(100, 220, 160, 0.25);
+}

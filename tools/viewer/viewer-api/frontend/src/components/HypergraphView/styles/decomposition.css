@@ -1,0 +1,236 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Decomposition — expanded/collapsing parent nodes, pattern rows, tokens,
+                   reparented child nodes inside decomposition rows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Expanded state — full content visible */
+.hg-node.hg-expanded {
+    display: flex !important;
+    flex-direction: column;
+    white-space: normal;
+    max-width: 400px !important;
+    padding: 0 !important;
+    gap: 0;
+    pointer-events: auto;
+    overflow: visible;
+}
+
+/* Collapsing state — same layout as expanded while empty container shrinks */
+.hg-node.hg-collapsing {
+    display: flex !important;
+    flex-direction: column;
+    white-space: normal;
+    max-width: 400px !important;
+    padding: 0 !important;
+    gap: 0;
+    pointer-events: auto;
+    overflow: visible;
+}
+.hg-node.hg-collapsing .decomp-patterns {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0;
+    gap: 0;
+}
+
+/* Subtle selected state for expanded parent — don't overwhelm children */
+.hg-node.hg-expanded.selected,
+.hg-node.hg-collapsing.selected {
+    background: rgba(30, 26, 20, 0.85) !important;
+    border-color: rgba(200, 150, 80, 0.25);
+    box-shadow: 0 0 8px rgba(200, 90, 24, 0.12);
+}
+
+/* Header row: the node's own label serves as a section title */
+.hg-node.hg-expanded > .hg-node-content,
+.hg-node.hg-collapsing > .hg-node-content {
+    display: flex;
+    width: 100%;
+    padding: 5px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    font-weight: 600;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.decomp-patterns {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 3px;
+    /* Smooth height + opacity transition for expand/collapse */
+    transition: max-height 0.3s linear, opacity 0.2s linear, padding 0.3s linear, gap 0.3s linear;
+}
+
+.decomp-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.decomp-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    padding: 3px 4px;
+    min-width: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.decomp-tokens {
+    display: flex;
+    flex: 1;
+}
+
+/* Hide width badges and index labels on reparented children */
+.hg-decomp-child.hg-node .level-badge,
+.hg-decomp-child.hg-node .hg-node-idx {
+    display: none;
+}
+
+/* Reparented child nodes inside decomposition rows */
+.hg-decomp-child.hg-node {
+    position: relative !important;
+    transform: none !important;
+    display: flex !important;
+    align-items: center;
+    padding: 3px 3px;
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0;
+    margin: 0;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    /* Reset 3D positioning styles */
+    left: auto !important;
+    top: auto !important;
+    z-index: auto !important;
+}
+
+.hg-decomp-child.hg-node > .hg-node-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Truncate labels that exceed the quantized width budget */
+.hg-decomp-child.hg-node .hg-node-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hg-decomp-child.hg-node:last-child {
+    border-right: none;
+}
+
+.hg-decomp-child.hg-node:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Highlight decomp child when it matches the graph selection */
+.hg-decomp-child.hg-node.selected {
+    background: rgba(200, 150, 80, 0.2) !important;
+    border-color: rgba(200, 150, 80, 0.4);
+    box-shadow: 0 0 6px rgba(200, 90, 24, 0.2);
+}
+
+.hg-decomp-child.hg-node.span-highlighted {
+    background: rgba(180, 160, 100, 0.15) !important;
+}
+
+.decomp-token {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px 3px;
+    cursor: pointer;
+    overflow: hidden;
+    min-width: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.decomp-token:last-child {
+    border-right: none;
+}
+
+.decomp-token:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Re-use level classes for token coloring */
+.decomp-token.level-info {
+    background: rgba(80, 160, 255, 0.08);
+}
+.decomp-token.level-info:hover {
+    background: rgba(80, 160, 255, 0.18);
+}
+
+.decomp-token.level-debug {
+    background: rgba(100, 200, 120, 0.06);
+}
+.decomp-token.level-debug:hover {
+    background: rgba(100, 200, 120, 0.15);
+}
+
+.decomp-token.level-warn {
+    background: rgba(255, 180, 60, 0.08);
+}
+.decomp-token.level-warn:hover {
+    background: rgba(255, 180, 60, 0.18);
+}
+
+.decomp-token.level-error {
+    background: rgba(255, 80, 60, 0.08);
+}
+.decomp-token.level-error:hover {
+    background: rgba(255, 80, 60, 0.18);
+}
+
+/* Viz-state highlights on decomposition tokens */
+.decomp-token.viz-selected {
+    box-shadow: inset 0 0 0 2px rgba(200, 150, 80, 0.6);
+}
+
+.decomp-token.viz-matched {
+    box-shadow: inset 0 0 0 2px rgba(60, 255, 120, 0.5);
+}
+
+.decomp-token.viz-mismatched {
+    box-shadow: inset 0 0 0 2px rgba(255, 60, 80, 0.5);
+}
+
+.decomp-token.viz-candidate-child {
+    box-shadow: inset 0 0 0 2px rgba(100, 180, 255, 0.4);
+}
+
+.decomp-token-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 9px;
+}
+
+.decomp-token-idx {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 7px;
+    flex-shrink: 0;
+}

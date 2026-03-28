@@ -40,6 +40,11 @@ export * from './effects/palette';
 export { Graph3DView } from './components/Graph3DView/Graph3DView';
 export type { Graph3DNode, Graph3DEdge, Graph3DViewProps } from './components/Graph3DView/types';
 
+// Re-export HypergraphViewCore component and public types
+export { HypergraphViewCore } from './components/HypergraphView/HypergraphViewCore';
+export type { HypergraphViewProps, NestingSettings } from './components/HypergraphView/types';
+export type { GraphLayout, LayoutNode, LayoutEdge } from './components/HypergraphView/layout';
+
 // Re-export shared ThemeSettings component and store types
 export { ThemeSettings } from './components/ThemeSettings/ThemeSettings';
 export type { ThemeSettingsStore, SavedTheme, ColorTheme, EffectTheme } from './store/theme';

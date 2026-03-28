@@ -11,7 +11,8 @@
   "dependencies": {
     "preact": "^10.19.3",
     "@preact/signals": "^1.2.2",
-    "prismjs": "^1.29.0"
+    "prismjs": "^1.29.0",
+    "@context-engine/types": "file:../../../packages/context-types"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

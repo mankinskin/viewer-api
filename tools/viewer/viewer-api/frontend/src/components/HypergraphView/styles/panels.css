@@ -1,0 +1,383 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Panels — HUD controls, graph info overlay, node info panel,
+            empty state, tooltip
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── HUD (bottom-center controls bar) ── */
+
+.hypergraph-hud {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    pointer-events: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.hypergraph-hud .hg-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    font-family: inherit;
+    padding: 2px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.hypergraph-hud .hg-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.hypergraph-hud .hg-toggle {
+    pointer-events: auto;
+    padding: 2px 10px;
+    font-size: 10px;
+    border-radius: 3px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.hypergraph-hud .hg-toggle-on {
+    background: rgba(40, 180, 255, 0.2);
+    border-color: rgba(40, 180, 255, 0.5);
+    color: rgba(40, 180, 255, 0.9);
+}
+
+.hypergraph-hud .hg-toggle-on:hover {
+    background: rgba(40, 180, 255, 0.3);
+    color: rgba(40, 180, 255, 1.0);
+}
+
+/* HUD slider controls */
+.hg-slider-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.hg-slider {
+    width: 50px;
+    height: 4px;
+    accent-color: rgba(100, 180, 255, 0.8);
+    cursor: pointer;
+}
+
+/* ── Graph Info Overlay (bottom-left) ── */
+
+.hypergraph-info {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    pointer-events: none;
+    min-width: 140px;
+    z-index: 20;
+}
+
+.hypergraph-info .hg-title {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.hypergraph-info .hg-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 2px;
+}
+
+.hypergraph-info .hg-label {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.hypergraph-info .hg-value {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Selected Node Info Panel (right side) ── */
+
+.node-info-panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    pointer-events: auto;
+    min-width: 200px;
+    max-width: 280px;
+    backdrop-filter: blur(8px);
+}
+
+.node-info-panel .nip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.node-info-panel .nip-title {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.node-info-panel .nip-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.node-info-panel .nip-badge.atom {
+    background: rgba(100, 180, 255, 0.25);
+    color: rgba(140, 200, 255, 0.95);
+}
+
+.node-info-panel .nip-badge.compound {
+    background: rgba(255, 180, 100, 0.25);
+    color: rgba(255, 200, 140, 0.95);
+}
+
+.node-info-panel .nip-section {
+    margin-bottom: 8px;
+}
+
+.node-info-panel .nip-section-title {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.node-info-panel .nip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+}
+
+.node-info-panel .nip-label {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.node-info-panel .nip-value {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+}
+
+.node-info-panel .nip-indices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.node-info-panel .nip-idx {
+    font-size: 10px;
+    padding: 2px 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.node-info-panel .nip-link {
+    cursor: pointer;
+    color: rgba(100, 180, 255, 0.9);
+    background: rgba(100, 180, 255, 0.15);
+    transition: all 0.15s ease;
+}
+
+.node-info-panel .nip-link:hover {
+    background: rgba(100, 180, 255, 0.3);
+    color: #64c8ff;
+    transform: scale(1.05);
+}
+
+.node-info-panel .nip-viz-state {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.node-info-panel .nip-viz-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.node-info-panel .nip-viz-badge.start { background: rgba(0, 180, 220, 0.3); color: #60d8ff; }
+.node-info-panel .nip-viz-badge.root { background: rgba(255, 200, 80, 0.3); color: #ffc850; }
+.node-info-panel .nip-viz-badge.candidate-parent { background: rgba(255, 160, 80, 0.3); color: #ffa050; }
+.node-info-panel .nip-viz-badge.candidate-child { background: rgba(180, 120, 255, 0.3); color: #b478ff; }
+.node-info-panel .nip-viz-badge.matched { background: rgba(80, 220, 120, 0.3); color: #50dc78; }
+.node-info-panel .nip-viz-badge.mismatched { background: rgba(255, 90, 70, 0.3); color: #ff5a46; }
+.node-info-panel .nip-viz-badge.path { background: rgba(100, 200, 255, 0.3); color: #64c8ff; }
+.node-info-panel .nip-viz-badge.completed { background: rgba(80, 200, 120, 0.3); color: #50c878; }
+.node-info-panel .nip-viz-badge.pending-parent { background: rgba(255, 160, 80, 0.2); color: #ffa050; }
+.node-info-panel .nip-viz-badge.pending-child { background: rgba(180, 120, 255, 0.2); color: #b478ff; }
+
+/* Search path info badge colors */
+.node-info-panel .nip-viz-badge.sp-start { background: rgba(0, 180, 220, 0.3); color: #60d8ff; }
+.node-info-panel .nip-viz-badge.sp-root { background: rgba(255, 200, 80, 0.3); color: #ffc850; }
+.node-info-panel .nip-viz-badge.sp-start-path { background: rgba(240, 140, 40, 0.3); color: #f0a040; }
+.node-info-panel .nip-viz-badge.sp-end-path { background: rgba(30, 170, 230, 0.3); color: #50c8ff; }
+
+/* ── Empty state ── */
+
+.hypergraph-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-family: var(--font-mono, monospace);
+}
+
+.hypergraph-empty .hg-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 420px;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.hypergraph-empty code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+/* ── Tooltip ── */
+
+.hypergraph-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(10, 10, 14, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 5px;
+    padding: 6px 10px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    z-index: 100;
+    transform: translate(-50%, 0%);
+    margin-top: 12px;
+}
+
+.hypergraph-tooltip .tt-label {
+    font-weight: 600;
+    color: #fff;
+}
+
+.hypergraph-tooltip .tt-detail {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Mobile responsive — HUD, info overlays, node panel
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    .hypergraph-hud {
+        gap: 6px;
+        font-size: 10px;
+        bottom: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: calc(100% - 24px);
+        padding: 4px 8px;
+        background: rgba(10, 10, 14, 0.85);
+        border-radius: 6px;
+    }
+
+    /* Hide verbose control hints on mobile — keep only buttons */
+    .hypergraph-hud > span {
+        display: none;
+    }
+
+    .hypergraph-info {
+        bottom: 6px;
+        left: 6px;
+        padding: 6px 10px;
+        font-size: 11px;
+        min-width: 100px;
+    }
+
+    .node-info-panel {
+        top: 6px;
+        right: 6px;
+        max-width: 200px;
+        min-width: 160px;
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    .hypergraph-tooltip {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .hypergraph-hud {
+        bottom: 4px;
+        gap: 4px;
+        max-width: calc(100% - 16px);
+    }
+
+    .hypergraph-info {
+        display: none;
+    }
+
+    .node-info-panel {
+        top: auto;
+        bottom: 50px;
+        right: 4px;
+        left: 4px;
+        max-width: none;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+}
