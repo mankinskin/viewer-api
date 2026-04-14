@@ -56,7 +56,7 @@ use tower_http::{
         Any,
         CorsLayer,
     },
-    services::ServeDir,
+    services::{ServeDir, ServeFile},
 };
 use tracing::{
     error,
@@ -384,14 +384,21 @@ pub async fn shutdown_signal() {
     info!("Received shutdown signal");
 }
 
-/// Create a router with static file serving
+/// Create a router with static file serving.
+///
+/// Non-matching paths fall back to `index.html` so that client-side
+/// SPA routing (Dioxus Router, etc.) works for deep-linked URLs.
 pub fn with_static_files(
     router: Router,
     static_dir: Option<PathBuf>,
 ) -> Router {
     if let Some(dir) = static_dir {
         if dir.exists() {
-            router.fallback_service(ServeDir::new(dir))
+            let index = dir.join("index.html");
+            router.fallback_service(
+                ServeDir::new(&dir)
+                    .not_found_service(ServeFile::new(index)),
+            )
         } else {
             router
         }
