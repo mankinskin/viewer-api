@@ -33,7 +33,7 @@ Applies to viewer-api-driven HTTP/SPA tools and shared frontend packages.
 
 ## Frontend Rules
 
-- Reuse shared UI primitives/styles from `tools/viewer/viewer-api/frontend` where possible.
+- Reuse shared UI primitives/styles from `tools/viewer/viewer-api/frontend/ts` where possible.
 - Keep viewer-specific features modular; avoid duplicating shared components.
 - Prefer explicit loading/error/empty states for all async data views.
 - Keep theme/effects integration centralized so log-viewer and ticket-viewer can share behavior.

@@ -1,0 +1,47 @@
+[package]
+name = "viewer-api-dioxus"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "viewer-api-dioxus"
+path = "src/main.rs"
+
+[dependencies]
+dioxus = { version = "0.7", features = ["web"] }
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
+syntect = { version = "5.3", default-features = false, features = ["default-fancy"] }
+
+# wasm32-specific dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Document",
+    "HtmlElement",
+    "HtmlBodyElement",
+    "HtmlCanvasElement",
+    "HtmlHeadElement",
+    "HtmlStyleElement",
+    "Element",
+    "EventTarget",
+    "Node",
+    "NodeList",
+    "CssStyleDeclaration",
+    "MouseEvent",
+    "TouchEvent",
+    "TouchList",
+    "Touch",
+    "Storage",
+    "Navigator",
+    "Clipboard",
+    "Location",
+    "Performance",
+] }
+

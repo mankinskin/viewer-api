@@ -1,0 +1,362 @@
+//! ThemeStore — reactive theme colours with CSS custom-property injection.
+//!
+//! Provides [`ThemeColors`] (all `--theme-*` tokens), four built-in presets,
+//! and a [`ThemeStore`] that writes to `:root` CSS variables via `web_sys`
+//! and persists the active preset name to `localStorage`.
+use dioxus::prelude::*;
+
+// ── Data types ────────────────────────────────────────────────────────────────
+
+/// Full set of design-token colours mirroring the TypeScript theme.ts interface.
+#[derive(Clone, PartialEq, Debug)]
+pub struct ThemeColors {
+    // Backgrounds
+    pub bg_primary: &'static str,
+    pub bg_secondary: &'static str,
+    pub bg_tertiary: &'static str,
+    pub bg_elevated: &'static str,
+    // Text
+    pub text_primary: &'static str,
+    pub text_secondary: &'static str,
+    pub text_muted: &'static str,
+    // Borders
+    pub border_primary: &'static str,
+    pub border_secondary: &'static str,
+    // Accents
+    pub accent_blue: &'static str,
+    pub accent_purple: &'static str,
+    pub accent_green: &'static str,
+    pub accent_yellow: &'static str,
+    pub accent_red: &'static str,
+    pub accent_orange: &'static str,
+    pub accent_cyan: &'static str,
+    // Syntax tokens (mapped in CSS to syntect `.highlight.*` class colours).
+    pub syntax_keyword: &'static str,
+    pub syntax_string: &'static str,
+    pub syntax_comment: &'static str,
+    pub syntax_number: &'static str,
+    pub syntax_function: &'static str,
+    pub syntax_type: &'static str,
+    pub syntax_variable: &'static str,
+}
+
+/// Named preset identifier.
+#[derive(Clone, PartialEq, Debug, Default)]
+pub enum ThemePreset {
+    #[default]
+    Arcadia,
+    Dark,
+    Paper,
+    Scratchboard,
+}
+
+impl ThemePreset {
+    pub fn key(&self) -> &'static str {
+        match self {
+            ThemePreset::Arcadia => "arcadia",
+            ThemePreset::Dark => "dark",
+            ThemePreset::Paper => "paper",
+            ThemePreset::Scratchboard => "scratchboard",
+        }
+    }
+
+    pub fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "arcadia" => Some(ThemePreset::Arcadia),
+            "dark" => Some(ThemePreset::Dark),
+            "paper" => Some(ThemePreset::Paper),
+            "scratchboard" => Some(ThemePreset::Scratchboard),
+            _ => None,
+        }
+    }
+
+    pub fn colors(&self) -> &'static ThemeColors {
+        match self {
+            ThemePreset::Arcadia => &ARCADIA,
+            ThemePreset::Dark => &DARK,
+            ThemePreset::Paper => &PAPER,
+            ThemePreset::Scratchboard => &SCRATCHBOARD,
+        }
+    }
+}
+
+// ── Built-in presets ──────────────────────────────────────────────────────────
+
+/// Arcadia — warm marble light theme (default).
+pub static ARCADIA: ThemeColors = ThemeColors {
+    bg_primary: "#eae6df",
+    bg_secondary: "#f2efe8",
+    bg_tertiary: "#f8f6f1",
+    bg_elevated: "#ffffff",
+    text_primary: "#2c2a26",
+    text_secondary: "#5a5650",
+    text_muted: "#8a8680",
+    border_primary: "#d4cfc7",
+    border_secondary: "#e8e4dc",
+    accent_blue: "#4a7fa5",
+    accent_purple: "#7c5c9e",
+    accent_green: "#4a8c5c",
+    accent_yellow: "#b8860b",
+    accent_red: "#c0392b",
+    accent_orange: "#d35400",
+    accent_cyan: "#1a8c8c",
+    syntax_keyword: "#4a7fa5",
+    syntax_string: "#4a8c5c",
+    syntax_comment: "#8a8680",
+    syntax_number: "#b8860b",
+    syntax_function: "#7c5c9e",
+    syntax_type: "#1a8c8c",
+    syntax_variable: "#2c2a26",
+};
+
+/// Dark — dracula-inspired dark theme.
+pub static DARK: ThemeColors = ThemeColors {
+    bg_primary: "#1a1b26",
+    bg_secondary: "#1f2035",
+    bg_tertiary: "#24283b",
+    bg_elevated: "#2c2f4a",
+    text_primary: "#c0caf5",
+    text_secondary: "#9aa5ce",
+    text_muted: "#565f89",
+    border_primary: "#292e42",
+    border_secondary: "#1f2335",
+    accent_blue: "#7aa2f7",
+    accent_purple: "#bb9af7",
+    accent_green: "#9ece6a",
+    accent_yellow: "#e0af68",
+    accent_red: "#f7768e",
+    accent_orange: "#ff9e64",
+    accent_cyan: "#7dcfff",
+    syntax_keyword: "#bb9af7",
+    syntax_string: "#9ece6a",
+    syntax_comment: "#565f89",
+    syntax_number: "#ff9e64",
+    syntax_function: "#7aa2f7",
+    syntax_type: "#7dcfff",
+    syntax_variable: "#c0caf5",
+};
+
+/// Paper — soft off-white light theme.
+pub static PAPER: ThemeColors = ThemeColors {
+    bg_primary: "#f5f0eb",
+    bg_secondary: "#faf8f5",
+    bg_tertiary: "#ffffff",
+    bg_elevated: "#ffffff",
+    text_primary: "#1a1a1a",
+    text_secondary: "#4a4a4a",
+    text_muted: "#888888",
+    border_primary: "#ddd8d0",
+    border_secondary: "#ece8e2",
+    accent_blue: "#2563eb",
+    accent_purple: "#7c3aed",
+    accent_green: "#16a34a",
+    accent_yellow: "#ca8a04",
+    accent_red: "#dc2626",
+    accent_orange: "#ea580c",
+    accent_cyan: "#0891b2",
+    syntax_keyword: "#2563eb",
+    syntax_string: "#16a34a",
+    syntax_comment: "#888888",
+    syntax_number: "#ca8a04",
+    syntax_function: "#7c3aed",
+    syntax_type: "#0891b2",
+    syntax_variable: "#1a1a1a",
+};
+
+/// Scratchboard — high-contrast near-black theme.
+pub static SCRATCHBOARD: ThemeColors = ThemeColors {
+    bg_primary: "#0f0f0f",
+    bg_secondary: "#1a1a1a",
+    bg_tertiary: "#222222",
+    bg_elevated: "#2a2a2a",
+    text_primary: "#f0f0f0",
+    text_secondary: "#b0b0b0",
+    text_muted: "#606060",
+    border_primary: "#333333",
+    border_secondary: "#2a2a2a",
+    accent_blue: "#58a6ff",
+    accent_purple: "#c499f3",
+    accent_green: "#56d364",
+    accent_yellow: "#e3b341",
+    accent_red: "#f85149",
+    accent_orange: "#ffa657",
+    accent_cyan: "#39d0d8",
+    syntax_keyword: "#58a6ff",
+    syntax_string: "#56d364",
+    syntax_comment: "#606060",
+    syntax_number: "#ffa657",
+    syntax_function: "#c499f3",
+    syntax_type: "#39d0d8",
+    syntax_variable: "#f0f0f0",
+};
+
+// ── CSS injection ─────────────────────────────────────────────────────────────
+
+/// Build a `<style>` block that sets all `:root` CSS custom properties.
+fn colors_to_css(colors: &ThemeColors) -> String {
+    format!(
+        r#":root {{
+  --bg-primary: {bg_primary};
+  --bg-secondary: {bg_secondary};
+  --bg-tertiary: {bg_tertiary};
+  --bg-elevated: {bg_elevated};
+  --text-primary: {text_primary};
+  --text-secondary: {text_secondary};
+  --text-muted: {text_muted};
+  --border-primary: {border_primary};
+  --border-secondary: {border_secondary};
+  --accent-blue: {accent_blue};
+  --accent-purple: {accent_purple};
+  --accent-green: {accent_green};
+  --accent-yellow: {accent_yellow};
+  --accent-red: {accent_red};
+  --accent-orange: {accent_orange};
+  --accent-cyan: {accent_cyan};
+  --syntax-keyword: {syntax_keyword};
+  --syntax-string: {syntax_string};
+  --syntax-comment: {syntax_comment};
+  --syntax-number: {syntax_number};
+  --syntax-function: {syntax_function};
+  --syntax-type: {syntax_type};
+  --syntax-variable: {syntax_variable};
+}}"#,
+        bg_primary = colors.bg_primary,
+        bg_secondary = colors.bg_secondary,
+        bg_tertiary = colors.bg_tertiary,
+        bg_elevated = colors.bg_elevated,
+        text_primary = colors.text_primary,
+        text_secondary = colors.text_secondary,
+        text_muted = colors.text_muted,
+        border_primary = colors.border_primary,
+        border_secondary = colors.border_secondary,
+        accent_blue = colors.accent_blue,
+        accent_purple = colors.accent_purple,
+        accent_green = colors.accent_green,
+        accent_yellow = colors.accent_yellow,
+        accent_red = colors.accent_red,
+        accent_orange = colors.accent_orange,
+        accent_cyan = colors.accent_cyan,
+        syntax_keyword = colors.syntax_keyword,
+        syntax_string = colors.syntax_string,
+        syntax_comment = colors.syntax_comment,
+        syntax_number = colors.syntax_number,
+        syntax_function = colors.syntax_function,
+        syntax_type = colors.syntax_type,
+        syntax_variable = colors.syntax_variable,
+    )
+}
+
+const STYLE_ELEM_ID: &str = "viewer-api-theme";
+const STORAGE_KEY: &str = "viewer-api-theme";
+
+// ── ThemeStore ────────────────────────────────────────────────────────────────
+
+/// Reactive store for the active theme.
+///
+/// Call [`ThemeStore::use_store`] inside a component to access it.
+/// The store injects a `<style id="viewer-api-theme">` element into
+/// `document.head` whenever the preset changes and persists the selection
+/// to `localStorage`.
+#[derive(Clone, Copy)]
+pub struct ThemeStore {
+    preset: Signal<ThemePreset>,
+}
+
+impl ThemeStore {
+    /// Initialise the store (call once near the top of the app component).
+    ///
+    /// Reads the saved preset from `localStorage` on first mount and applies it.
+    pub fn use_store() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        let initial = {
+            web_sys::window()
+                .and_then(|w| w.local_storage().ok().flatten())
+                .and_then(|s| s.get_item(STORAGE_KEY).ok().flatten())
+                .and_then(|k| ThemePreset::from_key(&k))
+                .unwrap_or_default()
+        };
+        #[cfg(not(target_arch = "wasm32"))]
+        let initial = ThemePreset::default();
+
+        let preset = use_signal(|| initial);
+        let store = ThemeStore { preset };
+
+        // Inject CSS for the initial preset on first mount.
+        use_effect(move || {
+            store.apply_css(preset.read().clone());
+        });
+
+        store
+    }
+
+    /// Current active [`ThemePreset`].
+    pub fn preset(&self) -> ThemePreset {
+        self.preset.read().clone()
+    }
+
+    /// Current active [`ThemeColors`].
+    pub fn colors(&self) -> &'static ThemeColors {
+        self.preset.read().colors()
+    }
+
+    /// Switch to a different preset, inject updated CSS, and persist the choice.
+    pub fn apply_preset(&mut self, p: ThemePreset) {
+        self.preset.set(p.clone());
+        self.apply_css(p.clone());
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(storage) = web_sys::window()
+                .and_then(|w| w.local_storage().ok().flatten())
+            {
+                let _ = storage.set_item(STORAGE_KEY, p.key());
+            }
+        }
+    }
+
+    // ── private ──
+
+    fn apply_css(&self, preset: ThemePreset) {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let css = colors_to_css(preset.colors());
+            if let Some(window) = web_sys::window() {
+                if let Some(doc) = window.document() {
+                    // Reuse or create the style element.
+                    let style_el = if let Some(el) = doc.get_element_by_id(STYLE_ELEM_ID) {
+                        el
+                    } else {
+                        let el = doc
+                            .create_element("style")
+                            .expect("create_element style");
+                        el.set_id(STYLE_ELEM_ID);
+                        if let Some(head) = doc.head() {
+                            let _ = head.append_child(&el);
+                        }
+                        el
+                    };
+                    style_el.set_text_content(Some(&css));                }
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let _ = (preset, css_inject_noop());
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn css_inject_noop() {}
+
+// ── ThemeProvider component ───────────────────────────────────────────────────
+
+/// Context provider — wraps the application and makes [`ThemeStore`] available
+/// via Dioxus context.
+///
+/// Access it in any child with `use_context::<ThemeStore>()`.  
+/// Prefer [`ThemeProvider`] at the app root.
+#[component]
+pub fn ThemeProvider(children: Element) -> Element {
+    let store = ThemeStore::use_store();
+    provide_context(store);
+    rsx! { { children } }
+}

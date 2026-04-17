@@ -124,7 +124,7 @@ Add to your frontend's `package.json`:
 ```json
 {
   "dependencies": {
-    "@context-engine/viewer-api-frontend": "file:../../viewer-api/frontend"
+    "@context-engine/viewer-api-frontend": "file:../../viewer-api/frontend/ts"
   }
 }
 ```
