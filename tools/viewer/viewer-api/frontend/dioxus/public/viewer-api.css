@@ -265,6 +265,34 @@ pre {
   font-size: 13px;
 }
 
+/* Search field embedded in sidebar (above tree/list contents). */
+.sidebar-search {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sidebar-search input {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.sidebar-search input:focus {
+  border-color: var(--accent-blue);
+}
+
+.sidebar-search input::placeholder {
+  color: var(--text-muted);
+}
+
 .sidebar-collapse-btn,
 .sidebar-expand-btn {
   display: flex;
@@ -627,6 +655,18 @@ pre {
 }
 
 .tree-icon.doc {
+  color: var(--accent-green);
+}
+
+.tree-icon.crate {
+  color: var(--accent-orange);
+}
+
+.tree-icon.module {
+  color: var(--accent-purple);
+}
+
+.tree-icon.source-file {
   color: var(--accent-green);
 }
 
@@ -1206,3 +1246,74 @@ pre {
 
 .highlight .gs   /* generic.strong */
 { font-weight: bold; }
+
+/* ── spec-card.css ── */
+
+/* A compact card/button row for a spec item in the sidebar list. */
+.spec-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+.spec-card:hover {
+  background: var(--bg-hover);
+}
+
+.spec-card--selected {
+  background: var(--bg-active);
+  border-left-color: var(--accent-blue);
+}
+
+.spec-card__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.spec-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spec-card__slug {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── state-badge.css ── */
+
+/* Coloured pill badge for a spec workflow state. */
+.state-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.state-badge--draft    { background: #4b5563; color: #d1d5db; }
+.state-badge--ready    { background: #1e40af; color: #bfdbfe; }
+.state-badge--reviewed { background: #15803d; color: #bbf7d0; }
+.state-badge--approved { background: #065f46; color: #6ee7b7; }
+.state-badge--archived { background: #374151; color: #9ca3af; }

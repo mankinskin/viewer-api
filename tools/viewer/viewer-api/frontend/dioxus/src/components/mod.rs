@@ -13,11 +13,12 @@ pub use file_content_viewer::FileContentViewer;
 pub use icons::{
     AlertIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, CodeIcon, CrateIcon,
     DocumentIcon, FileIcon, FilterIcon, FolderIcon, FolderOpenIcon, GraphIcon, HamburgerIcon,
-    HomeIcon, InfoIcon, LogIcon, MinusIcon, PlusIcon, RefreshIcon, SearchIcon, StatsIcon,
+    HomeIcon, InfoIcon, LogIcon, MinusIcon, ModuleIcon, PlusIcon, RefreshIcon, SearchIcon,
+    SourceFileIcon, StatsIcon,
 };
 pub use layout::{GlassPanel, Header, Layout, Panel, PanelPlacement, Sidebar};
 pub use resize_handle::{ResizeDirection, ResizeEdge, ResizeHandle};
 pub use spinner::{Spinner, SpinnerSize};
 pub use tab_bar::{TabBar, TabItem};
 pub use theme_settings::{CustomTheme, ThemeSettings, ThemeSnapshot};
-pub use tree_view::{FileTree, FilterDef, SortKey, TreeNode, TreeView};
+pub use tree_view::{FileTree, FilterDef, NodeIcon, SortKey, TreeNode, TreeView};

@@ -24,9 +24,35 @@ use std::collections::BTreeSet;
 
 use dioxus::prelude::*;
 
-use crate::components::{ChevronRightIcon, FileIcon, FilterIcon, FolderIcon, FolderOpenIcon, Spinner};
+use crate::components::{
+    ChevronRightIcon, CrateIcon, DocumentIcon, FileIcon, FilterIcon, FolderIcon, FolderOpenIcon,
+    ModuleIcon, SourceFileIcon, Spinner,
+};
 
 // ── Data types ────────────────────────────────────────────────────────────────
+
+/// Icon variant for a [`TreeNode`].
+///
+/// Maps to both an SVG component and a CSS colour class on `.tree-icon`.
+/// Use [`NodeIcon::Auto`] (the default) to derive the icon from `is_dir`.
+#[derive(Clone, PartialEq, Default)]
+pub enum NodeIcon {
+    /// Derive from `is_dir`: folder icons for directories, file icon for leaves.
+    #[default]
+    Auto,
+    /// Yellow folder icon — `.tree-icon.folder`.
+    Folder,
+    /// Blue file icon — `.tree-icon.file`.
+    File,
+    /// Green document icon — `.tree-icon.doc`.
+    Doc,
+    /// Orange crate/package icon — `.tree-icon.crate`.
+    Crate,
+    /// Purple module icon — `.tree-icon.module`.
+    Module,
+    /// Green source-file icon — `.tree-icon.source-file`.
+    SourceFile,
+}
 
 /// A single node in the tree.
 #[derive(Clone, PartialEq)]
@@ -43,6 +69,8 @@ pub struct TreeNode {
     pub badge_color: Option<String>,
     /// Whether this node is a directory / group or a leaf.
     pub is_dir: bool,
+    /// Icon variant.  Defaults to [`NodeIcon::Auto`].
+    pub icon: NodeIcon,
     /// Child nodes (only meaningful when `is_dir` is true).
     pub children: Vec<TreeNode>,
 }
@@ -57,6 +85,7 @@ impl TreeNode {
             tooltip: None,
             badge_color: None,
             is_dir: false,
+            icon: NodeIcon::Auto,
             children: vec![],
         }
     }
@@ -70,6 +99,7 @@ impl TreeNode {
             tooltip: None,
             badge_color: None,
             is_dir: true,
+            icon: NodeIcon::Auto,
             children,
         }
     }
@@ -197,15 +227,31 @@ fn TreeItem(
     let toggle_id = node.id.clone();
     let indent = format!("padding-left: {}px", depth * 16);
 
-    // Icon selection
-    let icon: Element = if node.is_dir {
-        if *is_expanded.read() {
-            rsx! { FolderOpenIcon { size: 16, class: "tree-icon folder" } }
-        } else {
-            rsx! { FolderIcon { size: 16, class: "tree-icon folder" } }
+    // Icon selection — resolved from NodeIcon variant
+    let icon: Element = match &node.icon {
+        NodeIcon::Auto => {
+            if node.is_dir {
+                if *is_expanded.read() {
+                    rsx! { FolderOpenIcon { size: 16, class: "tree-icon folder" } }
+                } else {
+                    rsx! { FolderIcon { size: 16, class: "tree-icon folder" } }
+                }
+            } else {
+                rsx! { FileIcon { size: 16, class: "tree-icon file" } }
+            }
         }
-    } else {
-        rsx! { FileIcon { size: 16, class: "tree-icon file" } }
+        NodeIcon::Folder => {
+            if *is_expanded.read() {
+                rsx! { FolderOpenIcon { size: 16, class: "tree-icon folder" } }
+            } else {
+                rsx! { FolderIcon { size: 16, class: "tree-icon folder" } }
+            }
+        }
+        NodeIcon::File => rsx! { FileIcon { size: 16, class: "tree-icon file" } },
+        NodeIcon::Doc => rsx! { DocumentIcon { size: 16, class: "tree-icon doc" } },
+        NodeIcon::Crate => rsx! { CrateIcon { size: 16, class: "tree-icon crate" } },
+        NodeIcon::Module => rsx! { ModuleIcon { size: 16, class: "tree-icon module" } },
+        NodeIcon::SourceFile => rsx! { SourceFileIcon { size: 16, class: "tree-icon source-file" } },
     };
 
     let click_id = node.id.clone();

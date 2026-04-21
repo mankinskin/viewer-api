@@ -552,6 +552,64 @@ pub fn HomeIcon(
     }
 }
 
+/// Module icon — file with code lines (represents a Rust module).
+#[component]
+pub fn ModuleIcon(
+    #[props(default = 16)]
+    size: u32,
+    #[props(default)]
+    class: String,
+    #[props(default = "currentColor".to_string())]
+    color: String,
+) -> Element {
+    rsx! {
+        svg {
+            width: "{size}",
+            height: "{size}",
+            view_box: "0 0 24 24",
+            fill: "none",
+            stroke: "{color}",
+            stroke_width: "2",
+            stroke_linecap: "round",
+            stroke_linejoin: "round",
+            class: "{class}",
+            path { d: "M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" }
+            polyline { points: "14 2 14 8 20 8" }
+            polyline { points: "10 13 8 15 10 17" }
+            polyline { points: "14 13 16 15 14 17" }
+        }
+    }
+}
+
+/// Source file icon — file with bracket symbols (represents a .rs source file).
+#[component]
+pub fn SourceFileIcon(
+    #[props(default = 16)]
+    size: u32,
+    #[props(default)]
+    class: String,
+    #[props(default = "currentColor".to_string())]
+    color: String,
+) -> Element {
+    rsx! {
+        svg {
+            width: "{size}",
+            height: "{size}",
+            view_box: "0 0 24 24",
+            fill: "none",
+            stroke: "{color}",
+            stroke_width: "2",
+            stroke_linecap: "round",
+            stroke_linejoin: "round",
+            class: "{class}",
+            path { d: "M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" }
+            polyline { points: "14 2 14 8 20 8" }
+            path { d: "M9 13l-2 2 2 2" }
+            path { d: "M15 13l2 2-2 2" }
+        }
+    }
+}
+
 /// Hamburger icon (three horizontal lines) for mobile sidebar toggle.
 #[component]
 pub fn HamburgerIcon(
