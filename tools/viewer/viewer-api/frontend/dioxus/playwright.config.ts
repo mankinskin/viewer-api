@@ -3,10 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright configuration for viewer-api-dioxus e2e tests.
  *
- * Tests target the `dx serve` demo app.  Start the server before running:
+ * Tests target the `trunk serve` demo app.  Start the server before running:
  *
- *   cd tools/viewer/viewer-api-dioxus
- *   dx serve --port 18080 --open false
+ *   cd tools/viewer/viewer-api/frontend/dioxus
+ *   trunk serve --port 18080
  *
  * Then in a separate terminal:
  *
@@ -15,14 +15,14 @@ import { defineConfig, devices } from '@playwright/test';
  *   npm test:e2e:ui        (Playwright UI mode)
  *
  * No `webServer` block is used because the first WASM compilation can take
- * 60–120 s.  Run `dx serve` manually so you can see build progress.
+ * 60–120 s.  Run `trunk serve` manually so you can see build progress.
  */
 
 const DEV_SERVER_URL = 'http://localhost:18080';
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false, // share the single dx-serve process
+  fullyParallel: false, // share the single trunk-serve process
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,
   workers: 1,

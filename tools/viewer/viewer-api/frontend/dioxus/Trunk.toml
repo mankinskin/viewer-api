@@ -1,0 +1,7 @@
+[build]
+# Build: trunk build --release
+# Dev:   trunk serve
+
+[serve]
+port = 8092
+open = false

@@ -26,17 +26,17 @@ viewer-api-dioxus  (this crate — scaffold + layout shell)
 ### Development (hot-reload)
 
 ```bash
-cd tools/viewer/viewer-api-dioxus
-dx serve
+cd tools/viewer/viewer-api/frontend/dioxus
+trunk serve
 ```
 
-Opens a dev server at `http://localhost:8080` with hot-reload.
+Opens a dev server at `http://localhost:8092` with hot-reload.
 
 ### Production build
 
 ```bash
-cd tools/viewer/viewer-api-dioxus
-dx build --release
+cd tools/viewer/viewer-api/frontend/dioxus
+trunk build --release
 ```
 
 Outputs an optimised WASM bundle to `dist/`.
@@ -50,4 +50,4 @@ cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus
 ## Requirements
 
 - `rustup target add wasm32-unknown-unknown`
-- `cargo install dioxus-cli` (provides the `dx` command)
+- `cargo install trunk` (provides the `trunk` command)

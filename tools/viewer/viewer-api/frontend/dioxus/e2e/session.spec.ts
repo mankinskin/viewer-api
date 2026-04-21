@@ -2,7 +2,7 @@
  * E2E tests for session ID utilities.
  *
  * All tests drive the SessionDemo harness rendered inside the viewer-api-dioxus
- * demo app.  The dx serve server must be running on port 8080 before these
+ * demo app.  The trunk serve server must be running on port 8080 before these
  * tests are executed.
  *
  * Coverage:
