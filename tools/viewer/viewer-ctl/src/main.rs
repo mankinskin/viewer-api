@@ -734,7 +734,13 @@ fn cmd_start(viewer: Viewer, no_build: bool, extra: Vec<String>) -> Result<(), S
 
     info!(tag, "starting {} on port {port}", bin_path.display());
 
-    // Use exec-style replacement on Unix; on Windows spawn + wait.
+    // On Unix, exec() replaces this process image entirely — viewer-ctl
+    // disappears and the server takes over its PID.
+    //
+    // On Windows, exec() is not available.  We spawn the server detached
+    // (no wait) and exit immediately so that viewer-ctl.exe releases its
+    // file lock.  This allows `cargo install` / `cp` to overwrite the
+    // binary while a viewer is running.
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -748,15 +754,18 @@ fn cmd_start(viewer: Viewer, no_build: bool, extra: Vec<String>) -> Result<(), S
 
     #[cfg(not(unix))]
     {
-        let status = Command::new(&bin_path)
+        Command::new(&bin_path)
             .env("PORT", port.to_string())
             .args(&server_args)
             .current_dir(&root)
-            .status()
+            // Detach stdin/stdout/stderr so the child keeps running after
+            // viewer-ctl exits.
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
             .map_err(|e| format!("failed to launch {}: {e}", bin_path.display()))?;
-        if !status.success() {
-            return Err(format!("{} exited with {status}", cfg.pkg));
-        }
+        info!(tag, "{} launched (detached). viewer-ctl exiting.", cfg.pkg);
         Ok(())
     }
 }
