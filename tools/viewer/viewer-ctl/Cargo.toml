@@ -1,0 +1,13 @@
+[package]
+name = "viewer-ctl"
+version = "0.1.0"
+edition = "2024"
+description = "Viewer lifecycle manager — build, install, start, and stop context-engine viewer servers"
+
+[[bin]]
+name = "viewer-ctl"
+path = "src/main.rs"
+
+[dependencies]
+clap    = { version = "4", features = ["derive"] }
+sysinfo = "0.32"
