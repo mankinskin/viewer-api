@@ -179,10 +179,43 @@ macro_rules! error {
 /// Find PIDs of processes listening on `port`.
 ///
 /// Uses `sysinfo` for process metadata and falls back to platform-specific
-/// commands (`ss`, `lsof`, `netstat`) to map port → PID because `sysinfo`
-/// doesn't expose TCP socket info directly.
+/// commands to map port → PID because `sysinfo` doesn't expose TCP socket
+/// info directly.
+///
+/// Tool selection priority (most reliable first):
+///   Windows: PowerShell Get-NetTCPConnection (locale-agnostic enum) → ss → netstat
+///   Linux/macOS: ss → lsof → netstat
 fn pids_on_port(port: u16) -> Vec<Pid> {
-    // Try ss (Linux/modern macOS/WSL)
+    // ── Windows-first: PowerShell Get-NetTCPConnection ────────────────────
+    // The -State parameter is a .NET enum value, not a localized string, so
+    // this works correctly on all Windows locales (including German "ABHÖREN").
+    if cfg!(windows) {
+        if let Ok(out) = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                &format!(
+                    "(Get-NetTCPConnection -LocalPort {port} -State Listen \
+                     -ErrorAction SilentlyContinue).OwningProcess"
+                ),
+            ])
+            .output()
+        {
+            let text = String::from_utf8_lossy(&out.stdout);
+            let pids: Vec<Pid> = text
+                .split_whitespace()
+                .filter_map(|s| s.parse::<usize>().ok())
+                .map(Pid::from)
+                .collect();
+            if !pids.is_empty() || out.status.success() {
+                // PowerShell succeeded (even if no results) — trust its output.
+                return pids;
+            }
+        }
+    }
+
+    // ── Unix: ss (Linux/modern macOS/WSL) ─────────────────────────────────
     if let Ok(out) = Command::new("ss")
         .args(["-ltnp", &format!("sport = :{port}")])
         .output()
@@ -192,7 +225,7 @@ fn pids_on_port(port: u16) -> Vec<Pid> {
         }
     }
 
-    // Try lsof (macOS / Linux)
+    // ── Unix: lsof (macOS / Linux) ────────────────────────────────────────
     if let Ok(out) = Command::new("lsof")
         .args(["-ti", &format!(":{port}"), "-sTCP:LISTEN"])
         .output()
@@ -205,7 +238,7 @@ fn pids_on_port(port: u16) -> Vec<Pid> {
         }
     }
 
-    // Fallback: netstat (Windows / MSYS)
+    // ── Last resort: netstat (cross-platform fallback) ────────────────────
     if let Ok(out) = Command::new("netstat").args(["-ano"]).output() {
         if out.status.success() {
             return parse_netstat_pids(&String::from_utf8_lossy(&out.stdout), port);
@@ -247,7 +280,14 @@ fn parse_netstat_pids(output: &str, port: u16) -> Vec<Pid> {
     let mut pids = Vec::new();
     for line in output.lines() {
         let cols: Vec<&str> = line.split_whitespace().collect();
-        // TCP  <local>  <foreign>  LISTENING  <pid>
+        // Windows netstat -ano format:
+        //   TCP  <local>  <foreign>  <state>  <pid>
+        // The state column is locale-dependent (e.g. "LISTENING" on English
+        // Windows, "ABHÖREN" on German Windows).  We therefore do NOT check
+        // the state string.  Instead we identify listening sockets by:
+        //   1. Protocol is TCP
+        //   2. Local address ends with :<port>
+        //   3. Foreign address ends with :0  (remote port 0 → listening socket)
         if cols.len() < 5 {
             continue;
         }
@@ -257,7 +297,8 @@ fn parse_netstat_pids(output: &str, port: u16) -> Vec<Pid> {
         if !cols[1].ends_with(&suffix) {
             continue;
         }
-        if cols[3] != "LISTENING" {
+        // Foreign address ends with ":0" for LISTENING sockets (locale-agnostic).
+        if !cols[2].ends_with(":0") {
             continue;
         }
         if let Ok(n) = cols[4].parse::<usize>() {
@@ -290,8 +331,7 @@ fn kill_process(pid: Pid, tag: &str) -> bool {
             .status();
         if result.is_ok() {
             std::thread::sleep(Duration::from_millis(300));
-            return pids_on_port(0).contains(&pid) == false
-                && !process_exists(pid);
+            return !process_exists(pid);
         }
     }
 
@@ -659,7 +699,32 @@ fn cmd_start(viewer: Viewer, no_build: bool, extra: Vec<String>) -> Result<(), S
         }
     };
 
-    // Step 4: exec the server.
+    // Step 4: final port check — something may have grabbed the port during
+    // the build.  Kill it now so the bind attempt below succeeds.
+    let remaining = pids_on_port(port);
+    if !remaining.is_empty() {
+        warn!(
+            tag,
+            "port {port} was grabbed during build by PID(s): {:?} — evicting",
+            remaining.iter().map(|p| p.as_u32()).collect::<Vec<_>>()
+        );
+        for pid in &remaining {
+            kill_process(*pid, tag);
+        }
+        std::thread::sleep(Duration::from_millis(500));
+        let still_remaining = pids_on_port(port);
+        if !still_remaining.is_empty() {
+            return Err(format!(
+                "port {port} still occupied by {:?} after eviction — aborting",
+                still_remaining
+                    .iter()
+                    .map(|p| p.as_u32())
+                    .collect::<Vec<_>>()
+            ));
+        }
+    }
+
+    // Step 5: exec the server.
     let mut server_args: Vec<String> = cfg
         .fixed_server_args
         .iter()
