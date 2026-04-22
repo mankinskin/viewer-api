@@ -1,12 +1,16 @@
-//! viewer-ctl — build, install, start, and stop context-engine viewer servers.
+//! viewer-ctl — lifecycle manager for context-engine viewer servers.
 //!
-//! Replaces `scripts/start-viewer.sh` with a cross-platform Rust binary.
+//! Replaces build_frontend.sh, start-viewer.sh, generate-types.sh, and
+//! tools/ticket-vscode/build-and-install.sh with cross-platform Rust code.
 //!
 //! Usage:
-//!   viewer-ctl start  <viewer> [--no-build] [-- <extra server args>]
-//!   viewer-ctl stop   <viewer>
-//!   viewer-ctl build  <viewer>
+//!   viewer-ctl start   <viewer> [--no-build] [-- <extra server args>]
+//!   viewer-ctl stop    <viewer>
+//!   viewer-ctl build   <viewer>
 //!   viewer-ctl install <viewer>
+//!   viewer-ctl gen-types
+//!   viewer-ctl vscode-ext build
+//!   viewer-ctl vscode-ext install
 //!
 //! Viewers: doc-viewer  log-viewer  ticket-viewer  spec-viewer
 //!
@@ -29,7 +33,7 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 #[derive(Parser)]
 #[command(
     name = "viewer-ctl",
-    about = "Build, install, start, and stop context-engine viewer servers",
+    about = "Lifecycle manager for context-engine viewer servers",
     version
 )]
 struct Cli {
@@ -39,8 +43,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Build frontend artifacts and (if not already installed) install the
-    /// server binary, then launch it.
+    /// Build frontend artifacts, auto-install the server binary if needed,
+    /// then launch it.
     Start {
         viewer: Viewer,
         /// Skip the frontend build step.
@@ -62,6 +66,22 @@ enum Cmd {
     Install {
         viewer: Viewer,
     },
+    /// Generate TypeScript type bindings from Rust ts-rs exports, then build
+    /// the @context-engine/types npm package.
+    GenTypes,
+    /// Build or install the ticket-vscode VS Code extension.
+    VscodeExt {
+        #[command(subcommand)]
+        action: VscodeExtAction,
+    },
+}
+
+#[derive(Subcommand, Clone, Copy)]
+enum VscodeExtAction {
+    /// Compile the extension TypeScript only (npm run compile).
+    Build,
+    /// Compile then install to the VS Code extensions directory.
+    Install,
 }
 
 #[derive(Clone, Copy, ValueEnum, Debug)]
@@ -135,20 +155,22 @@ impl ViewerConfig {
 }
 
 // ── Logging helpers ───────────────────────────────────────────────────────────
+// No ANSI escape codes: VS Code task background pattern matchers read raw
+// stdout text and ANSI codes would prevent the regex patterns from matching.
 
 macro_rules! info {
     ($tag:expr, $($arg:tt)*) => {
-        println!("\x1b[36m[{}]\x1b[0m {}", $tag, format!($($arg)*));
+        println!("[{}] {}", $tag, format!($($arg)*));
     };
 }
 macro_rules! warn {
     ($tag:expr, $($arg:tt)*) => {
-        println!("\x1b[33m[{}]\x1b[0m {}", $tag, format!($($arg)*));
+        println!("[{}] WARN {}", $tag, format!($($arg)*));
     };
 }
 macro_rules! error {
     ($tag:expr, $($arg:tt)*) => {
-        eprintln!("\x1b[31m[{}]\x1b[0m {}", $tag, format!($($arg)*));
+        eprintln!("[{}] ERROR {}", $tag, format!($($arg)*));
     };
 }
 
@@ -347,12 +369,22 @@ fn build_vite(frontend_dir: &Path, static_dir: &Path, tag: &str) -> Result<(), S
         return Err(format!("vite frontend dir not found: {}", frontend_dir.display()));
     }
 
-    let needs_install = !frontend_dir.join("node_modules").is_dir()
-        || !frontend_dir
-            .join("node_modules/@context-engine/viewer-api-frontend")
-            .is_dir();
+    // The shared viewer-api TypeScript package lives at a well-known path
+    // relative to each Vite viewer's frontend dir.  It must have its own
+    // node_modules so that Rollup can resolve imports (e.g. prismjs) from
+    // files in that directory.
+    //
+    // Layout:  tools/viewer/<viewer>/frontend/
+    //                              ../../viewer-api/frontend/ts/
+    let viewer_api_dir = frontend_dir.join("../../viewer-api/frontend/ts");
+    if viewer_api_dir.is_dir() {
+        if !viewer_api_dir.join("node_modules").is_dir() {
+            info!(tag, "npm install in {}", viewer_api_dir.display());
+            run_cmd("npm", &["install"], &viewer_api_dir, tag)?;
+        }
+    }
 
-    if needs_install {
+    if !frontend_dir.join("node_modules").is_dir() {
         info!(tag, "npm install in {}", frontend_dir.display());
         run_cmd("npm", &["install"], frontend_dir, tag)?;
     }
@@ -426,18 +458,33 @@ fn run_cmd(
     cwd: &Path,
     tag: &str,
 ) -> Result<(), String> {
+    let _ = tag; // used only in log macros at call site
+
+    // On Windows, `.cmd` / `.bat` wrappers (npm, vsce, trunk, …) are not
+    // directly executable by CreateProcess — we must route them through cmd.
+    #[cfg(windows)]
+    let status = {
+        let mut cmd_args = vec!["/C", program];
+        cmd_args.extend_from_slice(args);
+        Command::new("cmd")
+            .args(&cmd_args)
+            .current_dir(cwd)
+            .status()
+            .map_err(|e| format!("failed to run `{program}` via cmd: {e}"))?
+    };
+    #[cfg(not(windows))]
     let status = Command::new(program)
         .args(args)
         .current_dir(cwd)
         .status()
         .map_err(|e| format!("failed to run `{program}`: {e}"))?;
+
     if !status.success() {
         return Err(format!(
             "`{program} {}` exited with status {status}",
             args.join(" ")
         ));
     }
-    let _ = tag; // used only in log macros at call site
     Ok(())
 }
 
@@ -656,6 +703,185 @@ fn port_for(cfg: &ViewerConfig) -> u16 {
         .unwrap_or(cfg.default_port)
 }
 
+// ── gen-types ─────────────────────────────────────────────────────────────────
+
+/// Generate TypeScript bindings via ts-rs cargo tests, then build the npm
+/// package in `packages/context-types`.
+fn cmd_gen_types() -> Result<(), String> {
+    const TAG: &str = "gen-types";
+    let root = repo_root();
+    let generated_dir = root.join("packages/context-types/src/generated");
+
+    // Remove stale .ts files; preserve .gitkeep
+    if generated_dir.is_dir() {
+        for entry in fs::read_dir(&generated_dir).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path();
+            if path.extension().map(|e| e == "ts").unwrap_or(false) {
+                fs::remove_file(&path).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    info!(TAG, "generating TypeScript types from Rust ts-rs exports...");
+
+    // Each entry: (cargo package, extra cargo args)
+    let crates: &[(&str, &[&str])] = &[
+        ("context-api", &["--features", "ts-gen"]),
+        ("context-trace", &[]),
+        ("log-viewer", &[]),
+    ];
+
+    for (pkg, extra) in crates {
+        info!(TAG, "cargo test -p {pkg} export_bindings...");
+        let mut cmd = Command::new("cargo");
+        cmd.arg("test").arg("-p").arg(pkg);
+        for arg in *extra {
+            cmd.arg(arg);
+        }
+        cmd.args(["export_bindings", "--", "--ignored"])
+            .current_dir(&root)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        // Ignore failures — not all crates may have export_bindings
+        let _ = cmd.status();
+    }
+
+    // Count generated files
+    let count = fs::read_dir(&generated_dir)
+        .map(|rd| {
+            rd.filter_map(|e| e.ok())
+                .filter(|e| e.path().extension().map(|x| x == "ts").unwrap_or(false))
+                .count()
+        })
+        .unwrap_or(0);
+    info!(TAG, "generated {count} TypeScript type file(s).");
+
+    // Build the npm package
+    let npm_dir = root.join("packages/context-types");
+    info!(TAG, "npm run build in packages/context-types...");
+    run_cmd("npm", &["run", "build"], &npm_dir, TAG)?;
+
+    info!(TAG, "done.");
+    Ok(())
+}
+
+// ── vscode-ext ────────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+struct PkgJson {
+    publisher: Option<String>,
+    name: String,
+    version: String,
+}
+
+/// Build (`npm run compile`) or build+install the ticket-vscode extension.
+///
+/// Install fast-path: if the VS Code extension dir already exists, syncs
+/// `out/`, `resources/`, and `package.json` directly without packaging a VSIX.
+/// Install slow-path: packages a VSIX with `vsce` and calls
+/// `code --install-extension` (first-time only).
+fn cmd_vscode_ext(action: VscodeExtAction) -> Result<(), String> {
+    const TAG: &str = "vscode-ext";
+    let root = repo_root();
+    let ext_dir = root.join("tools/ticket-vscode");
+
+    info!(TAG, "compiling TypeScript (npm run compile)...");
+    run_cmd("npm", &["run", "compile"], &ext_dir, TAG)?;
+
+    if matches!(action, VscodeExtAction::Build) {
+        info!(TAG, "build complete.");
+        return Ok(());
+    }
+
+    // Read package metadata
+    let pkg_text = fs::read_to_string(ext_dir.join("package.json"))
+        .map_err(|e| format!("failed to read package.json: {e}"))?;
+    let pkg: PkgJson = serde_json::from_str(&pkg_text)
+        .map_err(|e| format!("failed to parse package.json: {e}"))?;
+    let publisher = pkg.publisher.as_deref().unwrap_or("undefined_publisher");
+    let dirname = format!("{}.{}-{}", publisher, pkg.name, pkg.version);
+
+    // Derive VS Code extension install path
+    let user_home = env::var("USERPROFILE")
+        .or_else(|_| env::var("HOME"))
+        .map_err(|_| "neither USERPROFILE nor HOME is set".to_string())?;
+    let install_dir = PathBuf::from(&user_home)
+        .join(".vscode")
+        .join("extensions")
+        .join(&dirname);
+
+    info!(TAG, "install dir: {}", install_dir.display());
+
+    if install_dir.is_dir() {
+        // ── Fast path: in-place sync ──────────────────────────────────────
+        info!(TAG, "extension dir exists — syncing in-place...");
+
+        let out_dst = install_dir.join("out");
+        let _ = fs::remove_dir_all(&out_dst);
+        fs::create_dir_all(&out_dst).map_err(|e| e.to_string())?;
+        copy_dir_contents(&ext_dir.join("out"), &out_dst, TAG)?;
+
+        let res_dst = install_dir.join("resources");
+        fs::create_dir_all(&res_dst).map_err(|e| e.to_string())?;
+        copy_dir_contents(&ext_dir.join("resources"), &res_dst, TAG)?;
+
+        fs::copy(ext_dir.join("package.json"), install_dir.join("package.json"))
+            .map_err(|e| format!("failed to copy package.json: {e}"))?;
+
+        let nm = ext_dir.join("node_modules");
+        if nm.is_dir() {
+            let nm_dst = install_dir.join("node_modules");
+            fs::create_dir_all(&nm_dst).map_err(|e| e.to_string())?;
+            copy_dir_contents(&nm, &nm_dst, TAG)?;
+        }
+
+        info!(TAG, "sync complete. Reload the VS Code window to activate.");
+    } else {
+        // ── Slow path: VSIX package + install ─────────────────────────────
+        info!(TAG, "install dir not found — performing first-time VSIX install...");
+        run_cmd(
+            "vsce",
+            &[
+                "package",
+                "--no-dependencies",
+                "--allow-missing-repository",
+                "--skip-license",
+            ],
+            &ext_dir,
+            TAG,
+        )?;
+
+        let vsix = find_newest_vsix(&ext_dir)?;
+        info!(TAG, "installing {}...", vsix.display());
+        run_cmd(
+            "code",
+            &["--install-extension", vsix.to_str().unwrap_or(""), "--force"],
+            &ext_dir,
+            TAG,
+        )?;
+        info!(TAG, "done. Reload the VS Code window to activate the extension.");
+    }
+
+    Ok(())
+}
+
+fn find_newest_vsix(dir: &Path) -> Result<PathBuf, String> {
+    let mut vsix: Vec<_> = fs::read_dir(dir)
+        .map_err(|e| e.to_string())?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map(|x| x == "vsix").unwrap_or(false))
+        .collect();
+    vsix.sort_by_key(|e| {
+        e.metadata()
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+    });
+    vsix.last()
+        .map(|e| e.path())
+        .ok_or_else(|| "no .vsix file found in ticket-vscode/".to_string())
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 fn main() -> ExitCode {
@@ -665,11 +891,13 @@ fn main() -> ExitCode {
         Cmd::Stop { viewer } => cmd_stop(viewer),
         Cmd::Build { viewer } => cmd_build(viewer),
         Cmd::Install { viewer } => cmd_install(viewer),
+        Cmd::GenTypes => cmd_gen_types(),
+        Cmd::VscodeExt { action } => cmd_vscode_ext(action),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("\x1b[31merror:\x1b[0m {e}");
+            eprintln!("error: {e}");
             ExitCode::FAILURE
         }
     }
