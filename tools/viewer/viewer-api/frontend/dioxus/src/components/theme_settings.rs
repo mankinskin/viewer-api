@@ -621,6 +621,42 @@ pub fn ThemeSettings(
                     }
                 }
 
+                // ── Effects toggle (master switch for WgpuOverlay) ──
+                section {
+                    class: "theme-settings__section",
+                    h3 { class: "theme-settings__section-title", "Effects" }
+                    p { class: "theme-settings__section-hint",
+                        "Animated background — smoke, sparks/embers/beams (\"angelic beam\" particle simulation), and CRT scanlines. ",
+                        "Disabled by default to keep the viewer lightweight; enable to show the full visual treatment."
+                    }
+                    div {
+                        class: "theme-settings__effect-row",
+                        div {
+                            class: "theme-settings__effect-info",
+                            span { class: "theme-settings__effect-label", "Enable GPU overlay" }
+                            span { class: "theme-settings__effect-desc",
+                                "Master switch — toggles smoke, particles, and CRT effects."
+                            }
+                        }
+                        label {
+                            class: "theme-settings__toggle-switch",
+                            aria_label: "Toggle GPU overlay effects",
+                            input {
+                                r#type: "checkbox",
+                                checked: store.gpu_enabled(),
+                                onchange: move |e: Event<FormData>| {
+                                    let on = e.value() == "true";
+                                    store.set_gpu_enabled(on);
+                                    message.set(Some((false,
+                                        if on { "GPU overlay enabled.".into() }
+                                        else  { "GPU overlay disabled.".into() })));
+                                },
+                            }
+                            span { class: "theme-settings__toggle-slider" }
+                        }
+                    }
+                }
+
                 // ── Color token groups ──
                 for group in TOKEN_GROUPS {
                     section {

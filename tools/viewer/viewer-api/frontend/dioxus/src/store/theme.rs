@@ -248,6 +248,7 @@ fn colors_to_css(colors: &ThemeColors) -> String {
 
 const STYLE_ELEM_ID: &str = "viewer-api-theme";
 const STORAGE_KEY: &str = "viewer-api-theme";
+const GPU_STORAGE_KEY: &str = "viewer-api-gpu-enabled";
 
 // ── ThemeStore ────────────────────────────────────────────────────────────────
 
@@ -257,9 +258,15 @@ const STORAGE_KEY: &str = "viewer-api-theme";
 /// The store injects a `<style id="viewer-api-theme">` element into
 /// `document.head` whenever the preset changes and persists the selection
 /// to `localStorage`.
+///
+/// Also tracks the master GPU-overlay enable flag, which gates rendering of
+/// the [`crate::effects::WgpuOverlay`] (smoke / particles / CRT effects).
+/// Defaults to **off** so first-load viewers do not render expensive effects
+/// without the user opting in via the Theme Settings panel.
 #[derive(Clone, Copy)]
 pub struct ThemeStore {
     preset: Signal<ThemePreset>,
+    gpu_enabled: Signal<bool>,
 }
 
 impl ThemeStore {
@@ -278,12 +285,29 @@ impl ThemeStore {
         #[cfg(not(target_arch = "wasm32"))]
         let initial = ThemePreset::default();
 
+        // GPU enabled flag — default OFF; persisted under GPU_STORAGE_KEY.
+        #[cfg(target_arch = "wasm32")]
+        let initial_gpu = web_sys::window()
+            .and_then(|w| w.local_storage().ok().flatten())
+            .and_then(|s| s.get_item(GPU_STORAGE_KEY).ok().flatten())
+            .map(|v| v == "true")
+            .unwrap_or(false);
+        #[cfg(not(target_arch = "wasm32"))]
+        let initial_gpu = false;
+
         let preset = use_signal(|| initial);
-        let store = ThemeStore { preset };
+        let gpu_enabled = use_signal(|| initial_gpu);
+        let store = ThemeStore { preset, gpu_enabled };
 
         // Inject CSS for the initial preset on first mount.
         use_effect(move || {
             store.apply_css(preset.read().clone());
+        });
+
+        // Apply GPU-enabled flag to the overlay on first mount and whenever it changes.
+        use_effect(move || {
+            let enabled = *gpu_enabled.read();
+            crate::effects::wgpu_overlay::set_gpu_overlay_enabled(enabled);
         });
 
         store
@@ -297,6 +321,25 @@ impl ThemeStore {
     /// Current active [`ThemeColors`].
     pub fn colors(&self) -> &'static ThemeColors {
         self.preset.read().colors()
+    }
+
+    /// Whether the WebGPU overlay (smoke / particles / CRT) should render.
+    pub fn gpu_enabled(&self) -> bool {
+        *self.gpu_enabled.read()
+    }
+
+    /// Enable or disable the WebGPU overlay. Persists to `localStorage`.
+    pub fn set_gpu_enabled(&mut self, enabled: bool) {
+        self.gpu_enabled.set(enabled);
+        crate::effects::wgpu_overlay::set_gpu_overlay_enabled(enabled);
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(storage) = web_sys::window()
+                .and_then(|w| w.local_storage().ok().flatten())
+            {
+                let _ = storage.set_item(GPU_STORAGE_KEY, if enabled { "true" } else { "false" });
+            }
+        }
     }
 
     /// Switch to a different preset, inject updated CSS, and persist the choice.

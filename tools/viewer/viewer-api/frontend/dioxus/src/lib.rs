@@ -3,6 +3,8 @@ pub mod effects;
 pub mod store;
 pub use components::*;
 pub use effects::WgpuOverlay;
+pub use effects::set_gpu_canvas_owner;
+pub use effects::set_gpu_overlay_enabled;
 pub use store::*;
 // Explicit re-exports so downstream crates can import without glob.
 pub use store::session::{clear_session, get_session_id, with_session};

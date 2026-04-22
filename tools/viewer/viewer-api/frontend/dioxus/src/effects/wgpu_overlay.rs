@@ -18,6 +18,51 @@
 //! Non-WASM builds compile to an empty no-op component.
 use dioxus::prelude::*;
 
+// ── Canvas ownership arbitration ──────────────────────────────────────────────
+
+/// Per-WASM-thread flag: `true` while another renderer (e.g. `Graph3D`) owns
+/// `#webgpu-canvas`.  [`WgpuOverlay`] idles its render loop while this is set.
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    static GPU_CANVAS_OWNER: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    /// Master enable flag for the WgpuOverlay render loop. Defaults to `false`
+    /// so first-load viewers do not render expensive smoke / particle / CRT
+    /// effects until the user explicitly opts in via Theme Settings. Mutated
+    /// by [`set_gpu_overlay_enabled`] (called from [`crate::store::ThemeStore`]).
+    static GPU_OVERLAY_ENABLED: std::cell::Cell<bool> = std::cell::Cell::new(false);
+}
+
+/// Claim (`taken = true`) or release (`taken = false`) exclusive ownership of
+/// `#webgpu-canvas` on behalf of another renderer.
+///
+/// When claimed, [`WgpuOverlay`] suspends its render loop each animation
+/// frame so the two GPU contexts do not fight over the same canvas.
+///
+/// Call with `true` before initialising a competing renderer (e.g. `Graph3D`)
+/// and with `false` in that renderer's `use_drop` cleanup.
+///
+/// No-op on non-WASM builds.
+pub fn set_gpu_canvas_owner(taken: bool) {
+    #[cfg(target_arch = "wasm32")]
+    GPU_CANVAS_OWNER.with(|c| c.set(taken));
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = taken;
+}
+
+/// Enable or disable the WebGPU overlay master switch.
+///
+/// When disabled, [`WgpuOverlay`]'s render loop continues to schedule animation
+/// frames but skips all rendering — the canvas remains transparent. Use this
+/// from the Theme Settings UI; defaults to `false` (off).
+///
+/// No-op on non-WASM builds.
+pub fn set_gpu_overlay_enabled(enabled: bool) {
+    #[cfg(target_arch = "wasm32")]
+    GPU_OVERLAY_ENABLED.with(|c| c.set(enabled));
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = enabled;
+}
+
 // ── Embedded WGSL shaders ─────────────────────────────────────────────────────
 // Concatenation order must match the TypeScript reference (gpu-init.ts):
 //   palette → types → noise → [particle_shading] → pipeline-specific
@@ -77,6 +122,10 @@ const UI_SELECTORS: &[(&str, u32)] = &[
     (".view-container",      0),
     (".log-list",            0),
     (".code-viewer",         0),
+    // Main content panel (shared viewer-api class — ticket-viewer, spec-viewer) → kind 0
+    (".content",             0),
+    // Spec-viewer list items → kind 0
+    (".spec-card",           0),
     // Per-severity log entries → kinds 1-4
     (".log-entry.level-error", 1),
     (".log-entry.level-warn",  2),
@@ -87,6 +136,8 @@ const UI_SELECTORS: &[(&str, u32)] = &[
     (".log-entry.span-highlighted", 5),
     (".log-entry.selected",         6),
     (".log-entry.panic-entry",      7),
+    // Spec-viewer selected item → kind 6
+    (".spec-card--selected",  6),
 ];
 
 /// localStorage key under which effect settings are persisted per theme.
@@ -377,8 +428,16 @@ mod wasm_impl {
         let closure = Closure::<dyn FnMut(f64)>::new(move |ts_ms: f64| {
             if !kr_loop.get() { return; }
             if let Some(win) = web_sys::window() {
-                if let Some(gpu) = ctx_loop.borrow_mut().as_mut() {
-                    render_frame(gpu, ts_ms, &win);
+                // Yield the canvas if another renderer (e.g. Graph3D) has
+                // claimed it.  We still re-schedule so we resume seamlessly
+                // once the owner releases the canvas.
+                let canvas_free = !super::GPU_CANVAS_OWNER.with(|c| c.get());
+                // Master enable flag (controlled from Theme Settings UI).
+                let overlay_enabled = super::GPU_OVERLAY_ENABLED.with(|c| c.get());
+                if canvas_free && overlay_enabled {
+                    if let Some(gpu) = ctx_loop.borrow_mut().as_mut() {
+                        render_frame(gpu, ts_ms, &win);
+                    }
                 }
                 // Re-schedule using the stored JsValue reference.
                 if let Some(ref jv) = *raf_jv_loop.borrow() {
