@@ -25,11 +25,13 @@ use dioxus::prelude::*;
 #[cfg(target_arch = "wasm32")]
 thread_local! {
     static GPU_CANVAS_OWNER: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    /// Master enable flag for the WgpuOverlay render loop. Defaults to `false`
-    /// so first-load viewers do not render expensive smoke / particle / CRT
-    /// effects until the user explicitly opts in via Theme Settings. Mutated
-    /// by [`set_gpu_overlay_enabled`] (called from [`crate::store::ThemeStore`]).
-    static GPU_OVERLAY_ENABLED: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    /// Master enable flag for the WgpuOverlay render loop. Defaults to `true`
+    /// so first-load viewers render the full GPU experience (smoke /
+    /// particle / CRT effects) immediately. Mutated by
+    /// [`set_gpu_overlay_enabled`] (called from [`crate::store::ThemeStore`]).
+    /// Set to OFF only when the user explicitly disables the master toggle
+    /// in ThemeSettings.
+    static GPU_OVERLAY_ENABLED: std::cell::Cell<bool> = std::cell::Cell::new(true);
 }
 
 /// Claim (`taken = true`) or release (`taken = false`) exclusive ownership of
@@ -53,7 +55,7 @@ pub fn set_gpu_canvas_owner(taken: bool) {
 ///
 /// When disabled, [`WgpuOverlay`]'s render loop continues to schedule animation
 /// frames but skips all rendering — the canvas remains transparent. Use this
-/// from the Theme Settings UI; defaults to `false` (off).
+/// from the Theme Settings UI; defaults to `true` (on).
 ///
 /// No-op on non-WASM builds.
 pub fn set_gpu_overlay_enabled(enabled: bool) {

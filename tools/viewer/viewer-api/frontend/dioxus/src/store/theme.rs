@@ -285,15 +285,18 @@ impl ThemeStore {
         #[cfg(not(target_arch = "wasm32"))]
         let initial = ThemePreset::default();
 
-        // GPU enabled flag — default OFF; persisted under GPU_STORAGE_KEY.
+        // GPU enabled flag — default ON; persisted under GPU_STORAGE_KEY.
+        // The viewer is intended to be fully GPU-accelerated by default
+        // (3D graph rendering, glass panels, particle effects, smoke).
+        // Users can opt out via the master toggle in ThemeSettings.
         #[cfg(target_arch = "wasm32")]
         let initial_gpu = web_sys::window()
             .and_then(|w| w.local_storage().ok().flatten())
             .and_then(|s| s.get_item(GPU_STORAGE_KEY).ok().flatten())
             .map(|v| v == "true")
-            .unwrap_or(false);
+            .unwrap_or(true);
         #[cfg(not(target_arch = "wasm32"))]
-        let initial_gpu = false;
+        let initial_gpu = true;
 
         let preset = use_signal(|| initial);
         let gpu_enabled = use_signal(|| initial_gpu);
