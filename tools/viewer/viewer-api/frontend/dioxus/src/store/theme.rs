@@ -200,11 +200,15 @@ fn colors_to_css(colors: &ThemeColors) -> String {
   --bg-secondary: {bg_secondary};
   --bg-tertiary: {bg_tertiary};
   --bg-elevated: {bg_elevated};
+    --bg-hover: color-mix(in srgb, {bg_secondary} 86%, {text_primary} 14%);
+    --bg-active: color-mix(in srgb, {bg_secondary} 76%, {accent_blue} 24%);
   --text-primary: {text_primary};
   --text-secondary: {text_secondary};
   --text-muted: {text_muted};
   --border-primary: {border_primary};
   --border-secondary: {border_secondary};
+    --border-color: {border_primary};
+    --border-subtle: {border_secondary};
   --accent-blue: {accent_blue};
   --accent-purple: {accent_purple};
   --accent-green: {accent_green};
