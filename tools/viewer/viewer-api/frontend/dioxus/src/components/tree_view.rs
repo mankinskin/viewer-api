@@ -178,7 +178,7 @@ fn TreeItem(
     node: TreeNode,
     depth: usize,
     expanded_ids: Signal<Vec<String>>,
-    selected_id: Signal<Option<String>>,
+    selected_id: Option<String>,
     on_select: EventHandler<String>,
     // ── Multi-select ──────────────────────────────────────────────────────────
     /// When true a checkbox is shown and multi-select logic is active.
@@ -199,29 +199,10 @@ fn TreeItem(
     let node_id_multi = node.id.clone();
     let node_id_focus = node.id.clone();
     let is_expanded = use_memo(move || expanded_ids.read().contains(&node_id));
-    let is_selected = use_memo(move || {
-        selected_id
-            .read()
-            .as_deref()
-            .map_or(false, |s| s == node_id_sel)
-    });
+    let is_selected = selected_id.as_deref().map_or(false, |s| s == node_id_sel);
     let is_in_multi = use_memo(move || multi_selected.read().contains(&node_id_multi));
     let is_focused = use_memo(move || {
         focused_id.read().as_deref() == Some(node_id_focus.as_str())
-    });
-
-    let row_class = use_memo(move || {
-        let selected = if show_checkboxes {
-            *is_in_multi.read()
-        } else {
-            *is_selected.read()
-        };
-        match (selected, *is_focused.read()) {
-            (true, true) => "tree-item-row selected focused",
-            (true, false) => "tree-item-row selected",
-            (false, true) => "tree-item-row focused",
-            (false, false) => "tree-item-row",
-        }
     });
 
     let toggle_id = node.id.clone();
@@ -257,6 +238,17 @@ fn TreeItem(
     let click_id = node.id.clone();
     let click_id2 = node.id.clone();
     let has_children = !node.children.is_empty();
+    let row_selected = if show_checkboxes {
+        *is_in_multi.read()
+    } else {
+        is_selected
+    };
+    let row_class = match (row_selected, *is_focused.read()) {
+        (true, true) => "tree-item-row selected focused",
+        (true, false) => "tree-item-row selected",
+        (false, true) => "tree-item-row focused",
+        (false, false) => "tree-item-row",
+    };
 
     rsx! {
         div {
@@ -267,7 +259,7 @@ fn TreeItem(
                 style: "{indent}",
                 role: "treeitem",
                 aria_expanded: if node.is_dir { Some(*is_expanded.read()) } else { None },
-                aria_selected: if show_checkboxes { *is_in_multi.read() } else { *is_selected.read() },
+                aria_selected: if show_checkboxes { *is_in_multi.read() } else { is_selected },
                 title: node.tooltip.as_deref().unwrap_or(""),
                 // Toggle chevron
                 span {
@@ -331,7 +323,6 @@ fn TreeItem(
                             focused_id.set(Some(click_id.clone()));
                             on_selection_change.call(new_selection);
                         } else {
-                            selected_id.set(Some(click_id2.clone()));
                             on_select.call(click_id2.clone());
                         }
                     },
@@ -356,7 +347,7 @@ fn TreeItem(
                             node: child,
                             depth: depth + 1,
                             expanded_ids,
-                            selected_id,
+                            selected_id: selected_id.clone(),
                             on_select,
                             show_checkboxes,
                             multi_selected,
@@ -411,7 +402,6 @@ pub fn TreeView(
     on_selection_change: EventHandler<BTreeSet<String>>,
 ) -> Element {
     let expanded_ids = use_signal(|| initially_expanded);
-    let sel_id: Signal<Option<String>> = use_signal(|| selected_id);
     let mut multi_selected: Signal<BTreeSet<String>> = use_signal(BTreeSet::new);
     let mut focused_id: Signal<Option<String>> = use_signal(|| None);
     let last_clicked: Signal<Option<String>> = use_signal(|| None);
@@ -506,7 +496,7 @@ pub fn TreeView(
                     node,
                     depth: 0,
                     expanded_ids,
-                    selected_id: sel_id,
+                    selected_id: selected_id.clone(),
                     on_select,
                     show_checkboxes,
                     multi_selected,
