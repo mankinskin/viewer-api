@@ -28,6 +28,10 @@ pub(crate) struct RenderState {
     /// CSS id of the DOM container that hosts the node cards. Used to
     /// translate world-space projections into container-local pixels.
     pub container_id:  String,
+    /// Set by the drag interaction when a node has moved this frame; the
+    /// renderer will rewrite `edge_buf` + `node_quad_buf` from `layout`
+    /// before drawing.
+    pub dirty_layout:  bool,
 }
 
 struct ScreenPos { x: f32, y: f32, z: f32, visible: bool }
@@ -121,6 +125,21 @@ pub(crate) fn render_frame(state: &mut RenderState) {
             state.gpu.canvas_h = h;
         }
     }
+    // Re-upload per-instance buffers if a node moved this frame.
+    if state.dirty_layout {
+        let (edge_data, edge_count) = state.layout.build_edge_instances();
+        if !edge_data.is_empty() {
+            write_buffer(&state.gpu.device, &state.edge_buf, &edge_data);
+        }
+        state.edge_count = edge_count;
+        let (node_data, node_count) = state.layout.build_node_quads();
+        if !node_data.is_empty() {
+            write_buffer(&state.gpu.device, &state.node_quad_buf, &node_data);
+        }
+        state.node_count = node_count;
+        state.dirty_layout = false;
+    }
+
     let gpu = &state.gpu;
     let w = gpu.canvas_w;
     let h = gpu.canvas_h;

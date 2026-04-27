@@ -173,6 +173,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             let state_rc = Rc::new(RefCell::new(RenderState {
                 gpu, layout, camera, edge_buf, edge_count,
                 node_quad_buf, node_count, container_id: container_id.clone(),
+                dirty_layout: false,
             }));
             render_w.set(Some(state_rc.clone()));
             status_w.set(String::new());

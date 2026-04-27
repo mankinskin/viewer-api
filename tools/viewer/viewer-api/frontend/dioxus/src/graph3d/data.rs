@@ -32,6 +32,26 @@ pub struct Layout3D {
 /// Per-edge instance floats (posA[3]+posB[3]+color[4]+flags[1]+edgeType[1]).
 pub(crate) const EDGE_INST_FLOATS: usize = 12;
 
+/// Half-extent of the coordinate grid (world units).
+const GRID_HALF: f32 = 30.0;
+/// Number of grid lines we generate (used for buffer pre-sizing).
+const GRID_LINE_COUNT: usize = ((GRID_HALF as i32) * 2 + 1) as usize * 2;
+
+fn grid_line_color(coord: f32) -> (f32, f32, f32, f32) {
+    // Axis (coord == 0): brighter cool colour.
+    if coord.abs() < 0.001 {
+        return (0.45, 0.55, 0.75, 0.55);
+    }
+    // Major gridline every 5 units: mid alpha.
+    if (coord.rem_euclid(5.0)).abs() < 0.01
+        || (coord.rem_euclid(5.0) - 5.0).abs() < 0.01
+    {
+        return (0.35, 0.40, 0.55, 0.35);
+    }
+    // Minor: dim.
+    (0.30, 0.32, 0.42, 0.18)
+}
+
 impl Layout3D {
     pub fn new(nodes: Vec<Node3D>, edges: Vec<EdgeRef3D>) -> Self {
         Self { nodes, edges }
@@ -60,9 +80,50 @@ impl Layout3D {
     }
 
     /// Build the flat per-instance edge buffer the GPU consumes.
+    ///
+    /// Includes a coordinate grid on the y=0 plane (rendered as
+    /// `edgeType = 0` thin AA lines) followed by the actual graph edges.
+    /// Matches the TS reference (`pipeline.ts buildGridData()`).
     pub(crate) fn build_edge_instances(&self) -> (Vec<f32>, u32) {
-        let mut data = Vec::with_capacity(self.edges.len() * EDGE_INST_FLOATS);
+        let mut data = Vec::with_capacity(
+            (self.edges.len() + GRID_LINE_COUNT) * EDGE_INST_FLOATS,
+        );
         let mut count = 0u32;
+
+        // ── Coordinate grid (y = 0 plane) ──
+        // Step 1 world-unit, extent ±GRID_HALF on each axis.
+        let half = GRID_HALF;
+        let step = 1.0_f32;
+        let mut z = -half;
+        while z <= half + 0.0001 {
+            // Highlight axis lines (z == 0) with a brighter alpha; major
+            // gridlines every 5 units get a mid alpha; minor lines stay dim.
+            let (r, g, b, a) = grid_line_color(z);
+            data.extend_from_slice(&[
+                -half, 0.0, z,
+                 half, 0.0, z,
+                 r,    g,   b, a,
+                 0.0,        // flags
+                 0.0,        // edgeType = 0 (simple thin AA line)
+            ]);
+            count += 1;
+            z += step;
+        }
+        let mut x = -half;
+        while x <= half + 0.0001 {
+            let (r, g, b, a) = grid_line_color(x);
+            data.extend_from_slice(&[
+                x, 0.0, -half,
+                x, 0.0,  half,
+                r, g,   b, a,
+                0.0,
+                0.0,
+            ]);
+            count += 1;
+            x += step;
+        }
+
+        // ── Graph edges ──
         for edge in &self.edges {
             let Some(a) = self.nodes.get(edge.from_idx) else { continue };
             let Some(b) = self.nodes.get(edge.to_idx)   else { continue };

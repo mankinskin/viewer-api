@@ -134,7 +134,10 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
 
     // ── Grid / simple edges (edgeType 0) ──
     if (in.edgeType < 0.5) {
-        let alpha = 1.0 - smoothstep(0.6, 1.0, across);
+        // Tight AA band (matches TS hypergraph.wgsl reference): keep core
+        // fully opaque and only fade the outermost few % of the line so
+        // sub-pixel-thin edges stay crisp at any distance.
+        let alpha = 1.0 - smoothstep(0.92, 1.0, across);
         var col = in.color.rgb;
         var a = in.color.a * alpha;
         if (in.flags > 0.5) {
