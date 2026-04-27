@@ -1,0 +1,10 @@
+/* spinner.css — extracted from viewer-api.css */
+
+@keyframes va-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: va-spin 1s linear infinite;
+}

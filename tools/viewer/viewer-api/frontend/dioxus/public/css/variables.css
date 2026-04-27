@@ -1,0 +1,74 @@
+/* variables.css — extracted from viewer-api.css */
+
+:root {
+  /* Background colors — translucent so the WebGPU smoke shader bleeds
+     through.  Opacity tuned so text remains legible on top of swirling
+     low-frequency noise. */
+  --bg-primary: rgba(26, 26, 28, 0.55);
+  --bg-secondary: rgba(33, 33, 36, 0.65);
+  --bg-tertiary: rgba(40, 40, 44, 0.75);
+  --bg-hover: rgba(50, 50, 58, 0.85);
+  --bg-active: rgba(42, 58, 74, 0.85);
+
+  /* Solid fallbacks for components that explicitly need an opaque surface
+     (e.g. floating modals over content that is not the smoke canvas). */
+  --bg-primary-solid: #1a1a1c;
+  --bg-secondary-solid: #212124;
+  --bg-tertiary-solid: #28282c;
+
+  /* Text colors */
+  --text-primary: #e0e0e4;
+  --text-secondary: #a0a0a8;
+  --text-muted: #606068;
+
+  /* Border colors */
+  --border-color: #38383e;
+  --border-subtle: #2a2a30;
+
+  /* Accent colors */
+  --accent-blue: #4a8fd4;
+  --accent-green: #3da060;
+  --accent-orange: #d97a3a;
+  --accent-purple: #a06dd0;
+  --accent-yellow: #c9a820;
+  --accent-red: #c83838;
+
+  /* Semantic colors */
+  --success: var(--accent-green);
+  --warning: var(--accent-orange);
+  --error: var(--accent-red);
+  --info: var(--accent-blue);
+
+  /* Typography */
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 0px;
+  --header-height: 40px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+
+  /* Responsive breakpoints (documentation — media queries use literal values) */
+  --mobile-breakpoint: 768px;
+  --phone-breakpoint: 480px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* ── Panel surface tokens ─────────────────────────────────────────────
+     Independent of the theme `--bg-*` palette so the live theme picker
+     can recolour text/backgrounds without ever destroying panel
+     translucency.  These let the WebGPU smoke shader bleed through every
+     UI panel.  Tweak via the override stylesheet for each viewer. */
+  --panel-bg:        rgba(20, 20, 24, 0.55);
+  --panel-bg-strong: rgba(20, 20, 24, 0.75);
+  --panel-bg-floor:  rgba(14, 14, 18, 0.65);
+  --panel-blur:      14px;
+  --panel-saturate:  150%;
+}

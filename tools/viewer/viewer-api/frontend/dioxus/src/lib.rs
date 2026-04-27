@@ -29,11 +29,12 @@ use dioxus::prelude::*;
 pub fn ViewerShell(children: Element) -> Element {
     rsx! {
         div {
-            // Dark base colour — visible through transparent GPU overlay regions
-            // (smoke, atmospheric effects). The GPU canvas does NOT paint a solid
-            // background any more; CSS owns the dark background so DOM elements
-            // can show through the transparent WebGPU overlay canvas.
-            style: "width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden; position: relative; background: #0a0a0c;",
+            // Dark base colour shows through transparent regions of the WGPU
+            // canvas (e.g. when smoke is disabled) so the UI never flashes
+            // white. When the smoke shader is active it fully covers this
+            // surface; panels above use their own translucent backgrounds
+            // (`--panel-bg`) so the smoke bleeds through every UI layer.
+            style: "width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden; position: relative; background: #050608;",
 
             // UI root — graph nodes and all other DOM content render here.
             // z-index 3 keeps it above the GPU overlay canvas at z-index 1,
