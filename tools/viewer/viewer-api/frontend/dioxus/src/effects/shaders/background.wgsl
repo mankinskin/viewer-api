@@ -813,16 +813,26 @@ fn fs_main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
         let vig_d = length((raw_uv - 0.5) * vec2f(1.0, 0.8));
         vignette = 1.0 - smoothstep(0.5, 1.2, vig_d) * 0.35 * s_vignette;
         
-        // --- Base palette using triplanar noise (same logic as 2D) -----------
-        let palette_t = triplanar_noise(ray_dir, skybox_scale * 0.003 * s_warm_scale, drift * 5.0);
-        let cool_var  = triplanar_noise(ray_dir, skybox_scale * 0.005 * s_cool_scale, drift * 3.0 + vec2f(3.7, 2.1));
-        let moss_var  = triplanar_noise(ray_dir, skybox_scale * 0.008 * s_moss_scale, drift * 4.0 + vec2f(5.1, 9.3));
+        // --- Base palette ----------------------------------------------------
+        // The variegated cool/warm/moss noise IS the smoke effect's primary
+        // visual; gate the noise lookups on s_intensity so disabling smoke
+        // produces a flat gradient (matching the 2D fast-path).
         let cool_tone = palette.smoke_cool.rgb;
         let warm_tone = palette.smoke_warm.rgb;
         let moss_tone = palette.smoke_moss.rgb;
-        var base_col = mix(cool_tone, warm_tone, smoothstep(0.3, 0.7, palette_t));
-        base_col = mix(base_col, cool_tone, smoothstep(0.4, 0.7, cool_var) * 0.3);
-        base_col = mix(base_col, moss_tone, smoothstep(0.3, 0.7, moss_var) * 0.5 * s_moss_scale);
+        var base_col: vec3f;
+        if (s_intensity > 0.0) {
+            let palette_t = triplanar_noise(ray_dir, skybox_scale * 0.003 * s_warm_scale, drift * 5.0);
+            let cool_var  = triplanar_noise(ray_dir, skybox_scale * 0.005 * s_cool_scale, drift * 3.0 + vec2f(3.7, 2.1));
+            let moss_var  = triplanar_noise(ray_dir, skybox_scale * 0.008 * s_moss_scale, drift * 4.0 + vec2f(5.1, 9.3));
+            base_col = mix(cool_tone, warm_tone, smoothstep(0.3, 0.7, palette_t));
+            base_col = mix(base_col, cool_tone, smoothstep(0.4, 0.7, cool_var) * 0.3);
+            base_col = mix(base_col, moss_tone, smoothstep(0.3, 0.7, moss_var) * 0.5 * s_moss_scale);
+        } else {
+            // Simple ray-direction gradient — cheap and stable when smoke off
+            let grad_t = ray_dir.y * 0.5 + 0.5;
+            base_col = mix(cool_tone, warm_tone, grad_t);
+        }
         
         // Add grain (using screen coords for temporal stability)
         var grain_sum = 0.0;
@@ -877,8 +887,11 @@ fn fs_main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
         // --- 2D PATH: Original screen-space background -------------------------
         // Existing logic preserved for non-3D views
         
-        // FAST PATH: minimal background when smoke+grain disabled
-        let effects_minimal = s_intensity <= 0.0 && s_grain_i <= 0.0;
+        // FAST PATH: minimal background when smoke is disabled.
+        // Grain is gated independently inside the full path, so it must NOT
+        // be part of this predicate or toggling grain would also toggle the
+        // base smoke palette.
+        let effects_minimal = s_intensity <= 0.0;
 
         if effects_minimal {
             // Simple UV-based gradient — no noise calls at all
