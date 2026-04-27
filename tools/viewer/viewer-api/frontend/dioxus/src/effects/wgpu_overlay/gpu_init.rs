@@ -16,6 +16,7 @@ use js_sys::{Array, Function, Object, Promise, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
+use tracing::{info, warn, error};
 
 use super::webgpu::*;
 
@@ -54,13 +55,8 @@ pub(super) struct InitOutput {
 /// Acquire `#webgpu-canvas`, request adapter+device, configure the canvas
 /// context, build shader modules and pipelines.  Returns `None` when WebGPU
 /// is unavailable or any step fails.
-/// Helper: log a step name to the JS console for tracing init failures.
-fn log_step(step: &str) {
-    web_sys::console::log_1(&format!("[WgpuOverlay/init] {}", step).into());
-}
-
 pub(super) async fn init_gpu() -> Option<InitOutput> {
-    log_step("start");
+    info!(target: "wgpu_overlay::init", "start");
     let win = web_sys::window()?;
     let doc = win.document()?;
 
@@ -69,18 +65,18 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         .get_element_by_id("webgpu-canvas")?
         .dyn_into::<HtmlCanvasElement>()
         .ok()?;
-    log_step("canvas acquired");
     let dpr = win.device_pixel_ratio();
     let init_w = ((canvas.client_width()  as f64 * dpr) as u32).max(1);
     let init_h = ((canvas.client_height() as f64 * dpr) as u32).max(1);
     canvas.set_width(init_w);
     canvas.set_height(init_h);
+    info!(target: "wgpu_overlay::init", canvas_width = init_w, canvas_height = init_h, "canvas acquired");
 
     // ── navigator.gpu ───────────────────────────────────────────────────────
     let navigator = win.navigator();
     let gpu_js = Reflect::get(&navigator, &"gpu".into()).ok()?;
     if gpu_js.is_undefined() || gpu_js.is_null() {
-        web_sys::console::warn_1(&"[WgpuOverlay] navigator.gpu unavailable".into());
+        warn!(target: "wgpu_overlay::init", "navigator.gpu unavailable");
         return None;
     }
 
@@ -99,16 +95,17 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     let device_promise: Promise = request_device.call1(&adapter, &dev_desc.into()).ok()?.dyn_into().ok()?;
     let device = JsFuture::from(device_promise).await.ok()?;
     if device.is_null() || device.is_undefined() { return None; }
-    web_sys::console::log_1(&format!("[WgpuOverlay/init] device created label={}", dev_label).into());
+    info!(target: "wgpu_overlay::init", device_label = %dev_label, "device created");
 
     // Install onuncapturederror so any validation errors show device labels.
     {
         use wasm_bindgen::closure::Closure;
+        let label_for_err = dev_label.clone();
         let cb = Closure::<dyn FnMut(JsValue)>::new(move |ev: JsValue| {
             let err = Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
             let msg = Reflect::get(&err, &"message".into())
                 .ok().and_then(|v| v.as_string()).unwrap_or_default();
-            web_sys::console::error_1(&format!("[WgpuOverlay/uncaught] {}", msg).into());
+            error!(target: "wgpu_overlay::uncaught", device_label = %label_for_err, error_msg = %msg, "uncaptured WebGPU validation error");
         });
         let _ = Reflect::set(&device, &"onuncapturederror".into(), cb.as_ref());
         cb.into_js_value();
@@ -119,7 +116,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     // ── Canvas WebGPU context ───────────────────────────────────────────────
     let context: JsValue = canvas.get_context("webgpu").ok()??.into();
     let format: JsValue = get_fn(&gpu_js, "getPreferredCanvasFormat")?.call0(&gpu_js).ok()?;
-    log_step("context + format obtained");
+    info!(target: "wgpu_overlay::init", "context + format obtained");
 
     // Configure the canvas context. `alphaMode: "opaque"` matches the
     // TypeScript reference — the canvas paints a full opaque background and
@@ -129,18 +126,18 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     set_prop(&cfg, "format",    &format);
     set_prop(&cfg, "alphaMode", &"opaque".into());
     get_fn(&context, "configure")?.call1(&context, &cfg.into()).ok()?;
-    log_step("context configured");
+    info!(target: "wgpu_overlay::init", "context configured");
 
     // ── Shader modules ──────────────────────────────────────────────────────
     let shared_code   = format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
     let render_shared = format!("{}{}\n", shared_code, PARTICLE_SHADING_WGSL);
 
     let bg_shader       = create_shader(&device, "background", &format!("{}{}", render_shared, BACKGROUND_WGSL))?;
-    log_step("bg shader compiled");
+    info!(target: "wgpu_overlay::init", "bg shader compiled");
     let particle_shader = create_shader(&device, "particles",  &format!("{}{}", render_shared, PARTICLES_WGSL))?;
-    log_step("particle shader compiled");
+    info!(target: "wgpu_overlay::init", "particle shader compiled");
     let compute_shader  = create_shader(&device, "compute",    &format!("{}{}", shared_code,   COMPUTE_WGSL))?;
-    log_step("compute shader compiled");
+    info!(target: "wgpu_overlay::init", "compute shader compiled");
 
     // ── Bind-group layouts ──────────────────────────────────────────────────
     //
@@ -178,14 +175,14 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── Pipelines ───────────────────────────────────────────────────────────
     let compute_pipeline  = create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
-    log_step("compute pipeline built");
+    info!(target: "wgpu_overlay::init", "compute pipeline built");
     let bg_pipeline       = create_render_pipeline(
         &device, &render_layout, &bg_shader,       &bg_shader,       &format, /*additive=*/ false)?;
-    log_step("bg pipeline built");
+    info!(target: "wgpu_overlay::init", "bg pipeline built");
     let particle_pipeline = create_render_pipeline(
         &device, &render_layout, &particle_shader, &particle_shader, &format, /*additive=*/ true)?;
-    log_step("particle pipeline built");
-    log_step("init complete");
+    info!(target: "wgpu_overlay::init", "particle pipeline built");
+    info!(target: "wgpu_overlay::init", "init complete");
 
     Some(InitOutput {
         device,

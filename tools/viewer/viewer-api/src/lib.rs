@@ -36,6 +36,7 @@
 //! ```
 
 pub mod dev_proxy;
+pub mod client_log;
 
 // New shared primitives for ticket-viewer and future viewer tools
 pub mod auth;

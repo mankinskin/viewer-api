@@ -151,8 +151,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             {
                 let lbl = js_sys::Reflect::get(&shared.device, &"label".into())
                     .ok().and_then(|v| v.as_string()).unwrap_or_default();
-                web_sys::console::log_1(&format!(
-                    "[Graph3D/init] received shared device label={}", lbl).into());
+                tracing::info!(target: "graph3d::init", device_label = %lbl, "received shared device");
             }
 
             // Read current canvas backing-store size; the overlay loop

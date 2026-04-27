@@ -2,6 +2,8 @@ pub mod components;
 pub mod effects;
 pub mod graph3d;
 pub mod store;
+#[cfg(target_arch = "wasm32")]
+pub mod tracing_setup;
 
 pub use graph3d::{
     can_use_webgpu as can_use_webgpu_graph3d, EdgeRef3D, Graph3D, Layout3D, Node3D,

@@ -17,6 +17,7 @@ use super::gpu_buffers::{mk_compute_bind_group, mk_render_bind_group, GpuBuffers
 use super::gpu_init::{init_gpu, GpuPipelines};
 use super::settings::EffectSettings;
 use super::webgpu::*;
+use tracing::{debug, info, warn};
 // ── Per-frame GPU context ────────────────────────────────────────────────────
 
 pub(super) struct GpuCtx {
@@ -90,12 +91,12 @@ pub fn mount_overlay() {
             let ri_e  = Rc::clone(&ri_ref);
             let rjv_e = Rc::clone(&rjv_ref);
 
-            web_sys::console::log_1(&"[WgpuOverlay] mount_overlay use_effect — spawning bootstrap".into());
+            info!(target: "wgpu_overlay", "mount_overlay use_effect - spawning bootstrap");
             spawn(async move {
-                web_sys::console::log_1(&"[WgpuOverlay] bootstrap_ctx() starting".into());
+                info!(target: "wgpu_overlay", "bootstrap_ctx() starting");
                 match bootstrap_ctx().await {
                     Some(gpu_ctx) => {
-                        web_sys::console::log_1(&"[WgpuOverlay] bootstrap_ctx() succeeded — starting rAF loop".into());
+                        info!(target: "wgpu_overlay", "bootstrap_ctx() succeeded - starting rAF loop");
                         *ctx_e.borrow_mut() = Some(gpu_ctx);
                         setup_raf_loop(
                             Rc::clone(&ctx_e),
@@ -105,9 +106,7 @@ pub fn mount_overlay() {
                         );
                     }
                     None => {
-                        web_sys::console::warn_1(
-                            &"[WgpuOverlay] WebGPU unavailable — overlay disabled".into(),
-                        );
+                        warn!(target: "wgpu_overlay", "WebGPU unavailable - overlay disabled");
                     }
                 }
             });
@@ -220,7 +219,7 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
         queue_write_f32(&gpu.queue, &gpu.buffers.palette_buf, 0, &fa);
     }
 
-    // Diagnostic: log every ~60 frames so we can confirm the loop is alive.
+    // Diagnostic: log every ~120 frames so we can confirm the loop is alive.
     {
         thread_local! { static FRAME_NO: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
         FRAME_NO.with(|c| {
@@ -229,10 +228,15 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
             if n == 1 || n.is_multiple_of(120) {
                 let dev_label = js_sys::Reflect::get(&gpu.device, &"label".into())
                     .ok().and_then(|v| v.as_string()).unwrap_or_default();
-                web_sys::console::log_1(&format!(
-                    "[WgpuOverlay/frame] #{} t={:.2}s dt={:.4}s smoke={:.2} dev={}",
-                    n, time_s, dt_s, settings.smoke_intensity, dev_label
-                ).into());
+                debug!(
+                    target: "wgpu_overlay::frame",
+                    frame_n = n,
+                    frame_time_s = time_s,
+                    frame_dt_s = dt_s,
+                    smoke = settings.smoke_intensity,
+                    device_label = %dev_label,
+                    "frame"
+                );
             }
         });
     }

@@ -22,6 +22,11 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 gloo-events = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+tracing-wasm = "0.2"
 web-sys = { version = "0.3", features = [
     "Window",
     "Document",
@@ -47,6 +52,12 @@ web-sys = { version = "0.3", features = [
     "Location",
     "Performance",
     "console",
+    # Fetch API (used by the tracing network layer)
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Headers",
+    "Response",
     # WebGPU bindings used by the shared graph3d module
     "Gpu",
     "GpuAdapter",
