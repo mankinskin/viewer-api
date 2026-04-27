@@ -30,13 +30,17 @@
 use dioxus::prelude::*;
 
 mod element_types;
+pub mod settings;
 
 #[cfg(target_arch = "wasm32")] mod webgpu;
-#[cfg(target_arch = "wasm32")] mod settings;
 #[cfg(target_arch = "wasm32")] mod gpu_init;
 #[cfg(target_arch = "wasm32")] mod gpu_buffers;
 #[cfg(target_arch = "wasm32")] mod element_scanner;
 #[cfg(target_arch = "wasm32")] mod render_loop;
+
+pub use settings::{
+    hex_to_rgba, rgba_to_hex, EffectSettings, PaletteColor, PALETTE_LABELS, PALETTE_LEN,
+};
 
 // ── Canvas ownership arbitration ────────────────────────────────────────────
 
@@ -48,6 +52,20 @@ thread_local! {
     /// Master enable flag for the WgpuOverlay render loop. Defaults to `true`
     /// so first-load viewers render the full GPU experience immediately.
     static GPU_OVERLAY_ENABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+    /// Live (preview-or-committed) effect settings read each frame by the
+    /// render loop.  Mutated via [`set_live_effects`] from the Theme Settings
+    /// UI for instant preview.
+    static EFFECTS_LIVE: std::cell::RefCell<EffectSettings> =
+        std::cell::RefCell::new(EffectSettings::default());
+    /// Set whenever [`set_live_effects`] is called so the render loop knows
+    /// to re-upload the palette uniform buffer on the next frame.
+    static PALETTE_DIRTY: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+thread_local! {
+    static EFFECTS_LIVE: std::cell::RefCell<EffectSettings> =
+        std::cell::RefCell::new(EffectSettings::default());
 }
 
 /// Claim (`taken = true`) or release (`taken = false`) exclusive ownership of
@@ -86,6 +104,36 @@ pub(crate) fn is_canvas_owned() -> bool {
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn is_overlay_enabled() -> bool {
     GPU_OVERLAY_ENABLED.with(|c| c.get())
+}
+
+// ── Live effect-settings access ─────────────────────────────────────────────
+
+/// Replace the live effect settings consumed by the [`WgpuOverlay`] render
+/// loop.  Always marks the palette as dirty so the colour buffer is
+/// re-uploaded on the next frame.
+///
+/// Use this for **live preview** in the Theme Settings UI: each draft change
+/// pushes a new snapshot here for an immediate visual update without
+/// touching `localStorage`.  Persistence is handled separately via
+/// [`EffectSettings::save`].
+pub fn set_live_effects(s: EffectSettings) {
+    EFFECTS_LIVE.with(|c| *c.borrow_mut() = s);
+    #[cfg(target_arch = "wasm32")]
+    PALETTE_DIRTY.with(|c| c.set(true));
+}
+
+/// Snapshot the currently live effect settings.
+pub fn live_effects() -> EffectSettings {
+    EFFECTS_LIVE.with(|c| c.borrow().clone())
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn take_palette_dirty() -> bool {
+    PALETTE_DIRTY.with(|c| {
+        let was = c.get();
+        c.set(false);
+        was
+    })
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

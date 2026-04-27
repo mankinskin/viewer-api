@@ -17,7 +17,6 @@ use super::gpu_buffers::{mk_compute_bind_group, mk_render_bind_group, GpuBuffers
 use super::gpu_init::{init_gpu, GpuPipelines};
 use super::settings::EffectSettings;
 use super::webgpu::*;
-
 // ── Per-frame GPU context ────────────────────────────────────────────────────
 
 pub(super) struct GpuCtx {
@@ -40,8 +39,6 @@ pub(super) struct GpuCtx {
     start_time_ms: f64,
     /// Timestamp of the previous frame (ms).
     prev_time_ms:  f64,
-    /// Effect settings loaded from localStorage on init.
-    settings:      EffectSettings,
 }
 
 type SharedCtx = Rc<RefCell<Option<GpuCtx>>>;
@@ -126,6 +123,10 @@ async fn bootstrap_ctx() -> Option<GpuCtx> {
     let perf = win.performance()?;
     let now  = perf.now();
 
+    // Seed the live effect-settings store from localStorage so previously
+    // committed tweaks are restored on first paint.
+    super::set_live_effects(EffectSettings::load());
+
     let buffers    = GpuBuffers::new(&init.device, &init.queue)?;
     let compute_bg = mk_compute_bind_group(&init.device, &init.pipelines.compute_bgl, &buffers)?;
     let render_bg  = mk_render_bind_group (&init.device, &init.pipelines.render_bgl,  &buffers)?;
@@ -147,7 +148,6 @@ async fn bootstrap_ctx() -> Option<GpuCtx> {
         uniforms_f32:  Float32Array::new_with_length(UNIFORMS_F32_COUNT as u32),
         start_time_ms: now,
         prev_time_ms:  now,
-        settings:      EffectSettings::load("default"),
     })
 }
 
@@ -203,6 +203,16 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
     gpu.prev_time_ms = ts_ms;
     let time_s = ((ts_ms - gpu.start_time_ms) / 1000.0) as f32;
 
+    // Snapshot the live (potentially-preview) effect settings for this frame.
+    let settings = super::live_effects();
+
+    // Re-upload the palette buffer if the UI mutated colours since last frame.
+    if super::take_palette_dirty() {
+        let flat = settings.palette_flat();
+        let fa = unsafe { Float32Array::view(&flat) };
+        queue_write_f32(&gpu.queue, &gpu.buffers.palette_buf, 0, &fa);
+    }
+
     // Diagnostic: log every ~60 frames so we can confirm the loop is alive.
     {
         thread_local! { static FRAME_NO: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
@@ -212,7 +222,7 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
             if n == 1 || n.is_multiple_of(120) {
                 web_sys::console::log_1(&format!(
                     "[WgpuOverlay/frame] #{} t={:.2}s dt={:.4}s smoke={:.2}",
-                    n, time_s, dt_s, gpu.settings.smoke_intensity
+                    n, time_s, dt_s, settings.smoke_intensity
                 ).into());
             }
         });
@@ -262,7 +272,7 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
     }
 
     // ── Pack uniforms ───────────────────────────────────────────────────────
-    pack_uniforms(gpu, time_s, dt_s, cw, ch, elem_count);
+    pack_uniforms(gpu, &settings, time_s, dt_s, cw, ch, elem_count);
     queue_write_f32(&gpu.queue, &gpu.buffers.uniform_buf, 0, &gpu.uniforms_f32);
 
     // ── Get current frame texture ───────────────────────────────────────────
@@ -275,7 +285,7 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
         .and_then(|f| f.call0(&gpu.device).ok()) else { return; };
 
     // ── Compute pass (particle physics) ─────────────────────────────────────
-    if gpu.settings.particles_enabled {
+    if settings.particles_enabled {
         if let Some(pass) = get_fn(&encoder, "beginComputePass")
             .and_then(|f| f.call0(&encoder).ok())
         {
@@ -299,7 +309,7 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
             call_draw(&pass, 6, 1);
 
             // b) Particle quads (additive blend — sparks, embers, beams, glitter).
-            if gpu.settings.particles_enabled {
+            if settings.particles_enabled {
                 call_set_pipeline(&pass, &gpu.pipelines.particle_pipeline);
                 call_set_bind_group(&pass, 0, &gpu.render_bg);
                 call_draw(&pass, 6, NUM_PARTICLES as u32);
@@ -326,11 +336,19 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
 
 // ── Uniform packing ──────────────────────────────────────────────────────────
 
-fn pack_uniforms(gpu: &GpuCtx, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_count: usize) {
+fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_count: usize) {
     let u  = &gpu.uniforms_f32;
-    let s  = &gpu.settings;
     let vp = ortho_vp(cw as f32, ch as f32);
     let iv = ortho_inv_vp(cw as f32, ch as f32);
+
+    // Helper: a master-flag gates each effect group; multiplying by 0
+    // disables that group's contribution while keeping the uniform layout
+    // intact for the WGSL shader.
+    let smoke_gate    = if s.smoke_enabled    { 1.0 } else { 0.0 };
+    let crt_gate      = if s.crt_enabled      { 1.0 } else { 0.0 };
+    let grain_gate    = if s.grain_enabled    { 1.0 } else { 0.0 };
+    let vignette_gate = if s.vignette_enabled { 1.0 } else { 0.0 };
+    let particle_gate = if s.particles_enabled { 1.0 } else { 0.0 };
 
     // Scalars [0..55]
     u.set_index(0,  time_s);
@@ -343,37 +361,37 @@ fn pack_uniforms(gpu: &GpuCtx, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_co
     u.set_index(7,  -1.0);    // hover_elem
     u.set_index(8,  0.0);     // hover_start_time
     u.set_index(9,  -1.0);    // selected_elem
-    u.set_index(10, s.crt_scanlines_h);
-    u.set_index(11, 0.0);     // crt_scanlines_v
-    u.set_index(12, s.crt_edge_shadow);
-    u.set_index(13, 0.08);    // crt_flicker
-    u.set_index(14, 0.3);     // crt_line_width
-    u.set_index(15, s.smoke_intensity);
-    u.set_index(16, 1.0);     // smoke_speed
-    u.set_index(17, 1.0);     // smoke_warm_scale
-    u.set_index(18, 1.0);     // smoke_cool_scale
-    u.set_index(19, 1.0);     // smoke_moss_scale
-    u.set_index(20, s.grain_intensity);
-    u.set_index(21, 0.5);     // grain_coarseness
-    u.set_index(22, 0.3);     // grain_size
-    u.set_index(23, s.vignette_str);
-    u.set_index(24, 0.2);     // underglow_str
-    u.set_index(25, 1.0);     // spark_speed
-    u.set_index(26, 1.0);     // ember_speed
-    u.set_index(27, 1.0);     // beam_speed
-    u.set_index(28, 1.0);     // glitter_speed
-    u.set_index(29, 35.0);    // beam_height
-    u.set_index(30, 0.0);     // beam_count
-    u.set_index(31, 1.0);     // beam_drift
+    u.set_index(10, s.crt_scanlines_h * crt_gate);
+    u.set_index(11, s.crt_scanlines_v * crt_gate);
+    u.set_index(12, s.crt_edge_shadow * crt_gate);
+    u.set_index(13, s.crt_flicker     * crt_gate);
+    u.set_index(14, s.crt_line_width);
+    u.set_index(15, s.smoke_intensity * smoke_gate);
+    u.set_index(16, s.smoke_speed);
+    u.set_index(17, s.smoke_warm_scale);
+    u.set_index(18, s.smoke_cool_scale);
+    u.set_index(19, s.smoke_moss_scale);
+    u.set_index(20, s.grain_intensity * grain_gate);
+    u.set_index(21, s.grain_coarseness);
+    u.set_index(22, s.grain_size);
+    u.set_index(23, s.vignette_strength * vignette_gate);
+    u.set_index(24, s.underglow_strength);
+    u.set_index(25, s.spark_speed);
+    u.set_index(26, s.ember_speed);
+    u.set_index(27, s.beam_speed);
+    u.set_index(28, s.glitter_speed);
+    u.set_index(29, s.beam_height);
+    u.set_index(30, s.beam_count * particle_gate);
+    u.set_index(31, s.beam_drift);
     u.set_index(32, 0.0);     // scroll_dx
     u.set_index(33, 0.0);     // scroll_dy
-    u.set_index(34, if s.particles_enabled { 1.0 } else { 0.0 }); // spark_count
-    u.set_index(35, 1.0);     // spark_size
-    u.set_index(36, if s.particles_enabled { 1.0 } else { 0.0 }); // ember_count
-    u.set_index(37, 1.0);     // ember_size
-    u.set_index(38, if s.particles_enabled { 1.0 } else { 0.0 }); // glitter_count
-    u.set_index(39, 1.0);     // glitter_size
-    u.set_index(40, 1.0);     // cinder_size
+    u.set_index(34, s.spark_count * particle_gate);
+    u.set_index(35, s.spark_size);
+    u.set_index(36, s.ember_count * particle_gate);
+    u.set_index(37, s.ember_size);
+    u.set_index(38, s.glitter_count * particle_gate);
+    u.set_index(39, s.glitter_size);
+    u.set_index(40, s.cinder_size);
     u.set_index(41, 0.0);     // ref_depth
     u.set_index(42, 1.0);     // world_scale
     u.set_index(43, 0.0);     // vp_x
@@ -381,9 +399,9 @@ fn pack_uniforms(gpu: &GpuCtx, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_co
     u.set_index(45, cw as f32);
     u.set_index(46, ch as f32);
     u.set_index(47, 0.0);     // current_view (0 = logs)
-    u.set_index(48, 0.9);     // crt_color_r
-    u.set_index(49, 0.7);     // crt_color_g
-    u.set_index(50, 0.4);     // crt_color_b
+    u.set_index(48, s.crt_color[0]);
+    u.set_index(49, s.crt_color[1]);
+    u.set_index(50, s.crt_color[2]);
     u.set_index(51, 0.0);     // _crt_pad
     u.set_index(52, 0.0);     // cam x
     u.set_index(53, 0.0);     // cam y

@@ -5,6 +5,9 @@
 //! `localStorage` under the key `"viewer-api-custom-themes"`.
 use dioxus::prelude::*;
 
+use crate::effects::wgpu_overlay::{
+    hex_to_rgba, rgba_to_hex, EffectSettings, PaletteColor, PALETTE_LABELS, PALETTE_LEN,
+};
 use crate::store::{ThemeColors, ThemePreset, ThemeStore, ARCADIA, DARK, PAPER, SCRATCHBOARD};
 
 // ── Mutable colour snapshot ───────────────────────────────────────────────────
@@ -498,11 +501,28 @@ pub fn ThemeSettings(
     // ── Store access ──
     let mut store = use_context::<ThemeStore>();
 
-    // ── Local state ──
+    // ── Local state (colours) ──
     // Draft: the colors currently being edited (starts from active preset).
     let mut draft = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
     // Committed snapshot — used to implement "undo changes".
     let mut committed = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
+
+    // ── Local state (effects) ──
+    // Effects draft is the *live preview* state; pushed to the WgpuOverlay
+    // render loop on every change.  Apply commits it; closing the panel
+    // without Apply reverts to `effects_committed_local`.
+    let mut effects_draft = use_signal(|| store.effects_committed());
+    let mut effects_committed_local = use_signal(|| store.effects_committed());
+
+    // Push effects draft to the live render loop whenever it changes.
+    {
+        let e = effects_draft.read().clone();
+        use_effect(move || {
+            store.preview_effects(e.clone());
+        });
+    }
+
+    // ── Custom themes ──
     // Custom themes loaded from / persisted to localStorage.
     let mut custom_themes: Signal<Vec<CustomTheme>> = use_signal(load_custom_themes);
     // Name input for saving a new custom theme.
@@ -515,8 +535,12 @@ pub fn ThemeSettings(
     // Error / info message shown in the panel.
     let mut message: Signal<Option<(bool, String)>> = use_signal(|| None); // (is_error, text)
 
-    // Clean up preview style on unmount.
-    use_drop(|| remove_preview_css());
+    // Clean up preview style on unmount and revert effects to the committed
+    // snapshot so closing the panel without Apply discards effect previews.
+    use_drop(move || {
+        remove_preview_css();
+        store.revert_effects();
+    });
 
     // Inject live preview whenever the draft changes.
     {
@@ -546,8 +570,9 @@ pub fn ThemeSettings(
                     class: "tab-close",
                     aria_label: "Close theme settings",
                     onclick: move |_| {
-                        // Remove preview and revert to saved preset.
+                        // Remove preview, revert effects, and close.
                         remove_preview_css();
+                        store.revert_effects();
                         on_close.call(());
                     },
                     "✕"
@@ -648,13 +673,19 @@ pub fn ThemeSettings(
                                     let on = e.value() == "true";
                                     store.set_gpu_enabled(on);
                                     message.set(Some((false,
-                                        if on { "GPU overlay enabled.".into() }
-                                        else  { "GPU overlay disabled.".into() })));
+                                        if on { "GPU overlay enabled.".to_string() }
+                                        else  { "GPU overlay disabled.".to_string() })));
                                 },
                             }
                             span { class: "theme-settings__toggle-slider" }
                         }
                     }
+
+                    // ── Comprehensive shader-effect controls ──
+                    // Each subsection mirrors a shader pass.  All sliders write
+                    // to `effects_draft`, which is pushed live via use_effect
+                    // so the user sees changes immediately.  Apply persists.
+                    EffectControls { draft: effects_draft }
                 }
 
                 // ── Color token groups ──
@@ -790,7 +821,7 @@ pub fn ThemeSettings(
                                                         }
                                                         rename_idx.set(None);
                                                         rename_name.set(String::new());
-                                                        message.set(Some((false, "Renamed.".into())));
+                                                        message.set(Some((false, "Renamed.".to_string())));
                                                     },
                                                     "OK"
                                                 }
@@ -853,7 +884,7 @@ pub fn ThemeSettings(
                                         let _ = w.navigator().clipboard().write_text(&json);
                                     }
                                 }
-                                message.set(Some((false, "JSON copied to clipboard.".into())));
+                                message.set(Some((false, "JSON copied to clipboard.".to_string())));
                             },
                             "Export (copy)"
                         }
@@ -873,9 +904,9 @@ pub fn ThemeSettings(
                             if let Some(snap) = ThemeSnapshot::from_json(&raw) {
                                 draft.set(snap.clone());
                                 inject_preview_css(&snap);
-                                message.set(Some((false, "Theme imported — adjust and save.".into())));
+                                message.set(Some((false, "Theme imported — adjust and save.".to_string())));
                             } else {
-                                message.set(Some((true, "Invalid JSON — import failed.".into())));
+                                message.set(Some((true, "Invalid JSON — import failed.".to_string())));
                             }
                         },
                         "Import"
@@ -894,7 +925,11 @@ pub fn ThemeSettings(
                             let saved = committed.read().clone();
                             draft.set(saved.clone());
                             inject_preview_css(&saved);
-                            message.set(Some((false, "Changes reverted.".into())));
+                            // Revert shader effects too.
+                            let saved_eff = effects_committed_local.read().clone();
+                            effects_draft.set(saved_eff.clone());
+                            store.preview_effects(saved_eff);
+                            message.set(Some((false, "Changes reverted.".to_string())));
                         },
                         "Undo changes"
                     }
@@ -906,12 +941,12 @@ pub fn ThemeSettings(
                         onclick: move |_| {
                             let snap = draft.read().clone();
                             committed.set(snap.clone());
-                            // Persist via ThemeStore (re-inject the base style).
-                            // We keep the preview style since it exactly represents
-                            // the draft tokens; the base style will match on next
-                            // preset switch.
                             inject_preview_css(&snap);
-                            message.set(Some((false, "Theme applied.".into())));
+                            // Persist shader effects.
+                            let eff = effects_draft.read().clone();
+                            store.commit_effects(eff.clone());
+                            effects_committed_local.set(eff);
+                            message.set(Some((false, "Theme applied.".to_string())));
                         },
                         "Apply"
                     }
@@ -923,6 +958,343 @@ pub fn ThemeSettings(
                         class: if *is_error { "theme-settings__message theme-settings__message--error" }
                                else { "theme-settings__message" },
                         "{msg}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─── Shader-effect controls ──────────────────────────────────────────────────
+
+/// One labelled f32 slider that mutates a single field inside `EffectSettings`.
+#[component]
+fn EffectSlider(
+    label: String,
+    min: f32,
+    max: f32,
+    step: f32,
+    value: f32,
+    on_change: EventHandler<f32>,
+) -> Element {
+    rsx! {
+        label {
+            class: "theme-settings__slider-row",
+            span { class: "theme-settings__slider-label", "{label}" }
+            input {
+                r#type: "range",
+                class: "theme-settings__slider",
+                min: "{min}", max: "{max}", step: "{step}",
+                value: "{value}",
+                aria_label: "{label}",
+                oninput: move |e| {
+                    if let Ok(v) = e.value().parse::<f32>() { on_change.call(v); }
+                },
+            }
+            span { class: "theme-settings__slider-value", "{value:.2}" }
+        }
+    }
+}
+
+/// One palette-colour swatch + colour-picker row.
+#[component]
+fn PaletteSwatch(
+    label: String,
+    hint: String,
+    value: PaletteColor,
+    on_change: EventHandler<PaletteColor>,
+) -> Element {
+    let hex = rgba_to_hex(value);
+    rsx! {
+        label {
+            class: "theme-settings__token-row",
+            span { class: "theme-settings__token-label", title: "{hint}", "{label}" }
+            span {
+                class: "theme-settings__token-swatch",
+                style: "background: {hex};",
+            }
+            input {
+                r#type: "color",
+                class: "theme-settings__color-input",
+                value: "{hex}",
+                aria_label: "{label}",
+                oninput: move |e| {
+                    if let Some(rgba) = hex_to_rgba(&e.value()) {
+                        on_change.call(rgba);
+                    }
+                },
+            }
+        }
+    }
+}
+
+/// Comprehensive shader-effect editor.
+///
+/// Mutates the supplied `EffectSettings` draft signal in place.  All writes
+/// trigger a `use_effect` higher up the tree which pushes the new draft to
+/// the live render loop for instant preview.
+#[component]
+fn EffectControls(draft: Signal<EffectSettings>) -> Element {
+    rsx! {
+        // ── Smoke ────────────────────────────────────────────────────────
+        details { open: true,
+            summary { class: "theme-settings__effect-summary", "Background smoke" }
+            label {
+                class: "theme-settings__effect-row",
+                input {
+                    r#type: "checkbox",
+                    checked: draft.read().smoke_enabled,
+                    onchange: move |e: Event<FormData>| {
+                        draft.write().smoke_enabled = e.value() == "true";
+                    },
+                }
+                span { "Enabled" }
+            }
+            EffectSlider {
+                label: "Intensity".to_string(), min: 0.0, max: 1.5, step: 0.01,
+                value: draft.read().smoke_intensity,
+                on_change: move |v| draft.write().smoke_intensity = v,
+            }
+            EffectSlider {
+                label: "Speed".to_string(), min: 0.0, max: 4.0, step: 0.05,
+                value: draft.read().smoke_speed,
+                on_change: move |v| draft.write().smoke_speed = v,
+            }
+            EffectSlider {
+                label: "Warm scale".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().smoke_warm_scale,
+                on_change: move |v| draft.write().smoke_warm_scale = v,
+            }
+            EffectSlider {
+                label: "Cool scale".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().smoke_cool_scale,
+                on_change: move |v| draft.write().smoke_cool_scale = v,
+            }
+            EffectSlider {
+                label: "Moss scale".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().smoke_moss_scale,
+                on_change: move |v| draft.write().smoke_moss_scale = v,
+            }
+        }
+
+        // ── CRT ──────────────────────────────────────────────────────────
+        details {
+            summary { class: "theme-settings__effect-summary", "CRT scanlines" }
+            label {
+                class: "theme-settings__effect-row",
+                input {
+                    r#type: "checkbox",
+                    checked: draft.read().crt_enabled,
+                    onchange: move |e: Event<FormData>| {
+                        draft.write().crt_enabled = e.value() == "true";
+                    },
+                }
+                span { "Enabled" }
+            }
+            EffectSlider {
+                label: "Horizontal lines".to_string(), min: 0.0, max: 1.0, step: 0.01,
+                value: draft.read().crt_scanlines_h,
+                on_change: move |v| draft.write().crt_scanlines_h = v,
+            }
+            EffectSlider {
+                label: "Vertical lines".to_string(), min: 0.0, max: 1.0, step: 0.01,
+                value: draft.read().crt_scanlines_v,
+                on_change: move |v| draft.write().crt_scanlines_v = v,
+            }
+            EffectSlider {
+                label: "Edge shadow".to_string(), min: 0.0, max: 1.0, step: 0.01,
+                value: draft.read().crt_edge_shadow,
+                on_change: move |v| draft.write().crt_edge_shadow = v,
+            }
+            EffectSlider {
+                label: "Flicker".to_string(), min: 0.0, max: 0.5, step: 0.01,
+                value: draft.read().crt_flicker,
+                on_change: move |v| draft.write().crt_flicker = v,
+            }
+            EffectSlider {
+                label: "Line width".to_string(), min: 0.0, max: 1.0, step: 0.01,
+                value: draft.read().crt_line_width,
+                on_change: move |v| draft.write().crt_line_width = v,
+            }
+            PaletteSwatch {
+                label: "Tint colour".to_string(),
+                hint: "Warm tint applied to the CRT overlay".to_string(),
+                value: draft.read().crt_color,
+                on_change: move |c| draft.write().crt_color = c,
+            }
+        }
+
+        // ── Grain / vignette / underglow ─────────────────────────────────
+        details {
+            summary { class: "theme-settings__effect-summary", "Grain & vignette" }
+            label {
+                class: "theme-settings__effect-row",
+                input {
+                    r#type: "checkbox",
+                    checked: draft.read().grain_enabled,
+                    onchange: move |e: Event<FormData>| {
+                        draft.write().grain_enabled = e.value() == "true";
+                    },
+                }
+                span { "Grain enabled" }
+            }
+            EffectSlider {
+                label: "Grain intensity".to_string(), min: 0.0, max: 0.5, step: 0.01,
+                value: draft.read().grain_intensity,
+                on_change: move |v| draft.write().grain_intensity = v,
+            }
+            EffectSlider {
+                label: "Grain coarseness".to_string(), min: 0.0, max: 2.0, step: 0.05,
+                value: draft.read().grain_coarseness,
+                on_change: move |v| draft.write().grain_coarseness = v,
+            }
+            EffectSlider {
+                label: "Grain size".to_string(), min: 0.0, max: 2.0, step: 0.05,
+                value: draft.read().grain_size,
+                on_change: move |v| draft.write().grain_size = v,
+            }
+            label {
+                class: "theme-settings__effect-row",
+                input {
+                    r#type: "checkbox",
+                    checked: draft.read().vignette_enabled,
+                    onchange: move |e: Event<FormData>| {
+                        draft.write().vignette_enabled = e.value() == "true";
+                    },
+                }
+                span { "Vignette enabled" }
+            }
+            EffectSlider {
+                label: "Vignette strength".to_string(), min: 0.0, max: 1.5, step: 0.01,
+                value: draft.read().vignette_strength,
+                on_change: move |v| draft.write().vignette_strength = v,
+            }
+            EffectSlider {
+                label: "Underglow".to_string(), min: 0.0, max: 1.0, step: 0.01,
+                value: draft.read().underglow_strength,
+                on_change: move |v| draft.write().underglow_strength = v,
+            }
+        }
+
+        // ── Particles (sparks / embers / beams / glitter / cinder) ──────
+        details {
+            summary { class: "theme-settings__effect-summary", "Particles" }
+            label {
+                class: "theme-settings__effect-row",
+                input {
+                    r#type: "checkbox",
+                    checked: draft.read().particles_enabled,
+                    onchange: move |e: Event<FormData>| {
+                        draft.write().particles_enabled = e.value() == "true";
+                    },
+                }
+                span { "All particles enabled" }
+            }
+
+            // Sparks
+            h4 { class: "theme-settings__effect-subhead", "Sparks" }
+            EffectSlider {
+                label: "Speed".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().spark_speed,
+                on_change: move |v| draft.write().spark_speed = v,
+            }
+            EffectSlider {
+                label: "Size".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().spark_size,
+                on_change: move |v| draft.write().spark_size = v,
+            }
+            EffectSlider {
+                label: "Count".to_string(), min: 0.0, max: 1.0, step: 0.05,
+                value: draft.read().spark_count,
+                on_change: move |v| draft.write().spark_count = v,
+            }
+
+            // Embers
+            h4 { class: "theme-settings__effect-subhead", "Embers" }
+            EffectSlider {
+                label: "Speed".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().ember_speed,
+                on_change: move |v| draft.write().ember_speed = v,
+            }
+            EffectSlider {
+                label: "Size".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().ember_size,
+                on_change: move |v| draft.write().ember_size = v,
+            }
+            EffectSlider {
+                label: "Count".to_string(), min: 0.0, max: 1.0, step: 0.05,
+                value: draft.read().ember_count,
+                on_change: move |v| draft.write().ember_count = v,
+            }
+
+            // Beams
+            h4 { class: "theme-settings__effect-subhead", "Beams" }
+            EffectSlider {
+                label: "Speed".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().beam_speed,
+                on_change: move |v| draft.write().beam_speed = v,
+            }
+            EffectSlider {
+                label: "Count".to_string(), min: 0.0, max: 1.0, step: 0.05,
+                value: draft.read().beam_count,
+                on_change: move |v| draft.write().beam_count = v,
+            }
+            EffectSlider {
+                label: "Height".to_string(), min: 0.0, max: 200.0, step: 1.0,
+                value: draft.read().beam_height,
+                on_change: move |v| draft.write().beam_height = v,
+            }
+            EffectSlider {
+                label: "Drift".to_string(), min: 0.0, max: 5.0, step: 0.05,
+                value: draft.read().beam_drift,
+                on_change: move |v| draft.write().beam_drift = v,
+            }
+
+            // Glitter
+            h4 { class: "theme-settings__effect-subhead", "Glitter" }
+            EffectSlider {
+                label: "Speed".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().glitter_speed,
+                on_change: move |v| draft.write().glitter_speed = v,
+            }
+            EffectSlider {
+                label: "Size".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().glitter_size,
+                on_change: move |v| draft.write().glitter_size = v,
+            }
+            EffectSlider {
+                label: "Count".to_string(), min: 0.0, max: 1.0, step: 0.05,
+                value: draft.read().glitter_count,
+                on_change: move |v| draft.write().glitter_count = v,
+            }
+
+            // Cinder
+            h4 { class: "theme-settings__effect-subhead", "Cinder" }
+            EffectSlider {
+                label: "Cinder size".to_string(), min: 0.0, max: 3.0, step: 0.05,
+                value: draft.read().cinder_size,
+                on_change: move |v| draft.write().cinder_size = v,
+            }
+        }
+
+        // ── Palette (24 colours) ─────────────────────────────────────────
+        details {
+            summary { class: "theme-settings__effect-summary", "Palette ({PALETTE_LEN} colours)" }
+            div {
+                class: "theme-settings__token-grid",
+                for idx in 0..PALETTE_LEN {
+                    {
+                        let (label, hint) = PALETTE_LABELS[idx];
+                        let colour = draft.read().palette[idx];
+                        rsx! {
+                            PaletteSwatch {
+                                key: "pal-{idx}",
+                                label: label.to_string(),
+                                hint: hint.to_string(),
+                                value: colour,
+                                on_change: move |c: PaletteColor| draft.write().palette[idx] = c,
+                            }
+                        }
                     }
                 }
             }

@@ -5,6 +5,8 @@
 //! and persists the active preset name to `localStorage`.
 use dioxus::prelude::*;
 
+use crate::effects::wgpu_overlay::EffectSettings;
+
 // ── Data types ────────────────────────────────────────────────────────────────
 
 /// Full set of design-token colours mirroring the TypeScript theme.ts interface.
@@ -271,6 +273,10 @@ const GPU_STORAGE_KEY: &str = "viewer-api-gpu-enabled";
 pub struct ThemeStore {
     preset: Signal<ThemePreset>,
     gpu_enabled: Signal<bool>,
+    /// The **committed** effect settings — the value persisted to
+    /// `localStorage` and restored on page load.  Live preview state lives in
+    /// the global `EFFECTS_LIVE` thread-local inside `wgpu_overlay`.
+    effects_committed: Signal<EffectSettings>,
 }
 
 impl ThemeStore {
@@ -304,7 +310,13 @@ impl ThemeStore {
 
         let preset = use_signal(|| initial);
         let gpu_enabled = use_signal(|| initial_gpu);
-        let store = ThemeStore { preset, gpu_enabled };
+        // Load committed shader effects from localStorage.  Push the same
+        // snapshot into the WgpuOverlay's live state so the render loop
+        // immediately picks up the user's saved tweaks on first paint.
+        let initial_effects = EffectSettings::load();
+        crate::effects::wgpu_overlay::set_live_effects(initial_effects.clone());
+        let effects_committed = use_signal(|| initial_effects);
+        let store = ThemeStore { preset, gpu_enabled, effects_committed };
 
         // Inject CSS for the initial preset on first mount.
         use_effect(move || {
@@ -361,6 +373,37 @@ impl ThemeStore {
                 let _ = storage.set_item(STORAGE_KEY, p.key());
             }
         }
+    }
+
+    // ── Effect-settings API ──
+
+    /// Snapshot of the **committed** effect settings (the persisted value).
+    /// Use this as the starting point for a new edit session.
+    pub fn effects_committed(&self) -> EffectSettings {
+        self.effects_committed.read().clone()
+    }
+
+    /// Push a draft snapshot to the live render loop for immediate preview.
+    /// Does **not** persist to `localStorage` and does **not** mutate the
+    /// committed snapshot — call [`commit_effects`] for that.
+    pub fn preview_effects(&self, draft: EffectSettings) {
+        crate::effects::wgpu_overlay::set_live_effects(draft);
+    }
+
+    /// Persist a draft snapshot as the new committed value: writes to
+    /// `localStorage`, updates the committed Signal, and pushes it live so
+    /// the render loop and any subscribers see the same value.
+    pub fn commit_effects(&mut self, draft: EffectSettings) {
+        draft.save();
+        crate::effects::wgpu_overlay::set_live_effects(draft.clone());
+        self.effects_committed.set(draft);
+    }
+
+    /// Discard any pending preview by re-pushing the committed snapshot to
+    /// the live render loop.  The committed Signal is unchanged.
+    pub fn revert_effects(&self) {
+        let saved = self.effects_committed.read().clone();
+        crate::effects::wgpu_overlay::set_live_effects(saved);
     }
 
     // ── private ──
