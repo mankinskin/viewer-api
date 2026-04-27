@@ -50,15 +50,22 @@ pub(super) struct InitOutput {
 /// Acquire `#webgpu-canvas`, request adapter+device, configure the canvas
 /// context, build shader modules and pipelines.  Returns `None` when WebGPU
 /// is unavailable or any step fails.
+/// Helper: log a step name to the JS console for tracing init failures.
+fn log_step(step: &str) {
+    web_sys::console::log_1(&format!("[WgpuOverlay/init] {}", step).into());
+}
+
 pub(super) async fn init_gpu() -> Option<InitOutput> {
+    log_step("start");
     let win = web_sys::window()?;
     let doc = win.document()?;
 
-    // ── Acquire canvas ──────────────────────────────────────────────────────
+    // ── Acquire canvas ────────────────────────────────────────────────────────
     let canvas = doc
         .get_element_by_id("webgpu-canvas")?
         .dyn_into::<HtmlCanvasElement>()
         .ok()?;
+    log_step("canvas acquired");
     let dpr = win.device_pixel_ratio();
     let init_w = ((canvas.client_width()  as f64 * dpr) as u32).max(1);
     let init_h = ((canvas.client_height() as f64 * dpr) as u32).max(1);
@@ -90,6 +97,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     // ── Canvas WebGPU context ───────────────────────────────────────────────
     let context: JsValue = canvas.get_context("webgpu").ok()??.into();
     let format: JsValue = get_fn(&gpu_js, "getPreferredCanvasFormat")?.call0(&gpu_js).ok()?;
+    log_step("context + format obtained");
 
     // Configure the canvas context. `alphaMode: "opaque"` matches the
     // TypeScript reference — the canvas paints a full opaque background and
@@ -99,14 +107,18 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     set_prop(&cfg, "format",    &format);
     set_prop(&cfg, "alphaMode", &"opaque".into());
     get_fn(&context, "configure")?.call1(&context, &cfg.into()).ok()?;
+    log_step("context configured");
 
     // ── Shader modules ──────────────────────────────────────────────────────
     let shared_code   = format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
     let render_shared = format!("{}{}\n", shared_code, PARTICLE_SHADING_WGSL);
 
     let bg_shader       = create_shader(&device, "background", &format!("{}{}", render_shared, BACKGROUND_WGSL))?;
+    log_step("bg shader compiled");
     let particle_shader = create_shader(&device, "particles",  &format!("{}{}", render_shared, PARTICLES_WGSL))?;
+    log_step("particle shader compiled");
     let compute_shader  = create_shader(&device, "compute",    &format!("{}{}", shared_code,   COMPUTE_WGSL))?;
+    log_step("compute shader compiled");
 
     // ── Bind-group layouts ──────────────────────────────────────────────────
     //
@@ -144,10 +156,14 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── Pipelines ───────────────────────────────────────────────────────────
     let compute_pipeline  = create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
+    log_step("compute pipeline built");
     let bg_pipeline       = create_render_pipeline(
         &device, &render_layout, &bg_shader,       &bg_shader,       &format, /*additive=*/ false)?;
+    log_step("bg pipeline built");
     let particle_pipeline = create_render_pipeline(
         &device, &render_layout, &particle_shader, &particle_shader, &format, /*additive=*/ true)?;
+    log_step("particle pipeline built");
+    log_step("init complete");
 
     Some(InitOutput {
         device,

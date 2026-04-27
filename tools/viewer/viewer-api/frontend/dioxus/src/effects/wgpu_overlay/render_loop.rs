@@ -93,9 +93,12 @@ pub fn mount_overlay() {
             let ri_e  = Rc::clone(&ri_ref);
             let rjv_e = Rc::clone(&rjv_ref);
 
+            web_sys::console::log_1(&"[WgpuOverlay] mount_overlay use_effect — spawning bootstrap".into());
             spawn(async move {
+                web_sys::console::log_1(&"[WgpuOverlay] bootstrap_ctx() starting".into());
                 match bootstrap_ctx().await {
                     Some(gpu_ctx) => {
+                        web_sys::console::log_1(&"[WgpuOverlay] bootstrap_ctx() succeeded — starting rAF loop".into());
                         *ctx_e.borrow_mut() = Some(gpu_ctx);
                         setup_raf_loop(
                             Rc::clone(&ctx_e),
@@ -199,6 +202,21 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
     let dt_s   = ((ts_ms - gpu.prev_time_ms) / 1000.0).min(0.1) as f32;
     gpu.prev_time_ms = ts_ms;
     let time_s = ((ts_ms - gpu.start_time_ms) / 1000.0) as f32;
+
+    // Diagnostic: log every ~60 frames so we can confirm the loop is alive.
+    {
+        thread_local! { static FRAME_NO: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
+        FRAME_NO.with(|c| {
+            let n = c.get().wrapping_add(1);
+            c.set(n);
+            if n == 1 || n.is_multiple_of(120) {
+                web_sys::console::log_1(&format!(
+                    "[WgpuOverlay/frame] #{} t={:.2}s dt={:.4}s smoke={:.2}",
+                    n, time_s, dt_s, gpu.settings.smoke_intensity
+                ).into());
+            }
+        });
+    }
 
     // ── Resize canvas to device pixels ──────────────────────────────────────
     let Some(doc) = win.document() else { return; };
