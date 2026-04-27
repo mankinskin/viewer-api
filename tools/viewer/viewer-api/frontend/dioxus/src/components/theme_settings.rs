@@ -515,12 +515,12 @@ pub fn ThemeSettings(
     let mut effects_committed_local = use_signal(|| store.effects_committed());
 
     // Push effects draft to the live render loop whenever it changes.
-    {
+    // The signal must be read *inside* the closure so use_effect subscribes
+    // to it and re-runs on every change.
+    use_effect(move || {
         let e = effects_draft.read().clone();
-        use_effect(move || {
-            store.preview_effects(e.clone());
-        });
-    }
+        store.preview_effects(e);
+    });
 
     // ── Custom themes ──
     // Custom themes loaded from / persisted to localStorage.
@@ -543,12 +543,12 @@ pub fn ThemeSettings(
     });
 
     // Inject live preview whenever the draft changes.
-    {
+    // The signal must be read *inside* the closure so use_effect subscribes
+    // to it and re-runs on every change.
+    use_effect(move || {
         let d = draft.read().clone();
-        use_effect(move || {
-            inject_preview_css(&d);
-        });
-    }
+        inject_preview_css(&d);
+    });
 
     let panel_class = if class.is_empty() {
         "theme-settings glass-panel".to_string()
