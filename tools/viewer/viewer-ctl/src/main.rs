@@ -70,6 +70,8 @@ fn main() -> ExitCode {
             Err(e) => Err(e),
         },
         Cmd::Task { name } => commands::cmd_task(&cfg, &root, &name),
+        Cmd::Prepare { server } => commands::cmd_prepare(&cfg, &root, &server),
+        Cmd::StaticDir { server } => commands::cmd_static_dir(&cfg, &server),
     };
 
     match result {

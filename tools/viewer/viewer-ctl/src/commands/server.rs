@@ -2,9 +2,10 @@
 
 use std::{
     env,
+    net::TcpStream,
     path::Path,
     process::{Command, Stdio},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use crate::{
@@ -122,7 +123,42 @@ pub fn cmd_start(
 
     info!(tag, "starting {} on port {port}", disp(&bin_path));
 
-    spawn_server(&bin_path, &server_args, &env_vars, root, tag)
+    spawn_server(&bin_path, &server_args, &env_vars, root, tag)?;
+
+    // Wait for the server to actually bind the port so callers (VS Code
+    // `serverReadyAction`, scripts, etc.) can rely on the URL being live
+    // when this process exits. Print a single, stable line that downstream
+    // pattern matchers can latch onto:
+    //     Listening on http://localhost:<port>
+    wait_for_port_ready(port, Duration::from_secs(15), tag);
+    println!("Listening on http://localhost:{port}");
+    Ok(())
+}
+
+/// Poll TCP connect to localhost:port until success or timeout.
+///
+/// Logs a warning on timeout but does not fail — the server may still come
+/// up later, and the caller can decide what to do. We only block start()
+/// long enough to make `serverReadyAction` reliable.
+fn wait_for_port_ready(port: u16, timeout: Duration, tag: &str) {
+    let deadline = Instant::now() + timeout;
+    let addr = format!("127.0.0.1:{port}");
+    while Instant::now() < deadline {
+        if TcpStream::connect_timeout(
+            &addr.parse().expect("valid socket addr"),
+            Duration::from_millis(200),
+        )
+        .is_ok()
+        {
+            info!(tag, "port {port} is accepting connections.");
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    warn!(
+        tag,
+        "timed out waiting for port {port} to become ready after {:?}", timeout
+    );
 }
 
 pub fn cmd_stop(cfg: &Config, server: &str) -> Result<(), String> {

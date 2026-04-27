@@ -52,6 +52,18 @@ pub enum Cmd {
     },
     /// Run a named task (sequence of shell commands).
     Task { name: String },
+    /// Build + install the frontend linked to the given server.
+    ///
+    /// Designed for use as a vscode `preLaunchTask` so a debug launch of the
+    /// server binary serves a freshly built frontend bundle. A no-op if the
+    /// server has no linked frontend. Prints the resolved install dir to
+    /// stdout so it can be captured for `STATIC_DIR`.
+    Prepare { server: String },
+    /// Print the resolved STATIC_DIR for a server's linked frontend.
+    ///
+    /// Exits with an error if no frontend is linked. Does not build or
+    /// install — useful for scripting around the install layout.
+    StaticDir { server: String },
 }
 
 #[derive(Clone, Copy, ValueEnum, Debug)]

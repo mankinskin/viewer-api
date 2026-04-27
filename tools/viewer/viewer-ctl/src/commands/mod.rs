@@ -16,7 +16,7 @@ use crate::{
     cli::KindArg,
     config::{Component, Config},
     paths::disp,
-    process::pids_on_port,
+    process::{kill_process, pids_by_image_name, pids_on_port},
 };
 
 use self::{
@@ -164,4 +164,79 @@ pub fn cmd_install(
         Component::Frontend(f) => install_frontend(cfg, root, f),
         Component::Extension(e) => install_extension(cfg, root, e),
     })
+}
+
+// ── prepare / static-dir ─────────────────────────────────────────────────────
+
+/// Build + install the frontend linked to `server_name` and print its
+/// resolved install dir.
+///
+/// Intended as a vscode `preLaunchTask` for a debug launch of the server
+/// binary. The server is expected to read `STATIC_DIR` on boot; the launch
+/// config sets that to the printed path (or to the deterministic
+/// `<install_root>/<frontend>` location).
+///
+/// Side-effect: any process listening on the server's port is killed
+/// first. This frees the file lock on `target/debug/<server>.exe` on
+/// Windows so the subsequent cargo debug build can replace the binary.
+///
+/// If the server exists but no frontend declares `serves = "<server>"`,
+/// the port is still freed and the command succeeds without building.
+pub fn cmd_prepare(cfg: &Config, root: &Path, server_name: &str) -> Result<(), String> {
+    let server = cfg
+        .server(server_name)
+        .ok_or_else(|| format!("no [[server]] named `{server_name}` in viewer-ctl.toml"))?;
+
+    // Free the port so the cargo debug build can replace the running binary
+    // (Windows holds a file lock on the .exe of any running process).
+    // cmd_stop is idempotent: it succeeds silently if nothing is listening.
+    server::cmd_stop(cfg, &server.name)?;
+
+    // Belt-and-braces: also kill any orphaned process whose image name matches
+    // the server's package (e.g. a previous lldb debug session that exited
+    // ungracefully and left the binary running on a stale or no port).
+    // Without this the next `cargo build` fails with
+    // "failed to remove file ... Access denied" on Windows.
+    let orphans = pids_by_image_name(&server.package);
+    if !orphans.is_empty() {
+        warn!(
+            "prepare",
+            "killing {} orphaned `{}` process(es): {:?}",
+            orphans.len(),
+            server.package,
+            orphans.iter().map(|p| p.as_u32()).collect::<Vec<_>>()
+        );
+        for pid in &orphans {
+            kill_process(*pid, "prepare");
+        }
+    }
+
+    let Some(fe) = cfg.frontend_for_server(&server.name) else {
+        info!(
+            "prepare",
+            "server `{}` has no linked frontend; nothing to build", server.name
+        );
+        return Ok(());
+    };
+    build_frontend(root, fe)?;
+    install_frontend(cfg, root, fe)?;
+    let install = cfg.frontend_install_dir(&fe.name);
+    println!("{}", disp(&install));
+    Ok(())
+}
+
+/// Print the resolved STATIC_DIR for a server's linked frontend.
+///
+/// Errors if the server is unknown or has no linked frontend. Does not
+/// build or install.
+pub fn cmd_static_dir(cfg: &Config, server_name: &str) -> Result<(), String> {
+    let server = cfg
+        .server(server_name)
+        .ok_or_else(|| format!("no [[server]] named `{server_name}` in viewer-ctl.toml"))?;
+    let fe = cfg.frontend_for_server(&server.name).ok_or_else(|| {
+        format!("server `{}` has no linked frontend in viewer-ctl.toml", server.name)
+    })?;
+    let install = cfg.frontend_install_dir(&fe.name);
+    println!("{}", disp(&install));
+    Ok(())
 }

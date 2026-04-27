@@ -151,6 +151,26 @@ pub fn process_exists(pid: Pid) -> bool {
     sys.process(pid).is_some()
 }
 
+/// Find PIDs of all processes whose executable basename matches `package`.
+///
+/// Matches `<package>` and `<package>.exe` (case-insensitive on Windows).
+/// Used to clean up orphaned debug builds that still hold a file lock on
+/// `target/debug/<package>.exe` after a debugger session ended ungracefully.
+pub fn pids_by_image_name(package: &str) -> Vec<Pid> {
+    let sys = System::new_with_specifics(
+        RefreshKind::new().with_processes(ProcessRefreshKind::new()),
+    );
+    let bare = package.to_ascii_lowercase();
+    let exe = format!("{bare}.exe");
+    sys.processes()
+        .iter()
+        .filter_map(|(pid, proc)| {
+            let name = proc.name().to_string_lossy().to_ascii_lowercase();
+            (name == bare || name == exe).then_some(*pid)
+        })
+        .collect()
+}
+
 /// Print best-effort identifying info for `pid` (image name, args).
 pub fn print_process_info(pid: Pid, tag: &str) {
     if let Ok(out) = Command::new("tasklist")
