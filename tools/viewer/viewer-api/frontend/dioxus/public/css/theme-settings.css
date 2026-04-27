@@ -235,3 +235,143 @@
   transform: translateX(16px);
   background: #fff;
 }
+
+/* ── Effect-controls (collapsible details/summary cards) ─────────────────── */
+
+/* The Effects section hosts a series of `<details>` blocks, one per shader
+   pass.  Each looks like a flat sub-card so the panel still feels grouped
+   even with several open at once. */
+.theme-settings__section > details {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: 5px;
+}
+.theme-settings__section > details + details {
+  margin-top: 6px;
+}
+.theme-settings__section > details[open] {
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
+  border-color: var(--border-primary);
+  padding-bottom: 10px;
+}
+.theme-settings__effect-summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 4px 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theme-settings__effect-summary::-webkit-details-marker { display: none; }
+.theme-settings__effect-summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.theme-settings__section > details[open] > .theme-settings__effect-summary::before {
+  transform: rotate(90deg);
+}
+
+/* Subhead inside Particles (Sparks / Embers / …). */
+.theme-settings__effect-subhead {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 10px 0 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+.theme-settings__effect-subhead:first-of-type { margin-top: 4px; }
+
+/* The "Enabled" checkbox row inside each `<details>` block.
+   Override the master `.theme-settings__effect-row` (which is also used by
+   the GPU master switch in `space-between` mode) to a left-aligned compact
+   inline layout with the checkbox first. */
+.theme-settings__section > details > .theme-settings__effect-row {
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 2px 0 6px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.theme-settings__section > details > .theme-settings__effect-row > input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+}
+
+/* Slider row: label / range / value, in a fixed three-column grid so the
+   numbers line up neatly across all sliders in a section. */
+.theme-settings__slider-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.theme-settings__slider-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theme-settings__slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.theme-settings__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 1px solid var(--bg-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.theme-settings__slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 1px solid var(--bg-primary);
+  cursor: pointer;
+}
+.theme-settings__slider-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Palette grid: two columns of swatches so all 24 colours fit without
+   excessive vertical scroll. */
+.theme-settings__section > details > .theme-settings__token-grid {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+  row-gap: 2px;
+  margin-top: 4px;
+}
