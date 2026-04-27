@@ -138,12 +138,13 @@ fn default_palette_f32() -> Float32Array {
     w(0.35, 0.33, 0.32, 1.0);
     // [11] cinder_vine  — deep green
     w(0.05, 0.22, 0.05, 1.0);
-    // [12] smoke_cool   — blue-grey
-    w(0.08, 0.1,  0.15, 1.0);
+    // [12] smoke_cool   — blue-grey (brightened so smoke is visible against
+    //                                #0a0a0c shell background)
+    w(0.28, 0.34, 0.50, 1.0);
     // [13] smoke_warm   — brown-amber
-    w(0.12, 0.08, 0.03, 1.0);
+    w(0.45, 0.30, 0.12, 1.0);
     // [14] smoke_moss   — mossy mid-tone
-    w(0.06, 0.09, 0.04, 1.0);
+    w(0.18, 0.32, 0.16, 1.0);
     // [15..22] kind glow colors (structural, error, warn, info, debug, span, selected, panic)
     w(0.18, 0.16, 0.14, 1.0); // kind_structural
     w(0.97, 0.47, 0.55, 1.0); // kind_error

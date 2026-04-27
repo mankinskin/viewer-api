@@ -21,6 +21,7 @@ syntect = { version = "5.3", default-features = false, features = ["default-fanc
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
+gloo-events = "0.2"
 web-sys = { version = "0.3", features = [
     "Window",
     "Document",
@@ -35,13 +36,44 @@ web-sys = { version = "0.3", features = [
     "NodeList",
     "CssStyleDeclaration",
     "MouseEvent",
+    "WheelEvent",
     "TouchEvent",
     "TouchList",
     "Touch",
+    "DomRect",
     "Storage",
     "Navigator",
     "Clipboard",
     "Location",
     "Performance",
+    "console",
+    # WebGPU bindings used by the shared graph3d module
+    "Gpu",
+    "GpuAdapter",
+    "GpuDevice",
+    "GpuQueue",
+    "GpuCanvasContext",
+    "GpuCanvasConfiguration",
+    "GpuTextureFormat",
+    "GpuBuffer",
+    "GpuBufferDescriptor",
+    "GpuTexture",
+    "GpuTextureView",
+    "GpuTextureDescriptor",
+    "GpuShaderModule",
+    "GpuShaderModuleDescriptor",
+    "GpuPipelineLayout",
+    "GpuPipelineLayoutDescriptor",
+    "GpuBindGroupLayout",
+    "GpuBindGroupLayoutDescriptor",
+    "GpuBindGroup",
+    "GpuBindGroupDescriptor",
+    "GpuRenderPipeline",
+    "GpuRenderPipelineDescriptor",
+    "GpuCommandEncoder",
+    "GpuCommandEncoderDescriptor",
+    "GpuCommandBuffer",
+    "GpuRenderPassEncoder",
+    "GpuRenderPassDescriptor",
 ] }
 

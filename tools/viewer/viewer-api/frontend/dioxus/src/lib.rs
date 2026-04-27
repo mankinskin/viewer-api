@@ -1,6 +1,12 @@
 pub mod components;
 pub mod effects;
+pub mod graph3d;
 pub mod store;
+
+pub use graph3d::{
+    can_use_webgpu as can_use_webgpu_graph3d, EdgeRef3D, Graph3D, Layout3D, Node3D,
+    DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
+};
 pub use components::*;
 pub use effects::WgpuOverlay;
 pub use effects::set_gpu_canvas_owner;
