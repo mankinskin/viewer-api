@@ -8,24 +8,10 @@
 // transparent so the dark texture shows through.
 
 // ---- bindings (render pass — read-only) -------------------------------------
-//
-// Binding layout (must match render BGL in wgpu_overlay.rs):
-//   0  uniform        Uniforms
-//   1  storage read   array<ElemRect>
-//   2  storage read   array<Particle>
-//   3  uniform        ThemePalette
-//   4  sampler        dom_sam   — linear, for DOM snapshot sampling
-//   5  texture_2d<f32> dom_tex  — previous-frame DOM rasterisation
-//
-// The DOM texture lets shaders apply glass/blur compositing effects over
-// captured DOM pixels.  It is updated each frame by an async SVG capture
-// task in wgpu_overlay.rs.
 
 @group(0) @binding(0) var<uniform>       u         : Uniforms;
 @group(0) @binding(1) var<storage, read> elems     : array<ElemRect>;
 @group(0) @binding(2) var<storage, read> particles : array<Particle>;
-@group(0) @binding(4) var               dom_sam   : sampler;
-@group(0) @binding(5) var               dom_tex   : texture_2d<f32>;
 
 // ---- fullscreen quad vertex shader ------------------------------------------
 
@@ -1028,13 +1014,5 @@ fn fs_main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
         }
     }
 
-    // Compute overlay alpha from two contributions:
-    //   1. scene.a  — GPU element effects (node glows, edge halos, etc.)
-    //   2. atm_alpha — atmospheric smoke/haze thinly layered over the DOM
-    //
-    // Where both are zero the canvas is fully transparent and the DOM
-    // (graph nodes, labels, etc.) shows through unobstructed.
-    let atm_alpha    = clamp(s_intensity * 0.45 * vignette, 0.0, 1.0);
-    let overlay_alpha = clamp(scene.a + (1.0 - scene.a) * atm_alpha, 0.0, 1.0);
-    return vec4f(clamp(color, vec3f(0.0), vec3f(1.0)), overlay_alpha);
+    return vec4f(clamp(color, vec3f(0.0), vec3f(1.0)), 1.0);
 }

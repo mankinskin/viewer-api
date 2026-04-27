@@ -237,7 +237,10 @@ fn TreeItem(
 
     let click_id = node.id.clone();
     let click_id2 = node.id.clone();
+    let row_toggle_id = node.id.clone();
+    let row_select_id = node.id.clone();
     let has_children = !node.children.is_empty();
+    let is_dir_node = node.is_dir;
     let row_selected = if show_checkboxes {
         *is_in_multi.read()
     } else {
@@ -261,6 +264,23 @@ fn TreeItem(
                 aria_expanded: if node.is_dir { Some(*is_expanded.read()) } else { None },
                 aria_selected: if show_checkboxes { *is_in_multi.read() } else { is_selected },
                 title: node.tooltip.as_deref().unwrap_or(""),
+                // Row-level click: clicking anywhere on a directory row toggles
+                // expansion; clicking anywhere on a leaf row selects it. The
+                // chevron and label have their own handlers below that
+                // `stop_propagation`, so this acts as the catch-all for clicks
+                // on padding/icons/empty space.
+                onclick: move |_| {
+                    if is_dir_node && has_children {
+                        let mut ids = expanded_ids.write();
+                        if let Some(pos) = ids.iter().position(|id| id == &row_toggle_id) {
+                            ids.remove(pos);
+                        } else {
+                            ids.push(row_toggle_id.clone());
+                        }
+                    } else if !is_dir_node && !show_checkboxes {
+                        on_select.call(row_select_id.clone());
+                    }
+                },
                 // Toggle chevron
                 span {
                     class: if has_children {
@@ -297,6 +317,12 @@ fn TreeItem(
                 span {
                     class: "tree-label",
                     onclick: move |evt: Event<MouseData>| {
+                        // For directory leaves the row-level handler manages
+                        // expansion; for file leaves under multi-select mode
+                        // we still need the label handler for shift+click
+                        // range selection. Stop propagation so the row
+                        // handler doesn't double-fire.
+                        evt.stop_propagation();
                         if show_checkboxes {
                             let shift = evt.modifiers().contains(Modifiers::SHIFT);
                             let new_selection: BTreeSet<String> = if shift {
@@ -322,6 +348,14 @@ fn TreeItem(
                             multi_selected.set(new_selection.clone());
                             focused_id.set(Some(click_id.clone()));
                             on_selection_change.call(new_selection);
+                        } else if is_dir_node && has_children {
+                            // Directory label click also toggles expansion.
+                            let mut ids = expanded_ids.write();
+                            if let Some(pos) = ids.iter().position(|id| id == &click_id2) {
+                                ids.remove(pos);
+                            } else {
+                                ids.push(click_id2.clone());
+                            }
                         } else {
                             on_select.call(click_id2.clone());
                         }

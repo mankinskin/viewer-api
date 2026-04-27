@@ -56,7 +56,7 @@ use tower_http::{
         Any,
         CorsLayer,
     },
-    services::{ServeDir, ServeFile},
+    services::ServeDir,
 };
 use tracing::{
     error,
@@ -386,18 +386,44 @@ pub async fn shutdown_signal() {
 
 /// Create a router with static file serving.
 ///
-/// Non-matching paths fall back to `index.html` so that client-side
-/// SPA routing (Dioxus Router, etc.) works for deep-linked URLs.
+/// Non-matching paths fall back to `index.html` with a `200 OK` status so
+/// that client-side SPA routing (Dioxus Router, etc.) works for deep-linked
+/// URLs without browsers reporting a 404 in the network tab.
 pub fn with_static_files(
     router: Router,
     static_dir: Option<PathBuf>,
 ) -> Router {
+    use axum::{
+        body::Body,
+        http::{header, HeaderValue, Response, StatusCode},
+        response::IntoResponse,
+    };
+    use tower::service_fn;
+
     if let Some(dir) = static_dir {
         if dir.exists() {
             let index = dir.join("index.html");
+            // Read the SPA shell into memory at startup so the fallback can
+            // return a fresh `200 OK` response on every miss without touching
+            // disk. `ServeFile` (the previous fallback) preserved the inner
+            // `404` status from `ServeDir`, which made browsers log a noisy
+            // "GET /<route> 404" for every SPA deep-link reload even though
+            // the body was the correct shell.
+            let index_html = std::fs::read(&index).unwrap_or_default();
+            let spa_fallback = service_fn(move |_req| {
+                let body = index_html.clone();
+                async move {
+                    let mut res: Response<Body> =
+                        (StatusCode::OK, body).into_response();
+                    res.headers_mut().insert(
+                        header::CONTENT_TYPE,
+                        HeaderValue::from_static("text/html; charset=utf-8"),
+                    );
+                    Ok::<_, std::convert::Infallible>(res)
+                }
+            });
             router.fallback_service(
-                ServeDir::new(&dir)
-                    .not_found_service(ServeFile::new(index)),
+                ServeDir::new(&dir).fallback(spa_fallback),
             )
         } else {
             router
