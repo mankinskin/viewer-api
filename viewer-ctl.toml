@@ -1,0 +1,142 @@
+# viewer-ctl component registry
+#
+# Lists every server, frontend, extension, and task viewer-ctl can manage.
+# All paths are relative to the repository root (the directory containing
+# this file).
+#
+# Adding a new viewer:
+#   1. Add a [[server]] entry with name + cargo package + port.
+#   2. Add a [[frontend]] entry that links to the server via `serves`.
+#   3. Optional: add [[extension]] or [[task]] entries.
+#
+# Lifecycle commands:
+#   viewer-ctl list                       # show all components
+#   viewer-ctl status [<name>]            # show running state
+#   viewer-ctl build   <name>             # build artifacts (no install)
+#   viewer-ctl install <name>             # install artifacts to install_root
+#   viewer-ctl start   <server>           # launch server
+#   viewer-ctl stop    <server>           # kill process on server's port
+#   viewer-ctl restart <server>           # stop + start
+#   viewer-ctl task    <name>             # run a named multi-step task
+
+[defaults]
+# Where installed frontend bundles live. Each frontend is installed to
+# <frontend_install_root>/<frontend.name>/. The path supports a leading
+# `~` which expands to the user's home directory.
+#
+# Servers receive STATIC_DIR=<frontend_install_root>/<linked frontend name>
+# when launched via `viewer-ctl start`.
+frontend_install_root = "~/.context-engine/static"
+
+# ── Servers ──────────────────────────────────────────────────────────────────
+
+[[server]]
+name = "doc-viewer"
+package = "doc-viewer"
+port = 3001
+source_dir = "tools/viewer/doc-viewer"
+
+[[server]]
+name = "log-viewer"
+package = "log-viewer"
+port = 3000
+source_dir = "tools/viewer/log-viewer"
+start_args = ["--static"]
+
+[[server]]
+name = "ticket-viewer"
+package = "ticket-viewer"
+port = 3002
+source_dir = "tools/viewer/ticket-viewer"
+
+[[server]]
+name = "spec-viewer"
+package = "spec-viewer"
+port = 4002
+source_dir = "tools/viewer/spec-viewer"
+
+# ── Frontends ────────────────────────────────────────────────────────────────
+
+[[frontend]]
+name = "doc-viewer"
+serves = "doc-viewer"
+source_dir = "tools/viewer/doc-viewer/frontend"
+build_cmd = ["npx", "vite", "build"]
+build_output = "tools/viewer/doc-viewer/static"
+
+[[frontend.prebuild]]
+dir = "tools/viewer/viewer-api/frontend/ts"
+cmd = ["npm", "install"]
+condition = "missing:node_modules"
+
+[[frontend.prebuild]]
+dir = "tools/viewer/doc-viewer/frontend"
+cmd = ["npm", "install"]
+condition = "missing:node_modules"
+
+[[frontend]]
+name = "log-viewer"
+serves = "log-viewer"
+source_dir = "tools/viewer/log-viewer/frontend"
+build_cmd = ["npx", "vite", "build"]
+build_output = "tools/viewer/log-viewer/static"
+
+[[frontend.prebuild]]
+dir = "tools/viewer/viewer-api/frontend/ts"
+cmd = ["npm", "install"]
+condition = "missing:node_modules"
+
+[[frontend.prebuild]]
+dir = "tools/viewer/log-viewer/frontend"
+cmd = ["npm", "install"]
+condition = "missing:node_modules"
+
+[[frontend]]
+name = "ticket-viewer"
+serves = "ticket-viewer"
+source_dir = "tools/viewer/ticket-viewer/frontend/dioxus"
+build_cmd = ["trunk", "build", "--release"]
+build_output = "tools/viewer/ticket-viewer/frontend/dioxus/dist"
+extra_assets = ["tools/viewer/ticket-viewer/frontend/dioxus/public"]
+
+[[frontend]]
+name = "spec-viewer"
+serves = "spec-viewer"
+source_dir = "tools/viewer/spec-viewer/frontend/dioxus"
+build_cmd = ["trunk", "build", "--release"]
+build_output = "tools/viewer/spec-viewer/frontend/dioxus/dist"
+extra_assets = ["tools/viewer/spec-viewer/frontend/dioxus/public"]
+
+# ── Extensions ───────────────────────────────────────────────────────────────
+
+[[extension]]
+name = "ticket-vscode"
+kind = "vscode"
+source_dir = "tools/ticket-vscode"
+package_json = "package.json"
+build_cmd = ["npm", "run", "compile"]
+
+# ── Tasks (arbitrary multi-step pipelines) ───────────────────────────────────
+
+[[task]]
+name = "gen-types"
+description = "Generate TypeScript bindings from Rust ts-rs exports."
+
+[[task.steps]]
+dir = "."
+cmd = ["cargo", "test", "-p", "context-api", "--features", "ts-gen", "export_bindings", "--", "--ignored"]
+allow_failure = true
+
+[[task.steps]]
+dir = "."
+cmd = ["cargo", "test", "-p", "context-trace", "export_bindings", "--", "--ignored"]
+allow_failure = true
+
+[[task.steps]]
+dir = "."
+cmd = ["cargo", "test", "-p", "log-viewer", "export_bindings", "--", "--ignored"]
+allow_failure = true
+
+[[task.steps]]
+dir = "packages/context-types"
+cmd = ["npm", "run", "build"]
