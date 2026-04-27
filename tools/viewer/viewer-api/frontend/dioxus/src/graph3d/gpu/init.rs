@@ -1,22 +1,25 @@
-//! WebGPU initialisation for the graph3d view: device, pipelines, bind
-//! group, depth texture.
+//! WebGPU initialisation for the graph3d view: pipelines, bind groups,
+//! depth texture. Reuses the shared `GPUDevice` published by the
+//! [`crate::effects::WgpuOverlay`] so the graph composites into the same
+//! swap-chain texture as the smoke / particle effects.
 
 #![cfg(target_arch = "wasm32")]
 
 use js_sys::{Array, Function, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{
-    GpuBuffer, GpuCanvasContext, GpuDevice, GpuRenderPipeline, HtmlCanvasElement,
-};
+use web_sys::{GpuBuffer, GpuDevice, GpuRenderPipeline};
 
 use super::super::camera::{CAM_UNIFORM_FLOATS, PALETTE_FLOATS};
 use super::super::interop::*;
 
 /// Bundle of GPU resources the render loop needs each frame.
+///
+/// Note: `device` is a clone of the overlay's shared device handle. The
+/// canvas context and swap-chain texture view are obtained per-frame from
+/// the [`crate::effects::FrameContext`] passed into the registered
+/// frame callback, so they are not stored here.
 pub(crate) struct GpuResources {
     pub device:             GpuDevice,
-    pub ctx:                GpuCanvasContext,
     pub edge_pipeline:      GpuRenderPipeline,
     pub node_quad_pipeline: GpuRenderPipeline,
     pub bind_group:         JsValue,
@@ -30,47 +33,15 @@ pub(crate) struct GpuResources {
 const EDGE_SHADER:      &str = include_str!("../shaders/edge.wgsl");
 const NODE_QUAD_SHADER: &str = include_str!("../shaders/node_quad.wgsl");
 
-pub(crate) async fn init_gpu(canvas: HtmlCanvasElement) -> Result<GpuResources, String> {
-    let nav: JsValue = web_sys::window().unwrap().navigator().into();
-    let gpu = Reflect::get(&nav, &js_str("gpu")).map_err(|_| "No navigator.gpu")?;
-    if gpu.is_undefined() { return Err("WebGPU not supported".into()); }
-
-    // adapter
-    let adapter_promise = Reflect::get(&gpu, &js_str("requestAdapter"))
-        .and_then(|f| f.dyn_into::<Function>())
-        .map_err(|_| "requestAdapter missing")?
-        .call0(&gpu).map_err(|_| "requestAdapter call failed")?;
-    let adapter = JsFuture::from(js_sys::Promise::from(adapter_promise))
-        .await.map_err(|_| "adapter request failed")?;
-    if adapter.is_null() || adapter.is_undefined() { return Err("No GPU adapter".into()); }
-
-    // device
-    let device_promise = Reflect::get(&adapter, &js_str("requestDevice"))
-        .and_then(|f| f.dyn_into::<Function>())
-        .map_err(|_| "requestDevice missing")?
-        .call0(&adapter).map_err(|_| "requestDevice call failed")?;
-    let device_js = JsFuture::from(js_sys::Promise::from(device_promise))
-        .await.map_err(|_| "device request failed")?;
-    let device: GpuDevice = device_js.dyn_into().map_err(|_| "device cast failed")?;
-
-    // canvas context
-    let format = preferred_format();
-    let canvas_js: JsValue = canvas.clone().into();
-    let ctx_js = Reflect::get(&canvas_js, &js_str("getContext"))
-        .and_then(|f| f.dyn_into::<Function>())
-        .map_err(|_| "getContext missing")?
-        .call1(&canvas_js, &js_str("webgpu"))
-        .map_err(|_| "getContext call failed")?;
-    let ctx: GpuCanvasContext = ctx_js.dyn_into().map_err(|_| "ctx cast failed")?;
-    let cfg = obj();
-    set(&cfg, "device",    &device.clone().into());
-    set(&cfg, "format",    &js_str(&format));
-    set(&cfg, "alphaMode", &js_str("opaque"));
-    js_call(&ctx.clone().into(), "configure", &[&JsValue::from(cfg)]);
-
-    let canvas_w = canvas.width();
-    let canvas_h = canvas.height();
-
+/// Build pipelines, bind groups and per-renderer buffers against the shared
+/// `GPUDevice`. Caller is responsible for resizing `depth_view` whenever the
+/// canvas backing-store size changes.
+pub(crate) fn init_gpu(
+    device: GpuDevice,
+    format: &str,
+    canvas_w: u32,
+    canvas_h: u32,
+) -> Result<GpuResources, String> {
     // ── Bind group layout: camera(0) + palette(1) ──
     let bgl_entry0 = obj();
     set(&bgl_entry0, "binding",    &js_f64(0.0));
@@ -106,8 +77,8 @@ pub(crate) async fn init_gpu(canvas: HtmlCanvasElement) -> Result<GpuResources, 
         .call1(&device.clone().into(), &JsValue::from(pl_desc))
         .map_err(|_| "pl call")?;
 
-    let edge_pipeline      = build_edge_pipeline(&device, &pipeline_layout, &format)?;
-    let node_quad_pipeline = build_node_quad_pipeline(&device, &pipeline_layout, &format)?;
+    let edge_pipeline      = build_edge_pipeline(&device, &pipeline_layout, format)?;
+    let node_quad_pipeline = build_node_quad_pipeline(&device, &pipeline_layout, format)?;
 
     // uniform buffers
     let cam_buf     = create_buf(&device, CAM_UNIFORM_FLOATS * 4, USAGE_UNIFORM | USAGE_COPY_DST);
@@ -144,7 +115,7 @@ pub(crate) async fn init_gpu(canvas: HtmlCanvasElement) -> Result<GpuResources, 
     let depth_view = create_depth_view(&device, canvas_w, canvas_h);
 
     Ok(GpuResources {
-        device, ctx, edge_pipeline, node_quad_pipeline, bind_group,
+        device, edge_pipeline, node_quad_pipeline, bind_group,
         cam_buf, quad_buf, depth_view, canvas_w, canvas_h,
     })
 }

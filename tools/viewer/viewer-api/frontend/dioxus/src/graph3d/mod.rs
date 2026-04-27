@@ -17,9 +17,11 @@
 //!      `layout.nodes`. The renderer projects world coordinates to screen
 //!      pixels and updates `style.transform` on every frame.
 //!
-//! While mounted, this component takes ownership of `#webgpu-canvas` from
-//! `WgpuOverlay` (via [`crate::set_gpu_canvas_owner`]) so the two render
-//! pipelines do not clash.
+//! While mounted, this component reuses the `WgpuOverlay`'s shared
+//! `GPUDevice` and registers a per-frame callback (via
+//! [`crate::effects::register_frame_callback`]) so its pass composites into
+//! the same swap-chain texture as the smoke / particle effects, with
+//! `loadOp: "load"` preserving the overlay's render underneath.
 
 pub mod camera;
 pub mod data;
@@ -95,14 +97,16 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     use std::rc::Rc;
 
     use gloo_events::EventListener;
+    use js_sys::Promise;
     use wasm_bindgen::JsCast;
-    use web_sys::HtmlCanvasElement;
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::GpuDevice;
 
-    use crate::set_gpu_canvas_owner;
+    use crate::effects::{register_frame_callback, shared_gpu, FrameCallbackHandle};
     use camera::{Camera, CAMERA_FOV};
     use gpu::init_gpu;
     use interop::{create_buf, create_buf_init, USAGE_COPY_DST, USAGE_VERTEX};
-    use render::{schedule_raf, RenderState};
+    use render::{render_frame, RenderState};
 
     let layout       = props.layout.clone();
     let container_id = props.container_id.clone();
@@ -113,12 +117,11 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     };
 
     let mut status: Signal<String> = use_signal(|| "Initialising WebGPU\u{2026}".to_string());
-    let alive: Signal<Option<()>>  = use_signal(|| Some(()));
     let _listeners: Signal<Vec<EventListener>> = use_signal(Vec::new);
     let render_rc: Signal<Option<Rc<RefCell<RenderState>>>> = use_signal(|| None);
-
-    set_gpu_canvas_owner(true);
-    use_drop(|| set_gpu_canvas_owner(false));
+    // Holding the FrameCallbackHandle in a signal ensures the callback is
+    // unregistered from the overlay loop when this component unmounts.
+    let frame_handle: Signal<Option<Rc<FrameCallbackHandle>>> = use_signal(|| None);
 
     use_effect(move || {
         let layout       = layout.clone();
@@ -126,22 +129,43 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         let mut status_w = status;
         let mut render_w = render_rc;
         let mut listeners_w = _listeners;
-        let alive_r = alive;
+        let mut handle_w = frame_handle;
 
         spawn(async move {
-            let doc = web_sys::window().unwrap().document().unwrap();
-            let canvas: HtmlCanvasElement = match doc.get_element_by_id("webgpu-canvas") {
-                Some(el) => match el.dyn_into() {
-                    Ok(c) => c,
-                    Err(_) => { status_w.set("Canvas element not found".into()); return; }
-                },
-                None => { status_w.set("No #webgpu-canvas".into()); return; }
+            // Wait until the WgpuOverlay has bootstrapped its shared device.
+            let shared = loop {
+                if let Some(g) = shared_gpu() { break g; }
+                let p = Promise::new(&mut |resolve, _reject| {
+                    if let Some(win) = web_sys::window() {
+                        let _ = win.set_timeout_with_callback_and_timeout_and_arguments_0(
+                            resolve.unchecked_ref(), 16);
+                    }
+                });
+                let _ = JsFuture::from(p).await;
             };
-            canvas.set_width(canvas.client_width().max(1) as u32);
-            canvas.set_height(canvas.client_height().max(1) as u32);
 
-            status_w.set("Requesting GPU device\u{2026}".into());
-            let gpu = match init_gpu(canvas).await {
+            let device: GpuDevice = match shared.device.clone().dyn_into() {
+                Ok(d)  => d,
+                Err(_) => { status_w.set("Shared GPU device cast failed".into()); return; }
+            };
+            {
+                let lbl = js_sys::Reflect::get(&shared.device, &"label".into())
+                    .ok().and_then(|v| v.as_string()).unwrap_or_default();
+                web_sys::console::log_1(&format!(
+                    "[Graph3D/init] received shared device label={}", lbl).into());
+            }
+
+            // Read current canvas backing-store size; the overlay loop
+            // resizes it each frame, so any value here will be replaced
+            // before our first draw — but we need an initial depth texture.
+            let (init_w, init_h) = web_sys::window()
+                .and_then(|w| w.document())
+                .and_then(|d| d.get_element_by_id("webgpu-canvas"))
+                .and_then(|el| el.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+                .map(|c| (c.width().max(1), c.height().max(1)))
+                .unwrap_or((1, 1));
+
+            let gpu = match init_gpu(device, &shared.format, init_w, init_h) {
                 Ok(g)  => g,
                 Err(e) => { status_w.set(format!("GPU init failed: {e}")); return; }
             };
@@ -179,7 +203,15 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             status_w.set(String::new());
 
             listeners_w.set(interaction::install(&container_id, state_rc.clone()));
-            schedule_raf(state_rc, alive_r);
+
+            // Register per-frame callback into the overlay's loop.
+            let state_for_cb = state_rc.clone();
+            let handle = register_frame_callback(move |frame| {
+                if let Ok(mut st) = state_for_cb.try_borrow_mut() {
+                    render_frame(&mut st, frame);
+                }
+            });
+            handle_w.set(Some(Rc::new(handle)));
         });
     });
 

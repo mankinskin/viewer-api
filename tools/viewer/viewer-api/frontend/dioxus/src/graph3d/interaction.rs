@@ -127,8 +127,13 @@ pub(crate) fn install(
                             let depth = (to_node[0] * fwd[0]
                                 + to_node[1] * fwd[1]
                                 + to_node[2] * fwd[2]).abs().max(0.1);
-                            // Canvas height in CSS pixels (mirrors render).
-                            let canvas_h = s.gpu.canvas_h.max(1) as f32;
+                            // Canvas height in CSS pixels (mouse deltas are
+                            // in CSS px, but `canvas_h` is now the HiDPI
+                            // backing-store size — divide by DPR).
+                            let dpr = web_sys::window()
+                                .map(|w| w.device_pixel_ratio().clamp(1.0, 4.0))
+                                .unwrap_or(1.0) as f32;
+                            let canvas_h = (s.gpu.canvas_h.max(1) as f32) / dpr;
                             // World units per pixel at this depth (vertical).
                             let world_per_px =
                                 2.0 * depth * (CAMERA_FOV * 0.5).tan() / canvas_h;

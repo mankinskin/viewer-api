@@ -9,6 +9,7 @@ pub use graph3d::{
 };
 pub use components::*;
 pub use effects::WgpuOverlay;
+#[allow(deprecated)]
 pub use effects::set_gpu_canvas_owner;
 pub use effects::set_gpu_overlay_enabled;
 pub use store::*;

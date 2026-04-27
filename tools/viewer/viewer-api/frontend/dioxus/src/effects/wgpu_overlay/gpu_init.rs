@@ -42,6 +42,10 @@ pub(super) struct InitOutput {
     pub device:        JsValue,
     pub queue:         JsValue,
     pub context:       JsValue,
+    /// Preferred canvas format string (e.g. `"bgra8unorm"`). Republished
+    /// via [`super::SharedGpu`] for secondary renderers that need to build
+    /// pipelines targeting the same swap-chain format.
+    pub format:        String,
     pub pipelines:     GpuPipelines,
     pub canvas_width:  u32,
     pub canvas_height: u32,
@@ -88,9 +92,27 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── requestDevice() ─────────────────────────────────────────────────────
     let request_device: Function = get_fn(&adapter, "requestDevice")?;
-    let device_promise: Promise = request_device.call0(&adapter).ok()?.dyn_into().ok()?;
+    // Tag device with a unique label so we can identify cross-device errors.
+    let dev_desc = Object::new();
+    let dev_label = format!("overlay-device-{}", js_sys::Date::now() as u64);
+    set_prop(&dev_desc, "label", &dev_label.clone().into());
+    let device_promise: Promise = request_device.call1(&adapter, &dev_desc.into()).ok()?.dyn_into().ok()?;
     let device = JsFuture::from(device_promise).await.ok()?;
     if device.is_null() || device.is_undefined() { return None; }
+    web_sys::console::log_1(&format!("[WgpuOverlay/init] device created label={}", dev_label).into());
+
+    // Install onuncapturederror so any validation errors show device labels.
+    {
+        use wasm_bindgen::closure::Closure;
+        let cb = Closure::<dyn FnMut(JsValue)>::new(move |ev: JsValue| {
+            let err = Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
+            let msg = Reflect::get(&err, &"message".into())
+                .ok().and_then(|v| v.as_string()).unwrap_or_default();
+            web_sys::console::error_1(&format!("[WgpuOverlay/uncaught] {}", msg).into());
+        });
+        let _ = Reflect::set(&device, &"onuncapturederror".into(), cb.as_ref());
+        cb.into_js_value();
+    }
 
     let queue = Reflect::get(&device, &"queue".into()).ok()?;
 
@@ -169,6 +191,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         device,
         queue,
         context,
+        format: format.as_string().unwrap_or_else(|| "bgra8unorm".to_string()),
         pipelines: GpuPipelines {
             bg_pipeline,
             particle_pipeline,

@@ -133,6 +133,15 @@ async fn bootstrap_ctx() -> Option<GpuCtx> {
     let (depth_tex, depth_view) =
         create_depth_texture(&init.device, init.canvas_width, init.canvas_height)?;
 
+    // Publish the GPU handles so secondary renderers (e.g. Graph3D) can
+    // composite into the same swap-chain texture.
+    super::set_shared_gpu(super::SharedGpu {
+        device:  init.device.clone(),
+        queue:   init.queue.clone(),
+        context: init.context.clone(),
+        format:  init.format.clone(),
+    });
+
     Some(GpuCtx {
         device:        init.device,
         queue:         init.queue,
@@ -170,10 +179,8 @@ fn setup_raf_loop(
     let closure = Closure::<dyn FnMut(f64)>::new(move |ts_ms: f64| {
         if !kr_loop.get() { return; }
         if let Some(win) = web_sys::window() {
-            // Yield the canvas to other renderers (e.g. Graph3D) when claimed.
-            let canvas_free     = !crate::effects::wgpu_overlay::is_canvas_owned();
             let overlay_enabled = crate::effects::wgpu_overlay::is_overlay_enabled();
-            if canvas_free && overlay_enabled {
+            if overlay_enabled {
                 if let Some(gpu) = ctx_loop.borrow_mut().as_mut() {
                     render_frame(gpu, ts_ms, &win);
                 }
@@ -220,9 +227,11 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
             let n = c.get().wrapping_add(1);
             c.set(n);
             if n == 1 || n.is_multiple_of(120) {
+                let dev_label = js_sys::Reflect::get(&gpu.device, &"label".into())
+                    .ok().and_then(|v| v.as_string()).unwrap_or_default();
                 web_sys::console::log_1(&format!(
-                    "[WgpuOverlay/frame] #{} t={:.2}s dt={:.4}s smoke={:.2}",
-                    n, time_s, dt_s, settings.smoke_intensity
+                    "[WgpuOverlay/frame] #{} t={:.2}s dt={:.4}s smoke={:.2} dev={}",
+                    n, time_s, dt_s, settings.smoke_intensity, dev_label
                 ).into());
             }
         });
@@ -328,6 +337,22 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
             cmds.push(&finish);
             let _ = submit.call1(&gpu.queue, &cmds);
         }
+    }
+
+    // ── Invoke registered per-frame callbacks ───────────────────────────────
+    // Secondary renderers (e.g. Graph3D) composite into the same swap-chain
+    // texture using `loadOp: "load"` so the overlay's smoke and particles
+    // remain visible underneath.
+    {
+        let frame_ctx = super::FrameContext {
+            device:     &gpu.device,
+            queue:      &gpu.queue,
+            frame_view: &frame_view,
+            canvas_w:   cw,
+            canvas_h:   ch,
+            time_s,
+        };
+        super::invoke_frame_callbacks(&frame_ctx);
     }
 
     // Suppress unused suggestions for fields used only for resource ownership.

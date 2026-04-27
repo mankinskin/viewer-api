@@ -2,14 +2,10 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use dioxus::prelude::*;
 use js_sys::{Array, Function, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, HtmlElement};
+use web_sys::HtmlElement;
 
 use super::camera::{Camera, CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, CAM_UNIFORM_FLOATS};
 use super::data::Layout3D;
@@ -111,19 +107,21 @@ fn position_dom_nodes(state: &RenderState, vw: f32, vh: f32) {
     }
 }
 
-pub(crate) fn render_frame(state: &mut RenderState) {
-    // Resize the canvas + depth texture to the CSS box, if needed.
-    {
-        let canvas: HtmlCanvasElement = state.gpu.ctx.canvas().dyn_into().unwrap();
-        let w = canvas.client_width().max(1) as u32;
-        let h = canvas.client_height().max(1) as u32;
-        if w != state.gpu.canvas_w || h != state.gpu.canvas_h {
-            canvas.set_width(w);
-            canvas.set_height(h);
-            state.gpu.depth_view = create_depth_view(&state.gpu.device, w, h);
-            state.gpu.canvas_w = w;
-            state.gpu.canvas_h = h;
-        }
+pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::FrameContext) {
+    // The overlay-driven loop already resized the canvas backing store and
+    // hands us the current frame's swap-chain view. We only need to make
+    // sure our depth texture matches the new size; CSS pixel size is
+    // recomputed from `frame.canvas_w/h` divided by DPR for DOM positioning.
+    let dpr = web_sys::window()
+        .map(|w| w.device_pixel_ratio().clamp(1.0, 4.0))
+        .unwrap_or(1.0) as f32;
+    let css_w = (frame.canvas_w as f32) / dpr;
+    let css_h = (frame.canvas_h as f32) / dpr;
+    if frame.canvas_w != state.gpu.canvas_w || frame.canvas_h != state.gpu.canvas_h {
+        state.gpu.depth_view =
+            create_depth_view(&state.gpu.device, frame.canvas_w, frame.canvas_h);
+        state.gpu.canvas_w = frame.canvas_w;
+        state.gpu.canvas_h = frame.canvas_h;
     }
     // Re-upload per-instance buffers if a node moved this frame.
     if state.dirty_layout {
@@ -162,26 +160,17 @@ pub(crate) fn render_frame(state: &mut RenderState) {
     cam_data[20] = time;   cam_data[21] = w as f32; cam_data[22] = h as f32;
     write_buffer(&gpu.device, &gpu.cam_buf, &cam_data);
 
-    // Acquire frame texture view.
-    let Ok(tex) = gpu.ctx.get_current_texture() else { return };
-    let tex_js: JsValue = tex.into();
-    let Some(tv_fn) = Reflect::get(&tex_js, &js_str("createView"))
-        .ok()
-        .and_then(|f| f.dyn_into::<Function>().ok())
-    else { return };
-    let tex_view = tv_fn.call0(&tex_js).unwrap_or(JsValue::UNDEFINED);
+    // Use the swap-chain view supplied by the overlay's per-frame callback.
+    // `loadOp: "load"` preserves whatever the overlay's smoke / particle
+    // pass already drew underneath, so the graph composites on top.
+    let tex_view = frame.frame_view.clone();
 
-    // Render pass descriptor (clear to dark, depth-cleared).
-    let clear_val = obj();
-    set(&clear_val, "r", &js_f64(0.05));
-    set(&clear_val, "g", &js_f64(0.05));
-    set(&clear_val, "b", &js_f64(0.07));
-    set(&clear_val, "a", &js_f64(1.0));
+    // Render pass descriptor (colour LOADs the existing overlay frame, depth
+    // is cleared because we own it exclusively).
     let color_att = obj();
-    set(&color_att, "view",       &tex_view);
-    set(&color_att, "clearValue", &JsValue::from(clear_val));
-    set(&color_att, "loadOp",     &js_str("clear"));
-    set(&color_att, "storeOp",    &js_str("store"));
+    set(&color_att, "view",    &tex_view);
+    set(&color_att, "loadOp",  &js_str("load"));
+    set(&color_att, "storeOp", &js_str("store"));
     let color_atts = Array::new(); color_atts.push(&JsValue::from(color_att));
     let rp_desc = obj();
     set(&rp_desc, "colorAttachments", &JsValue::from(color_atts));
@@ -226,32 +215,7 @@ pub(crate) fn render_frame(state: &mut RenderState) {
         .and_then(|f| f.call0(&encoder_js).ok())
         .unwrap_or(JsValue::UNDEFINED);
     let bufs = Array::new(); bufs.push(&cmd_buf);
-    js_call(&gpu.device.queue().into(), "submit", &[&JsValue::from(bufs)]);
+    js_call(frame.queue, "submit", &[&JsValue::from(bufs)]);
 
-    position_dom_nodes(state, w as f32, h as f32);
-}
-
-pub(crate) fn schedule_raf(state_rc: Rc<RefCell<RenderState>>, alive: Signal<Option<()>>) {
-    let cb: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
-    let cb2 = cb.clone();
-    let closure = Closure::wrap(Box::new(move || {
-        match alive.try_read() {
-            Ok(val) if val.is_none() => return,
-            Err(_) => return,
-            _ => {}
-        }
-        if let Ok(mut st) = state_rc.try_borrow_mut() {
-            render_frame(&mut st);
-        }
-        if let Some(win) = web_sys::window() {
-            if let Some(ref c) = *cb2.borrow() {
-                let _ = win.request_animation_frame(c.as_ref().unchecked_ref());
-            }
-        }
-    }) as Box<dyn FnMut()>);
-
-    if let Some(win) = web_sys::window() {
-        let _ = win.request_animation_frame(closure.as_ref().unchecked_ref());
-    }
-    *cb.borrow_mut() = Some(closure);
+    position_dom_nodes(state, css_w, css_h);
 }

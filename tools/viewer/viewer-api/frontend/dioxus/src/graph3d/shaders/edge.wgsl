@@ -113,6 +113,22 @@ fn vs_edge(
         halfWidth = select(0.06, 0.08, flags > 0.5);
     }
 
+    // ── Enforce a minimum screen-space pixel width ─────────────────────
+    // Project the centre to clip space to figure out how many world units
+    // map to one pixel at this depth, then bump halfWidth so the line is
+    // never thinner than ~1 device pixel. This is the standard fix for
+    // sub-pixel edge aliasing in 3-D line renderers.
+    let viewport_h = max(cam.time.z, 1.0);
+    // Vertical FOV is 45° (FRAC_PI_4) → tan(fov/2) ≈ 0.4142.
+    let center_clip = cam.viewProj * vec4(center, 1.0);
+    let depth_w = max(abs(center_clip.w), 0.0001);
+    // World units per pixel at this depth.
+    let world_per_px = (2.0 * 0.41421356 * depth_w) / viewport_h;
+    // Minimum half-width: 1.0 px (subtle) for grid, 1.25 px for energy beams.
+    let min_px = select(1.25, 1.0, edgeType < 0.5);
+    let min_world = world_per_px * min_px;
+    halfWidth = max(halfWidth, min_world);
+
     let worldPos = center + side * quadPos.y * halfWidth;
 
     var out: EdgeVsOut;
