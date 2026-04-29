@@ -50,6 +50,10 @@ pub fn install() {
                 .with(console_layer)
                 .init();
         }
+
+        // Emit one guaranteed record so E2E tests can confirm the subscriber
+        // is active and records are flowing (either to console or network sink).
+        tracing::info!(target: "viewer_api::tracing", "tracing subscriber installed");
     });
 }
 
