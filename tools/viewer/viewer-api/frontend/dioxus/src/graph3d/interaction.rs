@@ -9,7 +9,7 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gloo_events::EventListener;
@@ -71,13 +71,21 @@ pub(crate) fn install(
 
     let ms = Rc::new(RefCell::new(MouseState::default()));
     let drag = Rc::new(RefCell::new(DragState::default()));
+    // Set true when the cursor moves while right-button is held (panning).
+    // Consumed by the document-scoped `contextmenu` listener to suppress
+    // the browser menu *only* when the RMB was used to drag.
+    let suppress_contextmenu = Rc::new(Cell::new(false));
 
     let md = EventListener::new(container_target, "mousedown", {
         let ms = ms.clone();
         let drag = drag.clone();
         let st = state_rc.clone();
+        let suppress_contextmenu = suppress_contextmenu.clone();
         move |evt| {
             let Some(e) = evt.dyn_ref::<web_sys::MouseEvent>() else { return };
+            // A fresh mousedown starts a new gesture — clear any stale
+            // suppression flag from a previous interaction.
+            suppress_contextmenu.set(false);
             let cx = e.client_x() as f64;
             let cy = e.client_y() as f64;
 
@@ -165,8 +173,14 @@ pub(crate) fn install(
         let ms = ms.clone();
         let drag = drag.clone();
         let st = state_rc.clone();
+        let suppress_contextmenu = suppress_contextmenu.clone();
         move |evt| {
             let Some(e) = evt.dyn_ref::<web_sys::MouseEvent>() else { return };
+            // Any movement while right-button-pan is active counts as a
+            // drag — arm the contextmenu suppression.
+            if ms.borrow().panning {
+                suppress_contextmenu.set(true);
+            }
             let cx = e.client_x() as f64;
             let cy = e.client_y() as f64;
 
@@ -324,9 +338,28 @@ pub(crate) fn install(
         },
     );
 
-    let cm = EventListener::new(container_target, "contextmenu", |evt| {
-        evt.prevent_default();
-    });
+    // Bind to `document` (not the container) so the menu is suppressed
+    // even when the cursor finishes the right-button drag outside the
+    // graph element. Only fires `prevent_default` when an actual RMB
+    // drag occurred — plain right-clicks elsewhere are unaffected.
+    //
+    // NOTE: `EventListener::new` registers as **passive** by default in
+    // gloo_events, which silently ignores `preventDefault()`. Use
+    // `new_with_options` with `enable_prevent_default()` so the suppression
+    // actually takes effect on the contextmenu event.
+    let cm = EventListener::new_with_options(
+        &doc,
+        "contextmenu",
+        gloo_events::EventListenerOptions::enable_prevent_default(),
+        {
+            let suppress_contextmenu = suppress_contextmenu.clone();
+            move |evt| {
+                if suppress_contextmenu.replace(false) {
+                    evt.prevent_default();
+                }
+            }
+        },
+    );
 
     vec![md, mm, mu, wh, cm]
 }
