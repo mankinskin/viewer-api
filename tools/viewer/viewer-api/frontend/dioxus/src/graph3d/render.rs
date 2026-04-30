@@ -95,7 +95,11 @@ fn position_dom_nodes(state: &RenderState, vw: f32, vh: f32) {
         let local_x = screen.x - container_left;
         let local_y = screen.y - container_top;
 
-        let _ = html_el.style().set_property("display", "");
+        // Use explicit "block" instead of "" — when callers style cards via
+        // CSS classes (e.g. `.graph-node-card { display: none }`), removing
+        // the inline override falls back to the CSS rule and the card stays
+        // hidden. "block" wins as an inline override regardless.
+        let _ = html_el.style().set_property("display", "block");
         let z_idx = ((1.0 - screen.z) * 10000.0) as i32;
         let _ = html_el.style().set_property("z-index", &z_idx.to_string());
 

@@ -94,3 +94,121 @@
   font-family: var(--font-sans);
   pointer-events: none;
 }
+
+/* ── Settings panel ────────────────────────────────────────────────────────── */
+
+.graph-settings-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(18, 16, 14, 0.78);
+  color: #e5e7eb;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.graph-settings-toggle:hover {
+  background: rgba(40, 36, 32, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.graph-settings-panel {
+  position: absolute;
+  top: 52px;
+  left: 12px;
+  z-index: 100;
+  width: 260px;
+  max-height: calc(100% - 70px);
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: #e5e7eb;
+  background: rgba(18, 16, 14, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  padding: 14px 16px 16px 16px;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+.graph-settings-panel__title {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #f3f4f6;
+}
+
+.graph-settings-section {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.graph-settings-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.graph-settings-label--inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.graph-settings-value {
+  float: right;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-settings-select {
+  width: 100%;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.graph-settings-section input[type="range"] {
+  width: 100%;
+  accent-color: #60a5fa;
+}
+
+.graph-settings-reset {
+  width: 100%;
+  padding: 6px 10px;
+  margin-top: 4px;
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.graph-settings-reset:hover {
+  background: rgba(96, 165, 250, 0.32);
+}
