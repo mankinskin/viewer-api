@@ -216,6 +216,22 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 
     let status_text = status.read().clone();
 
+    // Push layout updates from props into the live RenderState so callers can
+    // change the Layout3D (e.g. switch algorithms, edit parameters) without
+    // re-mounting the component. Setting `dirty_layout` re-uploads the GPU
+    // instance buffers on the next frame and reframes the camera if the
+    // bounds shifted significantly.
+    if let Some(rc) = render_rc.read().as_ref() {
+        if let Ok(mut st) = rc.try_borrow_mut() {
+            if st.layout != props.layout {
+                let (centre, radius) = props.layout.bounds();
+                st.layout = props.layout.clone();
+                st.dirty_layout = true;
+                st.camera.frame(centre, radius);
+            }
+        }
+    }
+
     rsx! {
         div {
             id: "{props.container_id}",

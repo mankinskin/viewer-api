@@ -54,6 +54,15 @@ fn normalise(v: [f32; 3]) -> [f32; 3] {
     if len < 1e-6 { [0.0, 0.0, 1.0] } else { [v[0]/len, v[1]/len, v[2]/len] }
 }
 
+/// Returns `true` if the event's target lives inside a DOM subtree marked
+/// with `data-graph-passthrough="false"`. Used to keep settings panels and
+/// other overlay UI from triggering camera orbit/pan/zoom.
+fn target_is_passthrough_blocked(evt: &web_sys::Event) -> bool {
+    let Some(target) = evt.target() else { return false };
+    let Ok(el) = target.dyn_into::<web_sys::Element>() else { return false };
+    matches!(el.closest("[data-graph-passthrough=\"false\"]"), Ok(Some(_)))
+}
+
 /// Install mouse listeners on the graph container + document, returning the
 /// listener handles. Drop them to detach (Dioxus stores them in a Signal).
 pub(crate) fn install(
@@ -83,6 +92,11 @@ pub(crate) fn install(
         let suppress_contextmenu = suppress_contextmenu.clone();
         move |evt| {
             let Some(e) = evt.dyn_ref::<web_sys::MouseEvent>() else { return };
+            // Overlay UI (e.g. graph settings panel) opts out of camera
+            // gestures by setting data-graph-passthrough="false" on its
+            // root element. Skip the entire handler in that case so a
+            // slider drag doesn't also pan the camera.
+            if target_is_passthrough_blocked(evt) { return; }
             // A fresh mousedown starts a new gesture — clear any stale
             // suppression flag from a previous interaction.
             suppress_contextmenu.set(false);
@@ -327,6 +341,9 @@ pub(crate) fn install(
         {
             let st = state_rc.clone();
             move |evt| {
+                // Overlay UI opts out — let the wheel scroll the panel
+                // contents instead of zooming the camera.
+                if target_is_passthrough_blocked(evt) { return; }
                 evt.prevent_default();
                 let Some(e) = evt.dyn_ref::<web_sys::WheelEvent>() else { return };
                 let delta = e.delta_y() as f32;

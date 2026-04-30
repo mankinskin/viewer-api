@@ -212,3 +212,33 @@
 .graph-settings-reset:hover {
   background: rgba(96, 165, 250, 0.32);
 }
+
+/* ── Apply / Reset action row ──────────────────────────────────────────────── */
+
+.graph-settings-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.graph-settings-apply {
+  flex: 1;
+  padding: 6px 10px;
+  background: rgba(34, 197, 94, 0.22);
+  color: #bbf7d0;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.graph-settings-apply:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.36);
+}
+
+.graph-settings-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
