@@ -37,6 +37,7 @@ mod interop;
 mod render;
 
 pub use data::{EdgeRef3D, Layout3D, Node3D};
+pub use camera::CameraCommand;
 
 use dioxus::prelude::*;
 
@@ -75,6 +76,17 @@ pub struct Graph3DProps {
     /// Optional override for the inline container `style` attribute.
     #[props(default = String::new())]
     pub container_style: String,
+    /// Optional imperative camera command (e.g. "reset to top-down").
+    /// Paired with `camera_command_seq` so the same command value can be
+    /// re-applied by bumping the seq.  See [`CameraCommand`] for details.
+    #[props(default)]
+    pub camera_command: Option<CameraCommand>,
+    /// Monotonic generation counter for `camera_command`.  The component
+    /// applies the command once per new `seq` value via an internal
+    /// `use_hook(last_seq)` tracker.  Defaults to `0`; callers issuing a
+    /// command should always pass a strictly increasing value.
+    #[props(default = 0)]
+    pub camera_command_seq: u64,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -228,6 +240,23 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                 st.layout = props.layout.clone();
                 st.dirty_layout = true;
                 st.camera.frame(centre, radius);
+            }
+        }
+    }
+
+    // Apply imperative camera commands.  We use a `use_hook` to remember
+    // the last applied `seq` so each unique generation triggers exactly
+    // one command.  This pattern lets the parent re-apply the same
+    // logical command (e.g. "reset camera") by simply bumping the seq.
+    let mut last_cam_seq: Signal<u64> = use_hook(|| Signal::new(0));
+    if props.camera_command_seq != *last_cam_seq.peek() {
+        last_cam_seq.set(props.camera_command_seq);
+        if let Some(cmd) = props.camera_command.as_ref() {
+            if let Some(rc) = render_rc.read().as_ref() {
+                if let Ok(mut st) = rc.try_borrow_mut() {
+                    let bounds = st.layout.bounds();
+                    st.camera.apply_command(cmd, bounds);
+                }
             }
         }
     }

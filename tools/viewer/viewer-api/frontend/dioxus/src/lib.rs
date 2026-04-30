@@ -59,7 +59,7 @@ impl __ClassesConvert for Option<String> {
 }
 
 pub use graph3d::{
-    can_use_webgpu as can_use_webgpu_graph3d, EdgeRef3D, Graph3D, Layout3D, Node3D,
+    can_use_webgpu as can_use_webgpu_graph3d, CameraCommand, EdgeRef3D, Graph3D, Layout3D, Node3D,
     DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
 };
 pub use components::*;

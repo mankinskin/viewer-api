@@ -43,6 +43,42 @@ impl Camera {
         let half_fov_tan = (CAMERA_FOV * 0.5).tan();
         self.distance = ((radius / half_fov_tan) * 1.3).clamp(12.0, 120.0);
     }
+
+    /// Apply a `CameraCommand` to this camera, framing the layout bounds
+    /// when the command needs them.
+    pub fn apply_command(&mut self, cmd: &CameraCommand, bounds: ([f32; 3], f32)) {
+        let (centre, radius) = bounds;
+        match *cmd {
+            CameraCommand::ResetToDefault => {
+                let def = Camera::default();
+                self.yaw = def.yaw;
+                self.pitch = def.pitch;
+                self.frame(centre, radius);
+            }
+            CameraCommand::ResetTo { yaw, pitch } => {
+                self.yaw = yaw;
+                self.pitch = pitch;
+                self.frame(centre, radius);
+            }
+        }
+    }
+}
+
+/// Imperative camera command issued from the parent component.
+///
+/// Used together with the `camera_command` + `camera_command_seq` props on
+/// [`crate::graph3d::Graph3D`] to snap the orbit camera to a specific
+/// perspective (e.g. "top-down for a 2-D tree layout") without re-mounting
+/// the component.  The `seq` value is a monotonic generation counter; each
+/// time the parent wants to (re)apply the command \u2014 even if the command
+/// value itself is unchanged \u2014 it must increment the counter so the child
+/// can detect it via a `use_hook` "last applied seq" tracker.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CameraCommand {
+    /// Restore the default orbit angle and frame the entire layout.
+    ResetToDefault,
+    /// Snap to the given yaw / pitch (radians) and frame the entire layout.
+    ResetTo { yaw: f32, pitch: f32 },
 }
 
 #[derive(Debug, Clone, Default)]
