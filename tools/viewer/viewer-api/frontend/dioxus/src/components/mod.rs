@@ -2,6 +2,7 @@ pub mod breadcrumbs;
 pub mod cards;
 pub mod code_viewer;
 pub mod file_content_viewer;
+pub mod filter_panel;
 pub mod header;
 pub mod icons;
 pub mod layout;
@@ -17,6 +18,7 @@ pub use breadcrumbs::{BreadcrumbItem, Breadcrumbs};
 pub use cards::{Card, CardGrid, CardSection};
 pub use code_viewer::CodeViewer;
 pub use file_content_viewer::FileContentViewer;
+pub use filter_panel::{FilterPanel, FilterPreset, FilterResult, FilterState};
 pub use header::HeaderActions;
 pub use icons::{
     AlertIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, CodeIcon, CrateIcon,
