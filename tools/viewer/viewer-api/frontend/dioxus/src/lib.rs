@@ -5,6 +5,59 @@ pub mod store;
 #[cfg(target_arch = "wasm32")]
 pub mod tracing_setup;
 
+/// Join CSS class names, filtering out empty strings and `None` values.
+///
+/// # Usage
+/// ```rust
+/// let cls = classes!("btn", is_active.then_some("btn-active"), extra_class);
+/// ```
+#[macro_export]
+macro_rules! classes {
+    ($($part:expr),* $(,)?) => {{
+        let mut parts: Vec<&str> = Vec::new();
+        $(
+            // Accept &str, String, Option<&str>, Option<String>
+            let s: Option<&str> = $crate::__classes_as_opt_str!($part);
+            if let Some(s) = s {
+                if !s.is_empty() { parts.push(s); }
+            }
+        )*
+        parts.join(" ")
+    }};
+}
+
+/// Internal helper — converts an expression to `Option<&str>`.
+/// Not part of the public API.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __classes_as_opt_str {
+    ($e:expr) => {{
+        use $crate::__ClassesConvert;
+        (&$e).into_opt_str()
+    }};
+}
+
+/// Sealed trait that lets [`classes!`] accept `&str`, `String`,
+/// `Option<&str>`, and `Option<String>` uniformly.
+pub trait __ClassesConvert {
+    fn into_opt_str(&self) -> Option<&str>;
+}
+impl __ClassesConvert for &str {
+    fn into_opt_str(&self) -> Option<&str> { Some(self) }
+}
+impl __ClassesConvert for str {
+    fn into_opt_str(&self) -> Option<&str> { Some(self) }
+}
+impl __ClassesConvert for String {
+    fn into_opt_str(&self) -> Option<&str> { Some(self.as_str()) }
+}
+impl __ClassesConvert for Option<&str> {
+    fn into_opt_str(&self) -> Option<&str> { *self }
+}
+impl __ClassesConvert for Option<String> {
+    fn into_opt_str(&self) -> Option<&str> { self.as_deref() }
+}
+
 pub use graph3d::{
     can_use_webgpu as can_use_webgpu_graph3d, EdgeRef3D, Graph3D, Layout3D, Node3D,
     DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,

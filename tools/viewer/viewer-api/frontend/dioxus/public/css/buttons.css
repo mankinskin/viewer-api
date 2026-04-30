@@ -58,3 +58,26 @@
   padding: 10px 20px;
   font-size: 15px;
 }
+
+/* Inline navigation link that looks like a button (e.g. header nav). */
+.btn-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-nav-link:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
+}

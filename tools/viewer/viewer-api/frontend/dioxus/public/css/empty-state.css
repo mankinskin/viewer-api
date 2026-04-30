@@ -1,0 +1,13 @@
+/* empty-state.css — centred placeholder shown when a panel has no content. */
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  text-align: center;
+  padding: var(--spacing-lg);
+}
