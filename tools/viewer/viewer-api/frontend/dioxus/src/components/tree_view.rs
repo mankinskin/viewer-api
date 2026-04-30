@@ -21,6 +21,7 @@
 //!
 //! CSS class names mirror the TypeScript viewer-api package.
 use std::collections::BTreeSet;
+use std::rc::Rc;
 
 use dioxus::prelude::*;
 
@@ -55,7 +56,7 @@ pub enum NodeIcon {
 }
 
 /// A single node in the tree.
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct TreeNode {
     /// Unique identifier used as the React-style `key` and selection value.
     pub id: String,
@@ -65,6 +66,15 @@ pub struct TreeNode {
     pub badge: Option<String>,
     /// Optional tooltip text.
     pub tooltip: Option<String>,
+    /// Optional rich-tooltip renderer.  When set, the renderer is used to
+    /// produce a floating overlay shown on hover instead of the plain
+    /// `tooltip` string.  Use this for multi-line, formatted, or
+    /// interactive tooltip content.
+    ///
+    /// Stored as `Rc<dyn Fn() -> Element>` so it can be cloned cheaply
+    /// and shared across re-renders.  Equality is by `Rc` pointer; replace
+    /// the closure to trigger a re-render.
+    pub tooltip_render: Option<Rc<dyn Fn() -> Element>>,
     /// CSS colour string applied to the badge.
     pub badge_color: Option<String>,
     /// Whether this node is a directory / group or a leaf.
@@ -75,6 +85,28 @@ pub struct TreeNode {
     pub children: Vec<TreeNode>,
 }
 
+impl PartialEq for TreeNode {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare all fields except `tooltip_render` (which is a closure
+        // and so has no structural equality); for that field, accept
+        // pointer equality of the underlying `Rc`.
+        let tt_eq = match (&self.tooltip_render, &other.tooltip_render) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+            _ => false,
+        };
+        tt_eq
+            && self.id == other.id
+            && self.label == other.label
+            && self.badge == other.badge
+            && self.tooltip == other.tooltip
+            && self.badge_color == other.badge_color
+            && self.is_dir == other.is_dir
+            && self.icon == other.icon
+            && self.children == other.children
+    }
+}
+
 impl TreeNode {
     /// Create a leaf node.
     pub fn leaf(id: impl Into<String>, label: impl Into<String>) -> Self {
@@ -83,6 +115,7 @@ impl TreeNode {
             label: label.into(),
             badge: None,
             tooltip: None,
+            tooltip_render: None,
             badge_color: None,
             is_dir: false,
             icon: NodeIcon::Auto,
@@ -97,11 +130,24 @@ impl TreeNode {
             label: label.into(),
             badge: None,
             tooltip: None,
+            tooltip_render: None,
             badge_color: None,
             is_dir: true,
             icon: NodeIcon::Auto,
             children,
         }
+    }
+
+    /// Attach a rich tooltip renderer.  Returns `self` for chaining.
+    ///
+    /// The closure is called every time the tooltip is rendered (i.e.
+    /// every time the row re-renders while hovered).  Keep it cheap.
+    pub fn with_tooltip_render<F>(mut self, render: F) -> Self
+    where
+        F: Fn() -> Element + 'static,
+    {
+        self.tooltip_render = Some(Rc::new(render));
+        self
     }
 }
 
@@ -368,6 +414,14 @@ fn TreeItem(
                         class: "tree-badge",
                         style: node.badge_color.as_deref().map(|c| format!("color: {c}")).unwrap_or_default(),
                         "{badge}"
+                    }
+                }
+                // Optional rich tooltip overlay — shown on hover via CSS.
+                if let Some(render) = node.tooltip_render.as_ref() {
+                    div {
+                        class: "tree-tooltip",
+                        role: "tooltip",
+                        {render()}
                     }
                 }
             }

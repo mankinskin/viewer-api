@@ -81,3 +81,16 @@
   background: var(--bg-hover);
   border-color: var(--border-color);
 }
+
+/* Active / pressed-toggle modifier — pair with aria-pressed="true". */
+.btn-active,
+.btn.btn-active {
+  background: var(--bg-active);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.btn-active:hover {
+  background: var(--bg-active);
+  border-color: var(--accent-blue);
+}

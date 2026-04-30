@@ -137,6 +137,10 @@
 }
 
 .tree-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 16px;
+  margin-top: 4px;
   z-index: 10000;
   padding: 6px 10px;
   border-radius: 4px;
@@ -149,4 +153,21 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   white-space: pre-wrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 80ms ease-out 250ms, visibility 0s linear 250ms;
+}
+
+/* Anchor: tree row needs `position: relative` so the absolute tooltip
+ * positions against it.  Show on row hover with a brief delay so
+ * casual scrolling doesn't flash a wall of tooltips. */
+.tree-item-row {
+  position: relative;
+}
+
+.tree-item-row:hover > .tree-tooltip,
+.tree-item-row:focus-within > .tree-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 250ms, 0s;
 }
