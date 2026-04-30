@@ -1,0 +1,60 @@
+/* chip.css — Small inline pills for tags, statuses, and counts. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.chip--neutral {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+.chip--info {
+  background: color-mix(in srgb, var(--accent-blue) 18%, transparent);
+  color: var(--accent-blue);
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, transparent);
+}
+
+.chip--success {
+  background: color-mix(in srgb, var(--accent-green) 18%, transparent);
+  color: var(--accent-green);
+  border-color: color-mix(in srgb, var(--accent-green) 35%, transparent);
+}
+
+.chip--warning {
+  background: color-mix(in srgb, var(--accent-yellow) 22%, transparent);
+  color: var(--accent-yellow);
+  border-color: color-mix(in srgb, var(--accent-yellow) 40%, transparent);
+}
+
+.chip--danger {
+  background: color-mix(in srgb, var(--accent-red) 18%, transparent);
+  color: var(--accent-red);
+  border-color: color-mix(in srgb, var(--accent-red) 35%, transparent);
+}
+
+.chip--feature {
+  background: color-mix(in srgb, var(--accent-purple) 18%, transparent);
+  color: var(--accent-purple);
+  border-color: color-mix(in srgb, var(--accent-purple) 35%, transparent);
+}
+
+/* Inline row of chips with consistent gap. */
+.chip-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}

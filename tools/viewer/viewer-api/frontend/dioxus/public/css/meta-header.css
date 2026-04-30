@@ -1,0 +1,40 @@
+/* meta-header.css — Title + metadata header block. */
+
+.meta-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.meta-header__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.meta-header__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.meta-header__date {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.meta-header__status,
+.meta-header__tags {
+  display: inline-flex;
+  align-items: center;
+}
