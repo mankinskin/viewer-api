@@ -44,21 +44,23 @@ impl Camera {
         self.distance = ((radius / half_fov_tan) * 1.3).clamp(12.0, 120.0);
     }
 
-    /// Apply a `CameraCommand` to this camera, framing the layout bounds
-    /// when the command needs them.
-    pub fn apply_command(&mut self, cmd: &CameraCommand, bounds: ([f32; 3], f32)) {
-        let (centre, radius) = bounds;
+    /// Apply a `CameraCommand` to this camera.
+    ///
+    /// Only the orbit *orientation* (yaw / pitch) is reset; the existing
+    /// `distance` and `target` are intentionally preserved so that a
+    /// "reset perspective" gesture does not also undo the user's zoom
+    /// or pan.  The `_bounds` parameter is kept for forward-compatibility
+    /// with future commands that may want to re-frame the layout.
+    pub fn apply_command(&mut self, cmd: &CameraCommand, _bounds: ([f32; 3], f32)) {
         match *cmd {
             CameraCommand::ResetToDefault => {
                 let def = Camera::default();
                 self.yaw = def.yaw;
                 self.pitch = def.pitch;
-                self.frame(centre, radius);
             }
             CameraCommand::ResetTo { yaw, pitch } => {
                 self.yaw = yaw;
                 self.pitch = pitch;
-                self.frame(centre, radius);
             }
         }
     }
