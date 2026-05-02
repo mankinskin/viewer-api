@@ -62,13 +62,14 @@
   --radius-lg: 12px;
 
   /* ── Panel surface tokens ─────────────────────────────────────────────
-     Independent of the theme `--bg-*` palette so the live theme picker
-     can recolour text/backgrounds without ever destroying panel
-     translucency.  These let the WebGPU smoke shader bleed through every
-     UI panel.  Tweak via the override stylesheet for each viewer. */
-  --panel-bg:        rgba(20, 20, 24, 0.55);
-  --panel-bg-strong: rgba(20, 20, 24, 0.75);
-  --panel-bg-floor:  rgba(14, 14, 18, 0.65);
+     The runtime theme writer (`ThemeStore::apply_css` in viewer-api-dioxus)
+     overrides these on `:root` to keep them in sync with the active theme
+     palette so light themes get light translucent panels and dark themes
+     get dark translucent panels.  These values are conservative defaults
+     used only before the JS theme writer runs. */
+  --panel-bg:        color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  --panel-bg-strong: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  --panel-bg-floor:  color-mix(in srgb, var(--bg-primary)   78%, transparent);
   --panel-blur:      14px;
   --panel-saturate:  150%;
 }

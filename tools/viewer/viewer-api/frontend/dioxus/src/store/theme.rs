@@ -225,6 +225,21 @@ fn colors_to_css(colors: &ThemeColors) -> String {
   --syntax-function: {syntax_function};
   --syntax-type: {syntax_type};
   --syntax-variable: {syntax_variable};
+
+  /* ── Panel surface tokens ──────────────────────────────────────────
+     Derived from the active theme palette so light themes get light
+     translucent panels and dark themes get dark translucent panels.
+     The WebGPU smoke shader still bleeds through. */
+  --panel-bg:        color-mix(in srgb, {bg_secondary} 72%, transparent);
+  --panel-bg-strong: color-mix(in srgb, {bg_secondary} 88%, transparent);
+  --panel-bg-floor:  color-mix(in srgb, {bg_primary}   78%, transparent);
+  --panel-blur:      14px;
+  --panel-saturate:  150%;
+
+  /* Solid fallbacks (mirror theme bg). */
+  --bg-primary-solid:   {bg_primary};
+  --bg-secondary-solid: {bg_secondary};
+  --bg-tertiary-solid:  {bg_tertiary};
 }}"#,
         bg_primary = colors.bg_primary,
         bg_secondary = colors.bg_secondary,

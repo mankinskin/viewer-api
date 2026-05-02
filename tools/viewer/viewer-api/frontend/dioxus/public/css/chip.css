@@ -51,6 +51,33 @@
   border-color: color-mix(in srgb, var(--accent-purple) 35%, transparent);
 }
 
+/* Clickable chip variant — used as a filter toggle. */
+button.chip,
+.chip-button {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+button.chip:hover,
+.chip-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Active/selected modifier for toggle chips (e.g. state filter pills). */
+.chip--active {
+  background: color-mix(in srgb, var(--accent-blue) 22%, transparent);
+  color: var(--accent-blue);
+  border-color: color-mix(in srgb, var(--accent-blue) 45%, transparent);
+}
+
+button.chip.chip--active:hover,
+.chip-button.chip--active:hover {
+  background: color-mix(in srgb, var(--accent-blue) 32%, transparent);
+  color: var(--accent-blue);
+}
+
 /* Inline row of chips with consistent gap. */
 .chip-row {
   display: inline-flex;
