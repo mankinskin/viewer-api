@@ -67,9 +67,9 @@
      palette so light themes get light translucent panels and dark themes
      get dark translucent panels.  These values are conservative defaults
      used only before the JS theme writer runs. */
-  --panel-bg:        color-mix(in srgb, var(--bg-secondary) 72%, transparent);
-  --panel-bg-strong: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
-  --panel-bg-floor:  color-mix(in srgb, var(--bg-primary)   78%, transparent);
+  --panel-bg:        color-mix(in srgb, var(--bg-secondary) 96%, transparent);
+  --panel-bg-strong: color-mix(in srgb, var(--bg-secondary) 99%, transparent);
+  --panel-bg-floor:  color-mix(in srgb, var(--bg-primary)   96%, transparent);
   --panel-blur:      14px;
   --panel-saturate:  150%;
 }

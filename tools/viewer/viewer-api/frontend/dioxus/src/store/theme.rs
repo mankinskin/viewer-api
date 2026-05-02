@@ -230,9 +230,9 @@ fn colors_to_css(colors: &ThemeColors) -> String {
      Derived from the active theme palette so light themes get light
      translucent panels and dark themes get dark translucent panels.
      The WebGPU smoke shader still bleeds through. */
-  --panel-bg:        color-mix(in srgb, {bg_secondary} 72%, transparent);
-  --panel-bg-strong: color-mix(in srgb, {bg_secondary} 88%, transparent);
-  --panel-bg-floor:  color-mix(in srgb, {bg_primary}   78%, transparent);
+  --panel-bg:        color-mix(in srgb, {bg_secondary} 96%, transparent);
+  --panel-bg-strong: color-mix(in srgb, {bg_secondary} 99%, transparent);
+  --panel-bg-floor:  color-mix(in srgb, {bg_primary}   96%, transparent);
   --panel-blur:      14px;
   --panel-saturate:  150%;
 
