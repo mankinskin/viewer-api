@@ -244,7 +244,10 @@ fn build_node_quad_pipeline(
     set(&vertex_state, "buffers",    &JsValue::from(vbufs));
 
     let target = obj();
-    set(&target, "format", &js_str(format));
+    set(&target, "format",    &js_str(format));
+    // writeMask=0: write depth only — no color output, so the node-quad
+    // occluder is invisible against the canvas background.
+    set(&target, "writeMask", &js_f64(0.0));
     let targets = Array::new(); targets.push(&JsValue::from(target));
 
     let frag_state = obj();

@@ -126,6 +126,10 @@ async fn bootstrap_ctx() -> Option<GpuCtx> {
     // committed tweaks are restored on first paint.
     super::set_live_effects(EffectSettings::load());
 
+    // Register a mousemove listener so the compute shader can use the
+    // cursor position for spark spawning and hover detection.
+    install_mouse_listener();
+
     let buffers    = GpuBuffers::new(&init.device, &init.queue)?;
     let compute_bg = mk_compute_bind_group(&init.device, &init.pipelines.compute_bgl, &buffers)?;
     let render_bg  = mk_render_bind_group (&init.device, &init.pipelines.render_bgl,  &buffers)?;
@@ -285,7 +289,11 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
     }
 
     // ── Pack uniforms ───────────────────────────────────────────────────────
-    pack_uniforms(gpu, &settings, time_s, dt_s, cw, ch, elem_count);
+    let (mx, my) = super::mouse_pos();
+    let hover_elem    = find_hovered_elem(&elem_data, elem_count, mx, my);
+    let selected_elem = find_selected_elem(&elem_data, elem_count, &doc);
+    pack_uniforms(gpu, &settings, time_s, dt_s, cw, ch, elem_count,
+                  mx, my, hover_elem, selected_elem);
     queue_write_f32(&gpu.queue, &gpu.buffers.uniform_buf, 0, &gpu.uniforms_f32);
 
     // ── Get current frame texture ───────────────────────────────────────────
@@ -365,7 +373,8 @@ fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
 
 // ── Uniform packing ──────────────────────────────────────────────────────────
 
-fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_count: usize) {
+fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_count: usize,
+                 mouse_x: f32, mouse_y: f32, hover_elem: f32, selected_elem: f32) {
     let u  = &gpu.uniforms_f32;
     let vp = ortho_vp(cw as f32, ch as f32);
     let iv = ortho_inv_vp(cw as f32, ch as f32);
@@ -384,12 +393,12 @@ fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u
     u.set_index(1,  cw as f32);
     u.set_index(2,  ch as f32);
     u.set_index(3,  elem_count as f32);
-    u.set_index(4,  -9999.0); // mouse_x
-    u.set_index(5,  -9999.0); // mouse_y
+    u.set_index(4,  mouse_x);      // mouse_x
+    u.set_index(5,  mouse_y);      // mouse_y
     u.set_index(6,  dt_s);
-    u.set_index(7,  -1.0);    // hover_elem
-    u.set_index(8,  0.0);     // hover_start_time
-    u.set_index(9,  -1.0);    // selected_elem
+    u.set_index(7,  hover_elem);   // hover_elem
+    u.set_index(8,  0.0);          // hover_start_time
+    u.set_index(9,  selected_elem); // selected_elem
     u.set_index(10, s.crt_scanlines_h * crt_gate);
     u.set_index(11, s.crt_scanlines_v * crt_gate);
     u.set_index(12, s.crt_edge_shadow * crt_gate);
@@ -438,6 +447,84 @@ fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u
     u.set_index(55, 0.0);     // _cam_pad
     for (i, &v) in vp.iter().enumerate() { u.set_index(56 + i as u32, v); }
     for (i, &v) in iv.iter().enumerate() { u.set_index(72 + i as u32, v); }
+}
+
+// ── Mouse listener ───────────────────────────────────────────────────────────
+
+/// Register a `mousemove` listener on `document` and store the JS closure so
+/// it is never garbage-collected.  Safe to call multiple times — the second
+/// call is a no-op because `store_mouse_listener` replaces the previous value.
+fn install_mouse_listener() {
+    use wasm_bindgen::closure::Closure;
+    use web_sys::MouseEvent;
+
+    let closure = Closure::<dyn FnMut(MouseEvent)>::new(|evt: MouseEvent| {
+        super::set_mouse_pos(evt.client_x() as f32, evt.client_y() as f32);
+    });
+    if let Some(win) = web_sys::window() {
+        if let Some(doc) = win.document() {
+            let _ = doc.add_event_listener_with_callback(
+                "mousemove",
+                closure.as_ref().unchecked_ref(),
+            );
+        }
+    }
+    // Keep the closure alive — dropping it would silently unregister the listener.
+    super::store_mouse_listener(closure.into_js_value());
+}
+
+// ── Hover / selection helpers ────────────────────────────────────────────────
+
+/// Find the index of the element whose bounding rect contains `(mx, my)`.
+/// Returns `-1.0` if nothing is under the cursor.
+/// `elem_data` is the flat `[x, y, w, h, hue, kind, depth, _pad, ...]` Vec.
+fn find_hovered_elem(elem_data: &[f32], elem_count: usize, mx: f32, my: f32) -> f32 {
+    if mx < -999.0 { return -1.0; } // off-screen sentinel
+    for i in 0..elem_count {
+        let base = i * 8; // ELEM_FLOATS = 8
+        let x = elem_data[base];
+        let y = elem_data[base + 1];
+        let w = elem_data[base + 2];
+        let h = elem_data[base + 3];
+        if mx >= x && mx <= x + w && my >= y && my <= y + h {
+            return i as f32;
+        }
+    }
+    -1.0
+}
+
+/// Find the index of the first element that is currently "selected" in the DOM
+/// (matches `.log-entry.selected` or `.spec-card--selected`).
+/// Returns `-1.0` if none.
+fn find_selected_elem(elem_data: &[f32], elem_count: usize, doc: &web_sys::Document) -> f32 {
+    let selected_el = doc
+        .query_selector(".log-entry.selected, .spec-card--selected, [aria-selected=true]")
+        .ok()
+        .flatten();
+    let sel_el = match selected_el {
+        Some(el) => el,
+        None => return -1.0,
+    };
+    // Get its bounding rect and match against the scanned list.
+    use super::webgpu::{get_fn, prop_f32};
+    let rect = match get_fn(&sel_el, "getBoundingClientRect")
+        .and_then(|f| f.call0(&sel_el).ok())
+    {
+        Some(r) => r,
+        None => return -1.0,
+    };
+    let sx = prop_f32(&rect, "x");
+    let sy = prop_f32(&rect, "y");
+    for i in 0..elem_count {
+        let base = i * 8;
+        let x = elem_data[base];
+        let y = elem_data[base + 1];
+        // Match by top-left corner within 2 px tolerance (DPR rounding).
+        if (x - sx).abs() < 2.0 && (y - sy).abs() < 2.0 {
+            return i as f32;
+        }
+    }
+    -1.0
 }
 
 // ── Math helpers ─────────────────────────────────────────────────────────────

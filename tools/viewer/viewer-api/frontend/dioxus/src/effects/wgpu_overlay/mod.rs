@@ -108,6 +108,14 @@ thread_local! {
     static FRAME_CALLBACKS: RefCell<Vec<(u64, Rc<RefCell<FrameCallback>>)>> =
         const { RefCell::new(Vec::new()) };
     static NEXT_CB_ID: Cell<u64> = const { Cell::new(1) };
+
+    /// Current mouse cursor position in CSS pixels (client coordinates).
+    /// Initialised to (-9999, -9999) so particles don't fire off-screen before
+    /// the first `mousemove` event arrives.
+    static MOUSE_X: Cell<f32> = const { Cell::new(-9999.0) };
+    static MOUSE_Y: Cell<f32> = const { Cell::new(-9999.0) };
+    /// Keeps the mousemove JS closure alive for the lifetime of the page.
+    static MOUSE_LISTENER_JV: RefCell<Option<JsValue>> = const { RefCell::new(None) };
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -229,6 +237,27 @@ pub(crate) fn take_palette_dirty() -> bool {
         c.set(false);
         was
     })
+}
+
+/// Store the current cursor position (CSS client coordinates).
+/// Called by the `mousemove` listener installed during overlay bootstrap.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn set_mouse_pos(x: f32, y: f32) {
+    MOUSE_X.with(|c| c.set(x));
+    MOUSE_Y.with(|c| c.set(y));
+}
+
+/// Read the last known cursor position. Returns `(-9999, -9999)` before the
+/// first `mousemove` event (i.e. particles are suppressed off-screen).
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn mouse_pos() -> (f32, f32) {
+    (MOUSE_X.with(|c| c.get()), MOUSE_Y.with(|c| c.get()))
+}
+
+/// Keep the mouse-listener JS closure alive.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn store_mouse_listener(jv: JsValue) {
+    MOUSE_LISTENER_JV.with(|c| *c.borrow_mut() = Some(jv));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
