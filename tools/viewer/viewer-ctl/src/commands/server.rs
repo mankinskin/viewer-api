@@ -2,6 +2,7 @@
 
 use std::{
     env, fs,
+    io::Write,
     net::TcpStream,
     path::Path,
     process::{Command, Stdio},
@@ -172,6 +173,9 @@ pub fn cmd_start(
     //     Listening on http://localhost:<port>
     wait_for_port_ready(port, Duration::from_secs(15), tag);
     println!("Listening on http://localhost:{port}");
+    // Explicitly flush stdout so piped consumers (tail, grep, etc.) see the
+    // sentinel line before viewer-ctl exits.
+    let _ = std::io::stdout().flush();
     Ok(())
 }
 
@@ -271,34 +275,59 @@ fn spawn_server(
     cwd: &Path,
     tag: &str,
 ) -> Result<(), String> {
-    // On Unix, exec() replaces this process image entirely.
-    // On Windows, spawn detached so viewer-ctl exits and releases file locks.
+    // Spawn the server detached so viewer-ctl can exit cleanly.
+    // Using exec() on Unix would replace the viewer-ctl process with the
+    // server, which means wait_for_port_ready and the "Listening on..."
+    // sentinel message would never be reached, causing piped consumers
+    // (tail, grep, VS Code serverReadyAction) to hang indefinitely.
+    let mut cmd = Command::new(bin_path);
+    for (k, v) in env_vars {
+        cmd.env(k, v);
+    }
+    cmd.args(args)
+        .current_dir(cwd)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+
+    // On Unix, move the child into a new process group so it is not
+    // killed by SIGHUP when the terminal/parent session closes.
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
-        let _ = tag;
-        let mut cmd = Command::new(bin_path);
-        for (k, v) in env_vars {
-            cmd.env(k, v);
-        }
-        let err = cmd.args(args).current_dir(cwd).exec();
-        return Err(format!("exec failed: {err}"));
+        cmd.process_group(0);
     }
 
-    #[cfg(not(unix))]
+    // On Windows the shell creates the pipe with bInheritHandle=TRUE, so
+    // every child spawned via CreateProcess(bInheritHandles=TRUE) inherits
+    // the write-end of the pipe even though we redirect the child's own
+    // stdout/stderr to NUL.  The child then keeps the pipe alive after
+    // viewer-ctl exits, and `tail` never sees EOF.
+    //
+    // Fix: mark the parent's stdout and stderr handles as non-inheritable
+    // right before we spawn, so the child receives no reference to the pipe.
+    #[cfg(windows)]
     {
-        let mut cmd = Command::new(bin_path);
-        for (k, v) in env_vars {
-            cmd.env(k, v);
+        use windows_sys::Win32::Foundation::HANDLE_FLAG_INHERIT;
+        use windows_sys::Win32::System::Console::{
+            GetStdHandle, STD_ERROR_HANDLE, STD_OUTPUT_HANDLE,
+        };
+        unsafe {
+            for handle_id in [STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+                let h = GetStdHandle(handle_id);
+                if !h.is_null() && h != windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE {
+                    windows_sys::Win32::Foundation::SetHandleInformation(
+                        h,
+                        HANDLE_FLAG_INHERIT,
+                        0,
+                    );
+                }
+            }
         }
-        cmd.args(args)
-            .current_dir(cwd)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| format!("failed to launch {}: {e}", disp(bin_path)))?;
-        info!(tag, "launched (detached). viewer-ctl exiting.");
-        Ok(())
     }
+
+    cmd.spawn()
+        .map_err(|e| format!("failed to launch {}: {e}", disp(bin_path)))?;
+    info!(tag, "launched (detached). viewer-ctl exiting.");
+    Ok(())
 }
