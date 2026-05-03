@@ -1,7 +1,7 @@
 //! Server lifecycle: build, install, start, stop.
 
 use std::{
-    env,
+    env, fs,
     net::TcpStream,
     path::Path,
     process::{Command, Stdio},
@@ -11,7 +11,7 @@ use std::{
 use crate::{
     config::{Config, Server},
     paths::{crate_manifest_path_str, disp},
-    process::{kill_process, pids_on_port, print_process_info},
+    process::{kill_process, pids_by_image_name, pids_on_port, print_process_info},
     shell::{run_cmd_args, which},
 };
 
@@ -30,19 +30,59 @@ pub fn build_server(root: &Path, s: &Server) -> Result<(), String> {
 
 pub fn install_server(root: &Path, s: &Server) -> Result<(), String> {
     let tag = s.name.as_str();
-    let crate_path = root.join(&s.source_dir);
-    info!(tag, "cargo install --path {} --force", disp(&crate_path));
-    run_cmd_args(
-        "cargo",
-        &[
-            "install",
-            "--path",
-            crate_path.to_str().unwrap_or("."),
-            "--force",
-        ],
-        root,
-        tag,
-    )
+
+    // Determine the binary name: on Windows the release binary has an .exe suffix.
+    let bin_name = if cfg!(target_os = "windows") {
+        format!("{}.exe", s.package)
+    } else {
+        s.package.clone()
+    };
+
+    // Look for a pre-built release binary in the workspace target directory.
+    // This avoids rebuilding from source when `build_server` / `trunk build`
+    // was already run — and also avoids the mixed-separator issues that arise
+    // from passing a Windows Path to `cargo install --path`.
+    let release_bin = root.join("target").join("release").join(&bin_name);
+
+    if release_bin.exists() {
+        // Install by copying the binary to ~/.cargo/bin/.
+        let cargo_home = std::env::var_os("CARGO_HOME")
+            .map(std::path::PathBuf::from)
+            .or_else(|| dirs::home_dir().map(|h| h.join(".cargo")))
+            .ok_or_else(|| "cannot locate cargo home (CARGO_HOME not set and HOME unknown)".to_string())?;
+        let dest = cargo_home.join("bin").join(&bin_name);
+        info!(
+            tag,
+            "installing pre-built binary {} → {}",
+            disp(&release_bin),
+            disp(&dest)
+        );
+        fs::copy(&release_bin, &dest)
+            .map_err(|e| format!("failed to copy binary: {e}"))?;
+        Ok(())
+    } else {
+        // No pre-built binary found — fall back to building from source.
+        // Use the manifest path (always valid UTF-8 on supported platforms)
+        // to avoid passing a raw Windows path with backslashes as a CLI arg.
+        let crate_path = root.join(&s.source_dir);
+        let manifest = crate_manifest_path_str(&crate_path)?;
+        info!(
+            tag,
+            "no pre-built binary found; building via cargo install --manifest-path {}",
+            disp(&crate_path)
+        );
+        run_cmd_args(
+            "cargo",
+            &[
+                "install",
+                "--manifest-path",
+                manifest.as_str(),
+                "--force",
+            ],
+            root,
+            tag,
+        )
+    }
 }
 
 pub fn cmd_start(
@@ -168,16 +208,16 @@ pub fn cmd_stop(cfg: &Config, server: &str) -> Result<(), String> {
     let tag = s.name.as_str();
     let port = port_for(s);
 
+    // ── Phase 1: kill any process listening on the server port ────────────
     info!(tag, "looking for {} on port {port}...", s.package);
     let pids = pids_on_port(port);
     if pids.is_empty() {
         info!(tag, "no process listening on port {port}.");
-        return Ok(());
     }
-    for pid in pids {
+    for pid in &pids {
         warn!(tag, "found process on port {port}:");
-        print_process_info(pid, tag);
-        if kill_process(pid, tag) {
+        print_process_info(*pid, tag);
+        if kill_process(*pid, tag) {
             info!(tag, "PID {} terminated.", pid.as_u32());
         } else {
             error!(tag, "could not terminate PID {}.", pid.as_u32());
@@ -188,6 +228,32 @@ pub fn cmd_stop(cfg: &Config, server: &str) -> Result<(), String> {
             return Err(format!("failed to kill PID {}", pid.as_u32()));
         }
     }
+
+    // ── Phase 2: kill any orphaned processes by image name ─────────────────
+    // Processes that crashed before binding (or were launched from a different
+    // path like target/release/) won't appear in the port scan above, but they
+    // still hold file locks that prevent `install` from copying a new binary.
+    let zombies: Vec<_> = pids_by_image_name(&s.package)
+        .into_iter()
+        .filter(|pid| !pids.contains(pid))
+        .collect();
+    if !zombies.is_empty() {
+        warn!(
+            tag,
+            "found {} orphaned {} process(es) not on port {port} — cleaning up",
+            zombies.len(),
+            s.package
+        );
+        for pid in zombies {
+            print_process_info(pid, tag);
+            if kill_process(pid, tag) {
+                info!(tag, "orphan PID {} terminated.", pid.as_u32());
+            } else {
+                error!(tag, "could not terminate orphan PID {}.", pid.as_u32());
+            }
+        }
+    }
+
     Ok(())
 }
 
