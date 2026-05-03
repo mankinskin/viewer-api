@@ -38,6 +38,11 @@ pub enum Cmd {
     /// Start a server. Sets STATIC_DIR if a frontend is linked AND installed.
     Start {
         server: String,
+        /// Keep the server in the foreground: inherit the current stdout/stderr
+        /// and block until the process exits. By default the server is
+        /// detached and viewer-ctl exits once the port is ready.
+        #[arg(long, alias = "fg", short = 'f')]
+        foreground: bool,
         /// Extra args forwarded to the server binary.
         #[arg(last = true)]
         extra: Vec<String>,
@@ -47,6 +52,9 @@ pub enum Cmd {
     /// Stop then start the server.
     Restart {
         server: String,
+        /// Keep the server in the foreground (see `start --foreground`).
+        #[arg(long, alias = "fg", short = 'f')]
+        foreground: bool,
         #[arg(last = true)]
         extra: Vec<String>,
     },

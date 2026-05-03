@@ -60,12 +60,12 @@ fn main() -> ExitCode {
         Cmd::Status { name } => commands::cmd_status(&cfg, name.as_deref()),
         Cmd::Build { name, kind } => commands::cmd_build(&cfg, &root, &name, kind),
         Cmd::Install { name, kind } => commands::cmd_install(&cfg, &root, &name, kind),
-        Cmd::Start { server, extra } => commands::cmd_start(&cfg, &root, &server, extra),
+        Cmd::Start { server, foreground, extra } => commands::cmd_start(&cfg, &root, &server, foreground, extra),
         Cmd::Stop { server } => commands::cmd_stop(&cfg, &server),
-        Cmd::Restart { server, extra } => match commands::cmd_stop(&cfg, &server) {
+        Cmd::Restart { server, foreground, extra } => match commands::cmd_stop(&cfg, &server) {
             Ok(()) => {
                 std::thread::sleep(Duration::from_millis(500));
-                commands::cmd_start(&cfg, &root, &server, extra)
+                commands::cmd_start(&cfg, &root, &server, foreground, extra)
             }
             Err(e) => Err(e),
         },

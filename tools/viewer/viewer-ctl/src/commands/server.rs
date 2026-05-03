@@ -90,6 +90,7 @@ pub fn cmd_start(
     cfg: &Config,
     root: &Path,
     server: &str,
+    foreground: bool,
     extra: Vec<String>,
 ) -> Result<(), String> {
     let s = cfg
@@ -164,19 +165,24 @@ pub fn cmd_start(
 
     info!(tag, "starting {} on port {port}", disp(&bin_path));
 
-    spawn_server(&bin_path, &server_args, &env_vars, root, tag)?;
+    if foreground {
+        info!(tag, "foreground mode: stdout/stderr inherited; blocking until exit.");
+        run_server_foreground(&bin_path, &server_args, &env_vars, root, tag)
+    } else {
+        spawn_server(&bin_path, &server_args, &env_vars, root, tag)?;
 
-    // Wait for the server to actually bind the port so callers (VS Code
-    // `serverReadyAction`, scripts, etc.) can rely on the URL being live
-    // when this process exits. Print a single, stable line that downstream
-    // pattern matchers can latch onto:
-    //     Listening on http://localhost:<port>
-    wait_for_port_ready(port, Duration::from_secs(15), tag);
-    println!("Listening on http://localhost:{port}");
-    // Explicitly flush stdout so piped consumers (tail, grep, etc.) see the
-    // sentinel line before viewer-ctl exits.
-    let _ = std::io::stdout().flush();
-    Ok(())
+        // Wait for the server to actually bind the port so callers (VS Code
+        // `serverReadyAction`, scripts, etc.) can rely on the URL being live
+        // when this process exits. Print a single, stable line that downstream
+        // pattern matchers can latch onto:
+        //     Listening on http://localhost:<port>
+        wait_for_port_ready(port, Duration::from_secs(15), tag);
+        println!("Listening on http://localhost:{port}");
+        // Explicitly flush stdout so piped consumers (tail, grep, etc.) see the
+        // sentinel line before viewer-ctl exits.
+        let _ = std::io::stdout().flush();
+        Ok(())
+    }
 }
 
 /// Poll TCP connect to localhost:port until success or timeout.
@@ -266,6 +272,49 @@ fn port_for(s: &Server) -> u16 {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(s.port)
+}
+
+/// Run the server in the foreground: inherit stdout/stderr from the current
+/// process and block until the child exits. The caller's terminal sees all
+/// server output directly. Returns an error if the process exits with a
+/// non-zero status.
+fn run_server_foreground(
+    bin_path: &Path,
+    args: &[String],
+    env_vars: &[(String, String)],
+    cwd: &Path,
+    tag: &str,
+) -> Result<(), String> {
+    let mut cmd = Command::new(bin_path);
+    for (k, v) in env_vars {
+        cmd.env(k, v);
+    }
+    cmd.args(args)
+        .current_dir(cwd)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("failed to launch {}: {e}", disp(bin_path)))?;
+
+    info!(tag, "running in foreground (PID {}). Press Ctrl-C to stop.", child.id());
+
+    let status = child
+        .wait()
+        .map_err(|e| format!("error waiting for {}: {e}", disp(bin_path)))?;
+
+    if status.success() {
+        info!(tag, "process exited successfully.");
+        Ok(())
+    } else {
+        Err(format!(
+            "{} exited with status: {}",
+            disp(bin_path),
+            status
+        ))
+    }
 }
 
 fn spawn_server(
