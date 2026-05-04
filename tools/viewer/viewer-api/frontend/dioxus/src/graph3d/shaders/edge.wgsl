@@ -212,6 +212,22 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     let endFadeB = smoothstep(0.0, 0.06, 1.0 - t);
     intensity *= min(endFadeA, endFadeB);
 
+    // ── Directed arrowhead at posB (the dependency target) ────────────────
+    // When t > ARROW_START the line tapers into a triangular arrowhead
+    // pointing from A→B.  The arrowhead gradually narrows from its base
+    // width to zero at t=1 (the tip), masking out fragments outside the
+    // triangle with discard.
+    let ARROW_START: f32 = 0.80;
+    if t > ARROW_START {
+        let arrow_t = (t - ARROW_START) / (1.0 - ARROW_START); // 0..1 within arrow
+        // Base half-width at ARROW_START = 1.5× the beam's half-width.
+        let arrow_base_half = 0.22;
+        let allowed = arrow_base_half * (1.0 - arrow_t);
+        if abs(in.edgeUV.y) > allowed { discard; }
+        // Extra brightness to make the arrowhead pop.
+        intensity *= 1.3 + 0.4 * (1.0 - arrow_t);
+    }
+
     let a = clamp(intensity * in.color.a * 1.6, 0.0, 1.0);
     return vec4(col * a, a);
 }

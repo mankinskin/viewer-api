@@ -48,19 +48,15 @@ fn world_to_screen(pos: [f32; 3], vp: &[f32; 16], vw: f32, vh: f32) -> ScreenPos
     ScreenPos { x: sx, y: sy, z: ndc_z, visible: ndc_z >= 0.0 && ndc_z <= 1.0 }
 }
 
-fn position_dom_nodes(state: &RenderState, vw: f32, vh: f32) {
+fn position_dom_nodes(state: &RenderState, cont_w: f32, cont_h: f32) {
     let Some(doc) = web_sys::window().and_then(|w| w.document()) else { return };
 
-    let (container_left, container_top) = doc
-        .get_element_by_id(&state.container_id)
-        .map(|el| {
-            let rect = el.get_bounding_client_rect();
-            (rect.left() as f32, rect.top() as f32)
-        })
-        .unwrap_or((0.0, 0.0));
-
+    // Use the container's physical dimensions for the projection.  Since the
+    // camera's viewProj was computed with the same aspect ratio as the
+    // container (and setViewport maps NDC → container region), NDC → pixels
+    // is a simple [0, cont_w] × [0, cont_h] transform with no origin offset.
     let eye    = state.camera.eye();
-    let aspect = vw / vh.max(1.0);
+    let aspect = cont_w / cont_h.max(1.0);
     let proj   = math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR);
     let view   = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
     let vp     = math::mul(proj, view);
@@ -74,7 +70,7 @@ fn position_dom_nodes(state: &RenderState, vw: f32, vh: f32) {
         let Ok(idx)         = idx_str.parse::<usize>()        else { continue };
         let Some(node)      = state.layout.nodes.get(idx)     else { continue };
 
-        let screen = world_to_screen([node.x, node.y, node.z], &vp, vw, vh);
+        let screen = world_to_screen([node.x, node.y, node.z], &vp, cont_w, cont_h);
 
         let dx = eye[0] - node.x;
         let dy = eye[1] - node.y;
@@ -84,20 +80,22 @@ fn position_dom_nodes(state: &RenderState, vw: f32, vh: f32) {
 
         let margin = 300.0;
         if !screen.visible
-            || screen.x < -margin || screen.x > vw + margin
-            || screen.y < -margin || screen.y > vh + margin
+            || screen.x < -margin || screen.x > cont_w + margin
+            || screen.y < -margin || screen.y > cont_h + margin
             || pixel_scale < 0.08
         {
             let _ = html_el.style().set_property("display", "none");
             continue;
         }
 
-        let local_x = screen.x - container_left;
-        let local_y = screen.y - container_top;
+        // screen.x / screen.y are already container-local (no origin offset
+        // needed) because the projection uses container dimensions.
+        let local_x = screen.x;
+        let local_y = screen.y;
 
         // Use explicit "block" instead of "" — when callers style cards via
-        // CSS classes (e.g. `.graph-node-card { display: none }`), removing
-        // the inline override falls back to the CSS rule and the card stays
+        // CSS classes (e.g. `.content { display: none }`), removing the
+        // inline override falls back to the CSS rule and the card stays
         // hidden. "block" wins as an inline override regardless.
         let _ = html_el.style().set_property("display", "block");
         let z_idx = ((1.0 - screen.z) * 10000.0) as i32;
@@ -127,6 +125,23 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
         state.gpu.canvas_w = frame.canvas_w;
         state.gpu.canvas_h = frame.canvas_h;
     }
+
+    // Resolve the graph container's bounding rect so the camera and DOM
+    // projection are both centred on the container, not the full canvas.
+    let (cont_x_css, cont_y_css, cont_w_css, cont_h_css) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id(&state.container_id))
+        .map(|el| {
+            let r = el.get_bounding_client_rect();
+            (r.left() as f32, r.top() as f32, r.width() as f32, r.height() as f32)
+        })
+        .unwrap_or((0.0, 0.0, css_w, css_h));
+    // Physical-pixel viewport coordinates for setViewport / setScissorRect.
+    let vp_x = (cont_x_css * dpr).round() as u32;
+    let vp_y = (cont_y_css * dpr).round() as u32;
+    let vp_w = ((cont_w_css * dpr).round() as u32).max(1);
+    let vp_h = ((cont_h_css * dpr).round() as u32).max(1);
+
     // Re-upload per-instance buffers if a node moved this frame.
     if state.dirty_layout {
         let (edge_data, edge_count) = state.layout.build_edge_instances();
@@ -143,15 +158,14 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
     }
 
     let gpu = &state.gpu;
-    let w = gpu.canvas_w;
-    let h = gpu.canvas_h;
 
-    // Camera uniform.
+    // Camera uniform — use container aspect ratio so the projection centres
+    // the graph on the container, not the full canvas.
     let eye    = state.camera.eye();
-    let aspect = w as f32 / h.max(1) as f32;
+    let aspect = cont_w_css / cont_h_css.max(1.0);
     let proj   = math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR);
     let view   = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
-    let vp     = math::mul(proj, view);
+    let vp_mat = math::mul(proj, view);
 
     let time = web_sys::window()
         .and_then(|w| w.performance())
@@ -159,9 +173,9 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
         .unwrap_or(0.0);
 
     let mut cam_data = [0.0f32; CAM_UNIFORM_FLOATS];
-    cam_data[..16].copy_from_slice(&vp);
+    cam_data[..16].copy_from_slice(&vp_mat);
     cam_data[16] = eye[0]; cam_data[17] = eye[1]; cam_data[18] = eye[2]; cam_data[19] = 1.0;
-    cam_data[20] = time;   cam_data[21] = w as f32; cam_data[22] = h as f32;
+    cam_data[20] = time;   cam_data[21] = vp_w as f32; cam_data[22] = vp_h as f32;
     write_buffer(&gpu.device, &gpu.cam_buf, &cam_data);
 
     // Use the swap-chain view supplied by the overlay's per-frame callback.
@@ -193,14 +207,36 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
     let Ok(pass_enc) = enc_typed.begin_render_pass(&pass_desc) else { return };
     let pass: JsValue = JsValue::from(pass_enc);
 
-    // Node occluder quads first (write depth).
-    if state.node_count > 0 {
-        js_call(&pass, "setPipeline",     &[&gpu.node_quad_pipeline.clone().into()]);
-        js_call(&pass, "setBindGroup",    &[&js_f64(0.0), &gpu.bind_group]);
-        js_call(&pass, "setVertexBuffer", &[&js_f64(0.0), &gpu.quad_buf.clone().into()]);
-        js_call(&pass, "setVertexBuffer", &[&js_f64(1.0), &state.node_quad_buf.clone().into()]);
-        js_call(&pass, "draw",            &[&js_f64(4.0), &js_f64(state.node_count as f64)]);
+    // Restrict GPU rendering to the container region so edges and node quads
+    // don't bleed into the content panel on the right.
+    // setViewport(x, y, width, height, minDepth, maxDepth) — 6 args.
+    if let Ok(f) = js_sys::Reflect::get(&pass, &super::interop::js_str("setViewport"))
+        .and_then(|v| v.dyn_into::<js_sys::Function>())
+    {
+        let vp_args = Array::new();
+        vp_args.push(&js_f64(vp_x as f64));
+        vp_args.push(&js_f64(vp_y as f64));
+        vp_args.push(&js_f64(vp_w as f64));
+        vp_args.push(&js_f64(vp_h as f64));
+        vp_args.push(&js_f64(0.0));
+        vp_args.push(&js_f64(1.0));
+        let _ = f.apply(&pass, &vp_args);
     }
+    // setScissorRect(x, y, width, height) — 4 args.
+    if let Ok(f) = js_sys::Reflect::get(&pass, &super::interop::js_str("setScissorRect"))
+        .and_then(|v| v.dyn_into::<js_sys::Function>())
+    {
+        let sc_args = Array::new();
+        sc_args.push(&js_f64(vp_x as f64));
+        sc_args.push(&js_f64(vp_y as f64));
+        sc_args.push(&js_f64(vp_w as f64));
+        sc_args.push(&js_f64(vp_h as f64));
+        let _ = f.apply(&pass, &sc_args);
+    }
+
+    // Node occluder quads are intentionally skipped: all nodes are on the
+    // flat z=0 plane and DOM cards render on top of the GPU canvas anyway,
+    // so writing depth causes more edge clipping than it prevents.
 
     // Edges: depth-test only.
     if state.edge_count > 0 {
@@ -221,5 +257,5 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
     let bufs = Array::new(); bufs.push(&cmd_buf);
     js_call(frame.queue, "submit", &[&JsValue::from(bufs)]);
 
-    position_dom_nodes(state, css_w, css_h);
+    position_dom_nodes(state, cont_w_css, cont_h_css);
 }
