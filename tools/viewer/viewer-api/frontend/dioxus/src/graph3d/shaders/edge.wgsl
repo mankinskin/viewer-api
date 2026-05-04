@@ -131,6 +131,22 @@ fn vs_edge(
     let min_world = world_per_px * min_px;
     halfWidth = max(halfWidth, min_world);
 
+    // ── Arrowhead vertex expansion (directed edges only) ────────────────────
+    // Widen the quad near posB so the arrowhead triangle can be rasterized
+    // wider than the beam.  Uses a tent-function: ramps up from ARROW_BASE_T
+    // to ARROW_PEAK_T, then back down to posB.
+    const ARROW_BASE_T : f32 = 0.55;
+    const ARROW_PEAK_T : f32 = 0.63;
+    const ARROW_MULT   : f32 = 2.8;
+    if (edgeType > 0.5 && pos01 > ARROW_BASE_T) {
+        let env = select(
+            (1.0 - pos01) / max(1.0 - ARROW_PEAK_T, 0.0001),
+            (pos01 - ARROW_BASE_T) / (ARROW_PEAK_T - ARROW_BASE_T),
+            pos01 < ARROW_PEAK_T
+        );
+        halfWidth = max(halfWidth * max(ARROW_MULT * env, 1.0), min_world);
+    }
+
     let worldPos = center + side * quadPos.y * halfWidth;
 
     var out: EdgeVsOut;
@@ -212,58 +228,45 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
         intensity *= 1.2;
     }
 
-    // ── Bounding-box endpoint trim ─────────────────────────────────────────
+    // ── Fixed world-space bounding-box endpoint trim ──────────────────────
     // Discard fragments that fall inside the node card at either end of the
-    // edge so the beam appears to connect at the card boundary rather than
-    // running through the opaque DOM element.
-    //
-    // Card half-extents in world units (independent of camera distance D):
-    //   half_w = (card_css_half_w × pixel_scale) / (pix_per_wu)
-    //          = (110 × 15/D) / (viewport_h / (2 × 0.4142 × D))
-    //          = 110 × 15 × 2 × 0.4142 / viewport_h
-    //          = 1366 / viewport_h
-    // pixel_scale constant 15 matches render.rs `(15.0 / dist).clamp(…)`.
-    // card_css_half_w = 110 (half of 220 px).  card_css_half_h ≈ 32 px.
-    let vp_h_2 = max(cam.time.z, 1.0);
-    let card_half_w = 1366.0 / vp_h_2;   // world units
-    let card_half_h =  394.0 / vp_h_2;   // world units  (32 px half-height)
-
-    // Compute the normalised t value at which the edge exits the source card
-    // (and by symmetry enters the destination card).
-    let dx_abs = abs(in.edgeDir.x);
-    let dy_abs = abs(in.edgeDir.y);
-    let t_x = select(1.0e6, card_half_w / dx_abs, dx_abs > 0.001);
-    let t_y = select(1.0e6, card_half_h / dy_abs, dy_abs > 0.001);
-    // t_exit is in world units; divide by edgeLen to get a [0,1] parameter.
-    let t_exit_raw = min(t_x, t_y) / max(in.edgeLen, 0.0001);
-    // Clamp so at most 40% of each end is trimmed (avoids hiding very short
-    // edges entirely when adjacent cards overlap in world space).
-    let t_exit = clamp(t_exit_raw, 0.0, 0.40);
+    // edge.  Uses fixed world-unit half-extents (independent of camera dist).
+    //   NODE_HALF_W = 220px * 0.5 * scale(1/100) = 1.1 world units
+    //   NODE_HALF_H =  60px * 0.5 * scale(1/100) = 0.30 world units
+    const NODE_HALF_W: f32 = 1.1;
+    const NODE_HALF_H: f32 = 0.30;
+    let dx_abs = abs(in.edgeDir.x) * in.edgeLen;
+    let dy_abs = abs(in.edgeDir.y) * in.edgeLen;
+    let t_x = select(1.0e6, NODE_HALF_W / max(dx_abs, 0.0001), dx_abs > 0.001);
+    let t_y = select(1.0e6, NODE_HALF_H / max(dy_abs, 0.0001), dy_abs > 0.001);
+    let t_exit = clamp(min(t_x, t_y), 0.0, 0.38);
 
     if (t < t_exit || t > (1.0 - t_exit)) { discard; }
 
-    // ── Endpoint fades ─────────────────────────────────────────────────────
-    // ARROW_START is dynamic: place the arrowhead in the last 20% of the
-    // *visible* edge portion so it always sits near the destination card.
+    // ── Arrow region and endpoint fades ───────────────────────────────────
     let visible_end = 1.0 - t_exit;
-    let arrow_start = visible_end - max((visible_end - t_exit) * 0.20, 0.04);
+    let arrow_start = visible_end - max((visible_end - t_exit) * 0.22, 0.05);
 
+    const BEAM_HALF: f32 = 0.35;  // beam half-width in normalised edgeUV.y space
     let endFadeA = smoothstep(0.0, 0.06, t - t_exit);
-    // In the arrowhead zone suppress the tail-end fade so the tip stays bright.
-    let endFadeB = select(smoothstep(0.0, 0.06, visible_end - t), 1.0, t > arrow_start);
-    intensity *= min(endFadeA, endFadeB);
 
-    // ── Directed arrowhead at posB (the dependency target) ────────────────
-    // Tapers from full beam-width at the base to a sharp point at the visible
-    // end.  `arrow_base_half = 1.0` makes the base exactly beam-width so it
-    // looks like a natural continuation of the line.
-    if t > arrow_start {
+    if (t < arrow_start) {
+        // ── Beam region: thin strip with soft AA edges ──────────────────
+        let d = abs(in.edgeUV.y) - BEAM_HALF;
+        if (d > 0.12) { discard; }
+        let endFadeB = smoothstep(0.0, 0.06, visible_end - t);
+        intensity *= min(endFadeA, endFadeB) * (1.0 - smoothstep(0.0, 0.12, d));
+    } else {
+        // ── Arrowhead: triangle SDF with AA ────────────────────────────
+        // The vertex shader expanded halfWidth 2.8× near posB so edgeUV.y
+        // can reach ±1.0 for a triangle that is clearly wider than the beam.
         let arrow_t = (t - arrow_start) / max(visible_end - arrow_start, 0.0001);
-        let arrow_base_half = 1.0;   // 1.0 = beam half-width (edgeUV.y ∈ [-1,1])
-        let allowed = arrow_base_half * (1.0 - arrow_t);
-        if abs(in.edgeUV.y) > allowed { discard; }
-        // Brighten the arrowhead so it pops against the background.
-        intensity *= 1.5 + 0.8 * (1.0 - arrow_t);
+        const ARROW_HALF: f32 = 0.92;  // normalised arrowhead base half-width
+        let d_arrow = abs(in.edgeUV.y) - ARROW_HALF * (1.0 - arrow_t);
+        let aa = 0.06;
+        if (d_arrow > aa) { discard; }
+        intensity *= endFadeA * (1.0 - smoothstep(-aa, aa, d_arrow));
+        intensity *= 1.6 + 0.7 * (1.0 - arrow_t);
     }
 
     let a = clamp(intensity * in.color.a * 1.6, 0.0, 1.0);

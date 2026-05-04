@@ -229,8 +229,9 @@ pub fn Sidebar(
         { let _ = evt; }
     };
 
-    // Build the CSS class string.
-    let sidebar_class = use_memo(move || {
+    // Build the CSS class string directly (not use_memo — collapsed is a plain
+    // bool prop, not a Signal, so use_memo would never re-run on prop changes).
+    let sidebar_class = {
         let mut parts = vec!["sidebar"];
         if collapsed {
             parts.push("sidebar-collapsed");
@@ -246,15 +247,13 @@ pub fn Sidebar(
         } else {
             format!("{base} {class}")
         }
-    });
+    };
 
-    let inline_style = use_memo(move || {
-        if collapsed {
-            String::new()
-        } else {
-            format!("width: {}px; min-width: {}px", *width.read(), min_width)
-        }
-    });
+    let inline_style = if collapsed {
+        "width: 0px; min-width: 0px; overflow: hidden;".to_string()
+    } else {
+        format!("width: {}px; min-width: {}px", *width.read(), min_width)
+    };
 
     rsx! {
         // Mobile: dim overlay backdrop — invisible on desktop via CSS
