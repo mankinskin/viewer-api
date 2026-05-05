@@ -29,7 +29,7 @@ pub use icons::{
 pub use layout::{GlassPanel, Header, Layout, Panel, PanelPlacement, Sidebar};
 pub use meta_header::{Chip, ChipKind, ChipRow, MetaHeader};
 pub use modal::Overlay;
-pub use resize_handle::{ResizeDirection, ResizeEdge, ResizeHandle};
+pub use resize_handle::{PanelResizer, ResizeDirection, ResizeEdge, ResizeHandle};
 pub use spinner::{Spinner, SpinnerSize};
 pub use tab_bar::{TabBar, TabItem};
 pub use theme_settings::{CustomTheme, ThemeSettings, ThemeSnapshot};

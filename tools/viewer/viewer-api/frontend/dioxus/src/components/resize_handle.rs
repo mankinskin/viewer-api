@@ -287,3 +287,52 @@ pub fn ResizeHandle(
         }
     }
 }
+
+// ── PanelResizer ──────────────────────────────────────────────────────────────
+
+/// Flow-positioned drag divider placed **between** adjacent flex items.
+///
+/// Unlike [`ResizeHandle`] (positioned absolutely inside a panel at its edge),
+/// `PanelResizer` occupies a thin in-flow slice of the flex row/column and
+/// stretches to fill the cross-axis.  Dragging it calls `on_resize(delta)`:
+/// - Horizontal (default): positive delta = dragged right, negative = left.
+/// - Vertical: positive delta = dragged down, negative = up.
+///
+/// Apply the delta to the adjacent panel whose size you control:
+/// - Left panel:   `width  += delta`
+/// - Right panel:  `width  -= delta`
+/// - Top panel:    `height += delta`
+/// - Bottom panel: `height -= delta`
+///
+/// CSS class `.panel-resizer` (defined in `layout.css`) overrides the
+/// absolute positioning from `.resize-handle` so the element sits in-flow.
+#[component]
+pub fn PanelResizer(
+    /// Resize axis — `Horizontal` (default) for side-by-side panels,
+    /// `Vertical` for stacked panels.
+    #[props(default)]
+    direction: ResizeDirection,
+    /// Called with the pixel delta on each animation frame during a drag.
+    on_resize: EventHandler<f64>,
+    /// Extra CSS classes appended to the element.
+    #[props(default)]
+    class: String,
+) -> Element {
+    let edge = match direction {
+        ResizeDirection::Horizontal => ResizeEdge::Right,
+        ResizeDirection::Vertical  => ResizeEdge::Bottom,
+    };
+    let extra_class = if class.is_empty() {
+        "panel-resizer".to_string()
+    } else {
+        format!("panel-resizer {class}")
+    };
+    rsx! {
+        ResizeHandle {
+            edge: edge,
+            direction: direction,
+            on_resize: on_resize,
+            class: extra_class,
+        }
+    }
+}

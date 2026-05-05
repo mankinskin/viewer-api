@@ -435,3 +435,45 @@
     font-size: 14px;
   }
 }
+
+/* ── PanelResizer — in-flow drag divider for flex rows/columns ─────────────── */
+
+/* Override the absolute positioning from .resize-handle so the element
+   participates in the flex flow between panels.                          */
+.panel-resizer.resize-handle {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: transparent;
+  transition: background 0.15s ease;
+  z-index: 50;
+}
+
+/* Horizontal divider (between flex columns) */
+.panel-resizer.resize-handle-right,
+.panel-resizer.resize-handle-left {
+  width: 5px;
+  height: auto;
+}
+
+/* Vertical divider (between flex rows) */
+.panel-resizer.resize-handle-bottom,
+.panel-resizer.resize-handle-top {
+  height: 5px;
+  width: auto;
+}
+
+.panel-resizer.resize-handle:hover {
+  background: var(--accent-blue);
+  opacity: 0.35;
+}
+
+@media (max-width: 768px) {
+  .panel-resizer {
+    display: none;
+  }
+}
