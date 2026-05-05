@@ -1,5 +1,26 @@
 //! Orbit camera + mouse interaction state.
 
+/// Which layout algorithm the caller is using.  Stored here (in viewer-api)
+/// so the built-in settings panel can display and trigger layout changes.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum LayoutMode {
+    /// Hierarchical BFS rows on the Y axis, force-directed spread in the XZ
+    /// plane — full 3-D depth cues.
+    #[default]
+    Hierarchical3D,
+    /// Same hierarchical rows but Z coordinates zeroed — flat top-down view.
+    Flat2D,
+}
+
+/// Camera projection mode.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum Projection {
+    #[default]
+    Perspective,
+    /// Orthographic projection (no perspective foreshortening).
+    Orthographic,
+}
+
 /// Vertical FOV (radians) — 45°.
 pub const CAMERA_FOV:  f32 = std::f32::consts::FRAC_PI_4;
 pub const CAMERA_NEAR: f32 = 0.1;

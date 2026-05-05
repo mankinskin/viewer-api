@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
-use super::camera::{Camera, CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, CAM_UNIFORM_FLOATS};
+use super::camera::{Camera, Projection, CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, CAM_UNIFORM_FLOATS};
 use super::data::Layout3D;
 use super::gpu::GpuResources;
 use super::interop::*;
@@ -28,6 +28,8 @@ pub(crate) struct RenderState {
     /// renderer will rewrite `edge_buf` + `node_quad_buf` from `layout`
     /// before drawing.
     pub dirty_layout:  bool,
+    /// Camera projection mode (perspective or orthographic).
+    pub projection:    Projection,
 }
 
 struct ScreenPos { x: f32, y: f32, z: f32, visible: bool }
@@ -57,7 +59,13 @@ fn position_dom_nodes(state: &RenderState, cont_w: f32, cont_h: f32) {
     // is a simple [0, cont_w] × [0, cont_h] transform with no origin offset.
     let eye    = state.camera.eye();
     let aspect = cont_w / cont_h.max(1.0);
-    let proj   = math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR);
+    let proj   = match state.projection {
+        Projection::Perspective => math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
+        Projection::Orthographic => {
+            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
+            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
+        }
+    };
     let view   = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
     let vp     = math::mul(proj, view);
 
@@ -173,7 +181,13 @@ pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::Fram
     // the graph on the container, not the full canvas.
     let eye    = state.camera.eye();
     let aspect = cont_w_css / cont_h_css.max(1.0);
-    let proj   = math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR);
+    let proj   = match state.projection {
+        Projection::Perspective => math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
+        Projection::Orthographic => {
+            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
+            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
+        }
+    };
     let view   = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
     let vp_mat = math::mul(proj, view);
 

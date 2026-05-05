@@ -16,6 +16,22 @@ pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
     m
 }
 
+/// Symmetric orthographic projection matrix (WebGPU clip-space z ∈ [0, 1]).
+///
+/// `half_h` is the half-height of the visible world-space volume.  Use
+/// `camera.distance * (fov * 0.5).tan()` to obtain a matching scale.
+pub fn orthographic(half_h: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
+    let half_w = half_h * aspect;
+    let inv_depth = 1.0 / (near - far);
+    let mut m = [0.0f32; 16];
+    m[0]  = 1.0 / half_w;
+    m[5]  = 1.0 / half_h;
+    m[10] = inv_depth;
+    m[14] = near * inv_depth;
+    m[15] = 1.0;
+    m
+}
+
 /// Look-at view matrix (column-major, right-handed).
 pub fn look_at(eye: [f32; 3], target: [f32; 3], up: [f32; 3]) -> [f32; 16] {
     let fwd = normalise([

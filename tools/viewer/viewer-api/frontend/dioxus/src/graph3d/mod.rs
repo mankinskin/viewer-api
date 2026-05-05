@@ -37,7 +37,7 @@ mod interop;
 mod render;
 
 pub use data::{EdgeRef3D, Layout3D, Node3D};
-pub use camera::CameraCommand;
+pub use camera::{CameraCommand, LayoutMode, Projection};
 
 use dioxus::prelude::*;
 
@@ -87,6 +87,19 @@ pub struct Graph3DProps {
     /// command should always pass a strictly increasing value.
     #[props(default = 0)]
     pub camera_command_seq: u64,
+    /// Camera projection mode.  Defaults to [`Projection::Perspective`].
+    #[props(default)]
+    pub projection: Projection,
+    /// Currently active layout mode — shown in the built-in settings panel.
+    /// Defaults to [`LayoutMode::Hierarchical3D`].
+    #[props(default)]
+    pub layout_mode: LayoutMode,
+    /// Called when the user picks a different layout mode in the settings panel.
+    #[props(default)]
+    pub on_layout_mode_change: Option<EventHandler<LayoutMode>>,
+    /// Called when the user picks a different projection in the settings panel.
+    #[props(default)]
+    pub on_projection_change: Option<EventHandler<Projection>>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -98,7 +111,15 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         props.container_style.clone()
     };
     rsx! {
-        div { id: "{props.container_id}", style: "{style}", {props.children} }
+        div { id: "{props.container_id}", style: "{style}",
+            {props.children}
+            GraphSettingsOverlay {
+                layout_mode: props.layout_mode,
+                projection: props.projection,
+                on_layout_mode_change: props.on_layout_mode_change,
+                on_projection_change: props.on_projection_change,
+            }
+        }
     }
 }
 
@@ -122,6 +143,10 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 
     let layout       = props.layout.clone();
     let container_id = props.container_id.clone();
+    let projection   = props.projection;
+    let layout_mode  = props.layout_mode;
+    let on_layout_mode_change = props.on_layout_mode_change.clone();
+    let on_projection_change  = props.on_projection_change.clone();
     let style = if props.container_style.is_empty() {
         "position: absolute; inset: 0; overflow: hidden; user-select: none; cursor: grab;".to_string()
     } else {
@@ -208,7 +233,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             let state_rc = Rc::new(RefCell::new(RenderState {
                 gpu, layout, camera, edge_buf, edge_count,
                 node_quad_buf, node_count, container_id: container_id.clone(),
-                dirty_layout: false,
+                dirty_layout: false, projection,
             }));
             render_w.set(Some(state_rc.clone()));
             status_w.set(String::new());
@@ -241,6 +266,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                 st.dirty_layout = true;
                 st.camera.frame(centre, radius);
             }
+            if st.projection != props.projection {
+                st.projection = props.projection;
+            }
         }
     }
 
@@ -271,6 +299,155 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                     style: "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #aaa; font-size: 14px; font-family: sans-serif; text-align: center; pointer-events: none;",
                     "{status_text}"
                 }
+            }
+            GraphSettingsOverlay {
+                layout_mode: layout_mode,
+                projection: projection,
+                on_layout_mode_change: on_layout_mode_change,
+                on_projection_change: on_projection_change,
+            }
+        }
+    }
+}
+
+// ── Built-in settings overlay ─────────────────────────────────────────────
+
+#[derive(Props, Clone, PartialEq)]
+struct GraphSettingsOverlayProps {
+    layout_mode: LayoutMode,
+    projection:  Projection,
+    on_layout_mode_change: Option<EventHandler<LayoutMode>>,
+    on_projection_change:  Option<EventHandler<Projection>>,
+}
+
+fn opt_btn_style(active: bool) -> String {
+    let (bg, border, color) = if active {
+        ("rgba(79,140,255,0.20)", "1px solid rgba(79,140,255,0.50)", "#93bbff")
+    } else {
+        ("rgba(255,255,255,0.05)", "1px solid rgba(255,255,255,0.10)", "#aaa")
+    };
+    format!(
+        "flex:1; padding:5px 0; border-radius:5px; border:{border}; \
+         background:{bg}; color:{color}; font-size:11px; font-weight:500; \
+         cursor:pointer; text-align:center; white-space:nowrap;"
+    )
+}
+
+#[component]
+fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element {
+    let mut open: Signal<bool> = use_hook(|| Signal::new(false));
+    let cur_layout = props.layout_mode;
+    let cur_proj   = props.projection;
+
+    let has_callbacks =
+        props.on_layout_mode_change.is_some() || props.on_projection_change.is_some();
+
+    if !has_callbacks { return rsx! {}; }
+
+    let on_lm_change = props.on_layout_mode_change.clone();
+    let on_pr_change = props.on_projection_change.clone();
+
+    rsx! {
+        div {
+            style: "position: absolute; bottom: 12px; right: 12px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end;",
+            // Floating panel (rendered above the button when open)
+            if *open.read() {
+                div {
+                    style: "
+                        margin-bottom: 6px;
+                        min-width: 200px;
+                        background: rgba(18, 20, 28, 0.88);
+                        border: 1px solid rgba(255,255,255,0.10);
+                        border-radius: 9px;
+                        padding: 12px 14px;
+                        box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+                        font-family: sans-serif;
+                        font-size: 12px;
+                        color: #ccc;
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                    ",
+                    if on_lm_change.is_some() {
+                        {
+                            let on_h3d = on_lm_change.clone();
+                            let on_f2d = on_lm_change.clone();
+                            rsx! {
+                                div {
+                                    style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin-bottom:7px;",
+                                    "Layout"
+                                }
+                                div { style: "display:flex; gap:6px; margin-bottom:10px;",
+                                    button {
+                                        style: "{opt_btn_style(cur_layout == LayoutMode::Hierarchical3D)}",
+                                        onclick: move |_| {
+                                            if let Some(ref cb) = on_h3d { cb.call(LayoutMode::Hierarchical3D); }
+                                        },
+                                        "Hierarchical 3D"
+                                    }
+                                    button {
+                                        style: "{opt_btn_style(cur_layout == LayoutMode::Flat2D)}",
+                                        onclick: move |_| {
+                                            if let Some(ref cb) = on_f2d { cb.call(LayoutMode::Flat2D); }
+                                        },
+                                        "Flat 2D"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if on_pr_change.is_some() {
+                        {
+                            let on_persp = on_pr_change.clone();
+                            let on_ortho = on_pr_change.clone();
+                            rsx! {
+                                div {
+                                    style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin-bottom:7px;",
+                                    "Projection"
+                                }
+                                div { style: "display:flex; gap:6px;",
+                                    button {
+                                        style: "{opt_btn_style(cur_proj == Projection::Perspective)}",
+                                        onclick: move |_| {
+                                            if let Some(ref cb) = on_persp { cb.call(Projection::Perspective); }
+                                        },
+                                        "Perspective"
+                                    }
+                                    button {
+                                        style: "{opt_btn_style(cur_proj == Projection::Orthographic)}",
+                                        onclick: move |_| {
+                                            if let Some(ref cb) = on_ortho { cb.call(Projection::Orthographic); }
+                                        },
+                                        "Orthographic"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Gear button — minimal, transparent, bottom-right corner
+            button {
+                title: "Graph settings",
+                style: "
+                    width: 28px; height: 28px;
+                    border-radius: 6px;
+                    border: 1px solid rgba(255,255,255,0.08);
+                    background: rgba(0,0,0,0.30);
+                    color: rgba(255,255,255,0.45);
+                    font-size: 14px;
+                    cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
+                    padding: 0;
+                    line-height: 1;
+                ",
+                onclick: move |evt| {
+                    evt.stop_propagation();
+                    let cur = *open.read();
+                    *open.write() = !cur;
+                },
+                "\u{2699}"
             }
         }
     }
