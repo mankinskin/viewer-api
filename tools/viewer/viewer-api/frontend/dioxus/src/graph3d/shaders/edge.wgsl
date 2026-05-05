@@ -131,11 +131,11 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     //   [arrow_start_t .. t_dst_exit]  = arrowhead (triangle, widens then tapers to point)
     //
     // Node bounding-box trim:
-    //   NODE_HALF_W = 220px * 0.5 * (1/100 scale) = 1.1 world units
-    //   NODE_HALF_H =  60px * 0.5 * (1/100 scale) = 0.30 world units
+    //   NODE_HALF_W = 260px * 0.5 * (1/100 scale) = 1.3 world units
+    //   NODE_HALF_H =  70px * 0.5 * (1/100 scale) = 0.35 world units
 
-    const NODE_HALF_W : f32 = 1.1;
-    const NODE_HALF_H : f32 = 0.30;
+    const NODE_HALF_W : f32 = 1.3;
+    const NODE_HALF_H : f32 = 0.35;
     const ARROW_LEN_F : f32 = 0.45;   // world-space arrowhead length
     const SHAFT_HALF  : f32 = 0.22;   // shaft half-width in quad-UV space (y in -1..1)
     const ARROW_HALF  : f32 = 0.90;   // arrowhead max half-width at base (quad-UV)

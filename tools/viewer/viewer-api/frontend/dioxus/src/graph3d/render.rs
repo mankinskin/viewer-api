@@ -76,7 +76,7 @@ fn position_dom_nodes(state: &RenderState, cont_w: f32, cont_h: f32) {
         let dy = eye[1] - node.y;
         let dz = eye[2] - node.z;
         let dist = (dx*dx + dy*dy + dz*dz).sqrt().max(0.1);
-        let pixel_scale = (15.0 / dist).clamp(0.15, 2.5);
+        let pixel_scale = (22.0 / dist).clamp(0.2, 3.5);
 
         let margin = 300.0;
         if !screen.visible
@@ -98,7 +98,17 @@ fn position_dom_nodes(state: &RenderState, cont_w: f32, cont_h: f32) {
         // inline override falls back to the CSS rule and the card stays
         // hidden. "block" wins as an inline override regardless.
         let _ = html_el.style().set_property("display", "block");
-        let z_idx = ((1.0 - screen.z) * 10000.0) as i32;
+        // Selected nodes (class "node-card-selected") get a very high z-index
+        // so they always render in the foreground over overlapping neighbours.
+        let is_selected = html_el
+            .get_attribute("class")
+            .map(|c| c.contains("node-card-selected"))
+            .unwrap_or(false);
+        let z_idx = if is_selected {
+            100_000i32
+        } else {
+            ((1.0 - screen.z) * 10000.0) as i32
+        };
         let _ = html_el.style().set_property("z-index", &z_idx.to_string());
 
         let transform = format!(
