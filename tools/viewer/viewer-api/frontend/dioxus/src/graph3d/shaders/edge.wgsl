@@ -116,35 +116,40 @@ fn vs_edge(
     }
 
     // ── Enforce a minimum screen-space pixel width ─────────────────────
-    // Project the centre to clip space to figure out how many world units
-    // map to one pixel at this depth, then bump halfWidth so the line is
-    // never thinner than ~1 device pixel. This is the standard fix for
-    // sub-pixel edge aliasing in 3-D line renderers.
     let viewport_h = max(cam.time.z, 1.0);
-    // Vertical FOV is 45° (FRAC_PI_4) → tan(fov/2) ≈ 0.4142.
     let center_clip = cam.viewProj * vec4(center, 1.0);
     let depth_w = max(abs(center_clip.w), 0.0001);
-    // World units per pixel at this depth.
     let world_per_px = (2.0 * 0.41421356 * depth_w) / viewport_h;
-    // Minimum half-width: 1.0 px (subtle) for grid, 1.25 px for energy beams.
     let min_px = select(1.25, 1.0, edgeType < 0.5);
     let min_world = world_per_px * min_px;
     halfWidth = max(halfWidth, min_world);
 
     // ── Arrowhead vertex expansion (directed edges only) ────────────────────
-    // Widen the quad near posB so the arrowhead triangle can be rasterized
-    // wider than the beam.  Uses a tent-function: ramps up from ARROW_BASE_T
-    // to ARROW_PEAK_T, then back down to posB.
-    const ARROW_BASE_T : f32 = 0.55;
-    const ARROW_PEAK_T : f32 = 0.63;
-    const ARROW_MULT   : f32 = 2.8;
-    if (edgeType > 0.5 && pos01 > ARROW_BASE_T) {
-        let env = select(
-            (1.0 - pos01) / max(1.0 - ARROW_PEAK_T, 0.0001),
-            (pos01 - ARROW_BASE_T) / (ARROW_PEAK_T - ARROW_BASE_T),
-            pos01 < ARROW_PEAK_T
-        );
-        halfWidth = max(halfWidth * max(ARROW_MULT * env, 1.0), min_world);
+    // Constant world-space arrowhead: ARROW_LEN world units long, ARROW_MULT × beam wide.
+    // Node half-extents match fragment trim constants.
+    const NODE_HALF_W_VS : f32 = 1.1;
+    const NODE_HALF_H_VS : f32 = 0.30;
+    const ARROW_LEN      : f32 = 0.55;   // world-space arrowhead length (constant)
+    const ARROW_MULT     : f32 = 3.8;    // how many times wider than the beam at base
+
+    if (edgeType > 0.5 && edgeLength > 0.001) {
+        // World-space distance from posB at current vertex.
+        let dist_from_B = (1.0 - pos01) * edgeLength;
+        // Compute t_exit in world units: how far along the edge (in wu) the
+        // edge enters/exits the node bounding box at each endpoint.
+        let ndir_x = dir.x / edgeLength;
+        let ndir_y = dir.y / edgeLength;
+        let t_x = select(1.0e6, NODE_HALF_W_VS / max(abs(ndir_x), 0.0001), abs(ndir_x) > 0.001);
+        let t_y = select(1.0e6, NODE_HALF_H_VS / max(abs(ndir_y), 0.0001), abs(ndir_y) > 0.001);
+        let t_exit_world = clamp(min(t_x, t_y), 0.0, edgeLength * 0.38);
+        // Expand from (t_exit_world + ARROW_LEN) down to t_exit_world at tip.
+        let arrow_base_dist = t_exit_world + ARROW_LEN;
+        if (dist_from_B < arrow_base_dist) {
+            // tent: ramps up at base, back down at tip
+            let arrow_t = clamp(dist_from_B / max(t_exit_world + 0.001, 0.001), 0.0, 1.0);
+            let env = clamp((arrow_base_dist - dist_from_B) / max(ARROW_LEN, 0.001), 0.0, 1.0);
+            halfWidth = max(halfWidth * (1.0 + (ARROW_MULT - 1.0) * env), min_world);
+        }
     }
 
     let worldPos = center + side * quadPos.y * halfWidth;
@@ -156,7 +161,6 @@ fn vs_edge(
     out.flags    = flags;
     out.edgeType = edgeType;
     out.edgeLen  = edgeLength;
-    // Normalised 2-D direction (flat graph lies on z=0 so z component is ~0).
     out.edgeDir  = select(dir.xy / edgeLength, vec2(1.0, 0.0), edgeLength < 0.0001);
     return out;
 }
@@ -170,9 +174,6 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
 
     // ── Grid / simple edges (edgeType 0) ──
     if (in.edgeType < 0.5) {
-        // Tight AA band (matches TS hypergraph.wgsl reference): keep core
-        // fully opaque and only fade the outermost few % of the line so
-        // sub-pixel-thin edges stay crisp at any distance.
         let alpha = 1.0 - smoothstep(0.92, 1.0, across);
         var col = in.color.rgb;
         var a = in.color.a * alpha;
@@ -203,9 +204,6 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     let pulse1 = pow(0.5 + 0.5 * sin((t * 6.28318 * 3.0) - time * 4.0), 3.0);
     let pulse2 = pow(0.5 + 0.5 * sin((t * 6.28318 * 2.0) - time * 2.5 + 1.5), 2.0);
 
-    let sourceGlow = exp(-t * t * 6.0);
-    let targetGlow = exp(-(1.0 - t) * (1.0 - t) * 8.0);
-
     var intensity = core * 0.7
         + innerGlow * 0.2 * (0.6 + 0.4 * plasma)
         + outerGlow * 0.08 * (0.5 + 0.5 * turb)
@@ -215,12 +213,10 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     var col = in.color.rgb;
     var hotCenter = vec3(1.0);
 
-    // Normal edge: subtle energy
     intensity *= 0.8;
     let subtlePulse = 0.5 + 0.5 * sin(t * 8.0 - time * 1.5);
     intensity += core * subtlePulse * 0.08;
 
-    // Hot-core brightening
     col = mix(col, hotCenter, core * 0.4);
 
     if (in.flags > 0.5) {
@@ -228,47 +224,73 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
         intensity *= 1.2;
     }
 
-    // ── Fixed world-space bounding-box endpoint trim ──────────────────────
-    // Discard fragments that fall inside the node card at either end of the
-    // edge.  Uses fixed world-unit half-extents (independent of camera dist).
+    // ── Fixed world-space bounding-box endpoint trim (connection points) ──────
+    // Trim the edge at the node card surface so it appears to connect exactly
+    // at the node boundary.  Both source (t≈0) and target (t≈1) are trimmed.
     //   NODE_HALF_W = 220px * 0.5 * scale(1/100) = 1.1 world units
     //   NODE_HALF_H =  60px * 0.5 * scale(1/100) = 0.30 world units
     const NODE_HALF_W: f32 = 1.1;
     const NODE_HALF_H: f32 = 0.30;
-    let dx_abs = abs(in.edgeDir.x) * in.edgeLen;
-    let dy_abs = abs(in.edgeDir.y) * in.edgeLen;
-    let t_x = select(1.0e6, NODE_HALF_W / max(dx_abs, 0.0001), dx_abs > 0.001);
-    let t_y = select(1.0e6, NODE_HALF_H / max(dy_abs, 0.0001), dy_abs > 0.001);
+    // How far along t the edge enters/exits the node bounding box.
+    let dx_abs = abs(in.edgeDir.x);
+    let dy_abs = abs(in.edgeDir.y);
+    let t_x = select(1.0e6, NODE_HALF_W / max(dx_abs * in.edgeLen, 0.0001), dx_abs > 0.001);
+    let t_y = select(1.0e6, NODE_HALF_H / max(dy_abs * in.edgeLen, 0.0001), dy_abs > 0.001);
     let t_exit = clamp(min(t_x, t_y), 0.0, 0.38);
 
     if (t < t_exit || t > (1.0 - t_exit)) { discard; }
 
-    // ── Arrow region and endpoint fades ───────────────────────────────────
+    // ── Constant world-space arrowhead at posB end ────────────────────────
+    // Arrow: ARROW_LEN world units, starts just past the node boundary.
+    const ARROW_LEN_F: f32 = 0.55;
+    let arrow_start_t = 1.0 - t_exit - ARROW_LEN_F / max(in.edgeLen, 0.001);
     let visible_end = 1.0 - t_exit;
-    let arrow_start = visible_end - max((visible_end - t_exit) * 0.22, 0.05);
 
-    const BEAM_HALF: f32 = 0.35;  // beam half-width in normalised edgeUV.y space
-    let endFadeA = smoothstep(0.0, 0.06, t - t_exit);
+    // Smooth entry fade for both ends (avoids hard clip at connection point).
+    let srcFade = smoothstep(0.0, 0.06, t - t_exit);
+    let dstFade = smoothstep(0.0, 0.06, visible_end - t);
 
-    if (t < arrow_start) {
-        // ── Beam region: thin strip with soft AA edges ──────────────────
+    // ── Connection point energy balls ─────────────────────────────────────
+    // Compute glow contributions BEFORE any per-region discards so the ball
+    // can extend slightly beyond the beam width at the endpoints.
+    let ball_r2 = 0.0064;  // ball radius² in UV space (r = 0.08)
+    let src_dt = t - t_exit;
+    let dst_dt = t - visible_end;
+    let src_d2 = src_dt * src_dt + in.edgeUV.y * in.edgeUV.y;
+    let dst_d2 = dst_dt * dst_dt + in.edgeUV.y * in.edgeUV.y;
+    let ball_glow = (exp(-src_d2 / ball_r2) + exp(-dst_d2 / ball_r2)) * 1.8;
+    let ball_pulse = 0.82 + 0.18 * sin(time * 3.0 + t * 8.0);
+    let ball_a = clamp(ball_glow * ball_pulse * in.color.a, 0.0, 1.0);
+    let ball_col = mix(in.color.rgb, vec3(1.0), 0.80);
+
+    // ── Beam / arrowhead intensity (non-discarding, clipped to 0 instead) ─
+    var intensity_final = 0.0;
+
+    if (t < arrow_start_t) {
+        // Beam region: thin strip with soft AA edges.
+        const BEAM_HALF: f32 = 0.32;
         let d = abs(in.edgeUV.y) - BEAM_HALF;
-        if (d > 0.12) { discard; }
-        let endFadeB = smoothstep(0.0, 0.06, visible_end - t);
-        intensity *= min(endFadeA, endFadeB) * (1.0 - smoothstep(0.0, 0.12, d));
+        if (d <= 0.10) {
+            intensity_final = intensity * min(srcFade, dstFade)
+                * (1.0 - smoothstep(0.0, 0.10, d));
+        }
     } else {
-        // ── Arrowhead: triangle SDF with AA ────────────────────────────
-        // The vertex shader expanded halfWidth 2.8× near posB so edgeUV.y
-        // can reach ±1.0 for a triangle that is clearly wider than the beam.
-        let arrow_t = (t - arrow_start) / max(visible_end - arrow_start, 0.0001);
-        const ARROW_HALF: f32 = 0.92;  // normalised arrowhead base half-width
-        let d_arrow = abs(in.edgeUV.y) - ARROW_HALF * (1.0 - arrow_t);
-        let aa = 0.06;
-        if (d_arrow > aa) { discard; }
-        intensity *= endFadeA * (1.0 - smoothstep(-aa, aa, d_arrow));
-        intensity *= 1.6 + 0.7 * (1.0 - arrow_t);
+        // Arrowhead: crisp triangle SDF.
+        let arrow_t = clamp((t - arrow_start_t) / max(visible_end - arrow_start_t, 0.0001), 0.0, 1.0);
+        const ARROW_HALF: f32 = 0.98;
+        let tri_edge = ARROW_HALF * (1.0 - arrow_t);
+        let d_arrow = abs(in.edgeUV.y) - tri_edge;
+        const AA: f32 = 0.025;
+        if (d_arrow <= AA) {
+            intensity_final = intensity * srcFade
+                * (1.0 - smoothstep(-AA * 0.5, AA, d_arrow))
+                * (1.8 + 0.6 * (1.0 - arrow_t));
+        }
     }
 
-    let a = clamp(intensity * in.color.a * 1.6, 0.0, 1.0);
-    return vec4(col * a, a);
+    let beam_a   = clamp(intensity_final * in.color.a * 1.6, 0.0, 1.0);
+    let final_a  = clamp(beam_a + ball_a, 0.0, 1.0);
+    if (final_a < 0.0008) { discard; }
+    let final_col = (col * beam_a + ball_col * ball_a) / max(final_a, 0.001);
+    return vec4(final_col * final_a, final_a);
 }
