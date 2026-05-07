@@ -60,7 +60,8 @@ impl __ClassesConvert for Option<String> {
 
 pub use graph3d::{
     can_use_webgpu as can_use_webgpu_graph3d, CameraCommand, EdgeRef3D, Graph3D, Layout3D,
-    LayoutMode, Node3D, Projection, DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
+    LayoutMode, Node3D, NodeCardProfile, Projection,
+    DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
 };
 pub use components::*;
 pub use effects::WgpuOverlay;

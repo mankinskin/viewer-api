@@ -36,7 +36,7 @@ mod interop;
 #[cfg(target_arch = "wasm32")]
 mod render;
 
-pub use data::{EdgeRef3D, Layout3D, Node3D};
+pub use data::{EdgeRef3D, Layout3D, Node3D, NodeCardProfile};
 pub use camera::{CameraCommand, LayoutMode, Projection};
 
 use dioxus::prelude::*;

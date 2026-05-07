@@ -22,11 +22,22 @@ pub struct EdgeRef3D {
     pub kind:     String,
 }
 
+/// Screen-space node-card footprint profile for a shared Graph3D layout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NodeCardProfile {
+    /// Shared compact graph cards, currently used by spec-viewer.
+    #[default]
+    Compact,
+    /// Wider ticket cards with a fixed two-row summary layout.
+    TicketWide,
+}
+
 /// A complete 3-D graph: positioned nodes + indexed edges.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Layout3D {
     pub nodes: Vec<Node3D>,
     pub edges: Vec<EdgeRef3D>,
+    pub node_card_profile: NodeCardProfile,
 }
 
 /// Per-edge instance floats (posA[3]+posB[3]+color[4]+flags[1]+edgeType[1]).
@@ -54,7 +65,12 @@ fn grid_line_color(coord: f32) -> (f32, f32, f32, f32) {
 
 impl Layout3D {
     pub fn new(nodes: Vec<Node3D>, edges: Vec<EdgeRef3D>) -> Self {
-        Self { nodes, edges }
+        Self { nodes, edges, node_card_profile: NodeCardProfile::default() }
+    }
+
+    pub fn with_node_card_profile(mut self, node_card_profile: NodeCardProfile) -> Self {
+        self.node_card_profile = node_card_profile;
+        self
     }
 
     /// Bounding-sphere centre and radius of all nodes (for camera framing).
@@ -89,6 +105,10 @@ impl Layout3D {
             (self.edges.len() + GRID_LINE_COUNT) * EDGE_INST_FLOATS,
         );
         let mut count = 0u32;
+        let graph_edge_type = match self.node_card_profile {
+            NodeCardProfile::Compact => 1.0,
+            NodeCardProfile::TicketWide => 2.0,
+        };
 
         // ── Coordinate grid (y = 0 plane) ──
         // Step 1 world-unit, extent ±GRID_HALF on each axis.
@@ -133,7 +153,7 @@ impl Layout3D {
                 b.x, b.y, b.z,
                 r,   g,   bl, alpha,
                 0.0,        // flags
-                1.0,        // edgeType = normal energy beam
+                graph_edge_type,
             ]);
             count += 1;
         }
@@ -159,5 +179,42 @@ fn edge_color(kind: &str) -> (f32, f32, f32, f32) {
         "blocks"                          => (0.90, 0.40, 0.20, 0.70),
         "parent" | "child" | "section"    => (0.55, 0.45, 0.85, 0.60),
         _                                 => (0.50, 0.50, 0.70, 0.50),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{EdgeRef3D, Layout3D, Node3D, NodeCardProfile, EDGE_INST_FLOATS, GRID_LINE_COUNT};
+
+    fn sample_nodes() -> Vec<Node3D> {
+        vec![
+            Node3D { id: "root".into(), label: None, state: None, x: 0.0, y: 0.0, z: 0.0 },
+            Node3D { id: "child".into(), label: None, state: None, x: 2.0, y: 0.0, z: 0.0 },
+        ]
+    }
+
+    fn sample_edges() -> Vec<EdgeRef3D> {
+        vec![EdgeRef3D { from_idx: 0, to_idx: 1, kind: "depends_on".into() }]
+    }
+
+    #[test]
+    fn compact_profile_uses_compact_directed_edge_type() {
+        let layout = Layout3D::new(sample_nodes(), sample_edges());
+        let (edge_data, edge_count) = layout.build_edge_instances();
+
+        assert_eq!(edge_count as usize, GRID_LINE_COUNT + 1);
+        let edge_type = edge_data[(GRID_LINE_COUNT + 1) * EDGE_INST_FLOATS - 1];
+        assert_eq!(edge_type, 1.0);
+    }
+
+    #[test]
+    fn ticket_wide_profile_uses_ticket_directed_edge_type() {
+        let layout = Layout3D::new(sample_nodes(), sample_edges())
+            .with_node_card_profile(NodeCardProfile::TicketWide);
+        let (edge_data, edge_count) = layout.build_edge_instances();
+
+        assert_eq!(edge_count as usize, GRID_LINE_COUNT + 1);
+        let edge_type = edge_data[(GRID_LINE_COUNT + 1) * EDGE_INST_FLOATS - 1];
+        assert_eq!(edge_type, 2.0);
     }
 }

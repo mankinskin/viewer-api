@@ -49,13 +49,23 @@ struct EdgeVsOut {
     @location(2) flags     : f32,
     @location(3) edgeType  : f32,
     @location(4) edgeLen   : f32,
-    // Normalised XY direction (posB - posA) for bounding-box endpoint trim.
-    @location(5) edgeDir   : vec2<f32>,
+    // World-space t where the shaft exits the source / enters the destination card.
+    @location(5) srcExitT  : f32,
+    @location(6) dstExitT  : f32,
 };
+
+fn screen_fraction_to_world_t(s: f32, inv_w_a: f32, inv_w_b: f32) -> f32 {
+    let denom = (1.0 - s) * inv_w_a + s * inv_w_b;
+    if (denom <= 0.000001) {
+        return clamp(s, 0.0, 1.0);
+    }
+    return clamp((s * inv_w_b) / denom, 0.0, 1.0);
+}
 
 // edgeType encoding:
 //   0 = grid / simple
-//   1 = normal directed edge
+//   1 = directed edge with compact shared graph cards
+//   2 = directed edge with wide ticket-viewer cards
 
 @vertex
 fn vs_edge(
@@ -92,6 +102,45 @@ fn vs_edge(
     let min_world = world_per_px * min_px;
     halfWidth = max(halfWidth, min_world);
 
+    let clip_a = cam.viewProj * vec4(posA, 1.0);
+    let clip_b = cam.viewProj * vec4(posB, 1.0);
+    let inv_w_a = 1.0 / max(abs(clip_a.w), 0.0001);
+    let inv_w_b = 1.0 / max(abs(clip_b.w), 0.0001);
+    let ndc_a = clip_a.xy * inv_w_a;
+    let ndc_b = clip_b.xy * inv_w_b;
+    let screen_a = vec2(
+        (ndc_a.x + 1.0) * 0.5 * cam.time.y,
+        (1.0 - ndc_a.y) * 0.5 * cam.time.z,
+    );
+    let screen_b = vec2(
+        (ndc_b.x + 1.0) * 0.5 * cam.time.y,
+        (1.0 - ndc_b.y) * 0.5 * cam.time.z,
+    );
+    let screen_dir = screen_b - screen_a;
+    let screen_len = max(length(screen_dir), 0.0001);
+    let screen_unit = screen_dir / screen_len;
+    let dx_abs = abs(screen_unit.x);
+    let dy_abs = abs(screen_unit.y);
+    let card_w_px = select(170.0, 260.0, edgeType > 1.5);
+    let card_h_px = select(44.0, 56.0, edgeType > 1.5);
+
+    let dist_a = max(length(cam.eye.xyz - posA), 0.1);
+    let dist_b = max(length(cam.eye.xyz - posB), 0.1);
+    let pixel_scale_a = clamp(22.0 / dist_a, 0.2, 3.5);
+    let pixel_scale_b = clamp(22.0 / dist_b, 0.2, 3.5);
+    let half_w_a = card_w_px * pixel_scale_a * 0.5;
+    let half_h_a = card_h_px * pixel_scale_a * 0.5;
+    let half_w_b = card_w_px * pixel_scale_b * 0.5;
+    let half_h_b = card_h_px * pixel_scale_b * 0.5;
+    let src_exit_px_x = select(1.0e6, half_w_a / max(dx_abs, 0.0001), dx_abs > 0.001);
+    let src_exit_px_y = select(1.0e6, half_h_a / max(dy_abs, 0.0001), dy_abs > 0.001);
+    let dst_exit_px_x = select(1.0e6, half_w_b / max(dx_abs, 0.0001), dx_abs > 0.001);
+    let dst_exit_px_y = select(1.0e6, half_h_b / max(dy_abs, 0.0001), dy_abs > 0.001);
+    let src_exit_s = clamp(min(src_exit_px_x, src_exit_px_y) / screen_len, 0.0, 0.49);
+    let dst_exit_s = clamp(min(dst_exit_px_x, dst_exit_px_y) / screen_len, 0.0, 0.49);
+    let src_exit_t = screen_fraction_to_world_t(src_exit_s, inv_w_a, inv_w_b);
+    let dst_exit_t = screen_fraction_to_world_t(1.0 - dst_exit_s, inv_w_a, inv_w_b);
+
     let worldPos = center + side * quadPos.y * halfWidth;
 
     var out: EdgeVsOut;
@@ -101,7 +150,8 @@ fn vs_edge(
     out.flags    = flags;
     out.edgeType = edgeType;
     out.edgeLen  = edgeLength;
-    out.edgeDir  = select(dir.xy / edgeLength, vec2(1.0, 0.0), edgeLength < 0.0001);
+    out.srcExitT = src_exit_t;
+    out.dstExitT = dst_exit_t;
     return out;
 }
 
@@ -130,29 +180,17 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     //   [t_src_exit .. arrow_start_t]  = shaft (constant width)
     //   [arrow_start_t .. t_dst_exit]  = arrowhead (triangle, widens then tapers to point)
     //
-    // Node bounding-box trim:
-    //   NODE_HALF_W = 260px * 0.5 * (1/100 scale) = 1.3 world units
-    //   NODE_HALF_H =  70px * 0.5 * (1/100 scale) = 0.35 world units
-
-    const NODE_HALF_W : f32 = 1.3;
-    const NODE_HALF_H : f32 = 0.35;
     const ARROW_LEN_F : f32 = 0.45;   // world-space arrowhead length
     const SHAFT_HALF  : f32 = 0.22;   // shaft half-width in quad-UV space (y in -1..1)
     const ARROW_HALF  : f32 = 0.90;   // arrowhead max half-width at base (quad-UV)
     const AA          : f32 = 0.04;   // anti-alias softness
-
-    // How far along t the edge is inside the node bounding box (trim both ends).
-    let dx_abs = abs(in.edgeDir.x);
-    let dy_abs = abs(in.edgeDir.y);
-    let t_x = select(1.0e6, NODE_HALF_W / max(dx_abs * in.edgeLen, 0.0001), dx_abs > 0.001);
-    let t_y = select(1.0e6, NODE_HALF_H / max(dy_abs * in.edgeLen, 0.0001), dy_abs > 0.001);
-    let t_exit = clamp(min(t_x, t_y), 0.0, 0.38);
+    let visible_start = min(in.srcExitT, in.dstExitT);
+    let visible_end = max(in.srcExitT, in.dstExitT);
 
     // Discard inside node cards.
-    if (t < t_exit || t > (1.0 - t_exit)) { discard; }
+    if (t < visible_start || t > visible_end) { discard; }
 
-    let visible_end   = 1.0 - t_exit;
-    let arrow_start_t = visible_end - ARROW_LEN_F / max(in.edgeLen, 0.001);
+    let arrow_start_t = clamp(visible_end - ARROW_LEN_F / max(in.edgeLen, 0.001), visible_start, visible_end);
 
     // ── Determine inside/outside for the current region ──────────────────
     var inside = false;
@@ -182,7 +220,7 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     }
 
     // Short fade-in from the source node edge to avoid a hard clip.
-    let srcFade = smoothstep(0.0, 0.05, t - t_exit);
+    let srcFade = smoothstep(0.0, 0.05, t - visible_start);
     a *= srcFade * in.color.a;
 
     if (a < 0.002) { discard; }
