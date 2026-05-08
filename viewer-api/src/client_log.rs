@@ -8,9 +8,10 @@
 //!
 //! ```rust,no_run
 //! use viewer_api::client_log::{client_log_router, ClientLogState};
+//! use axum::Router;
 //!
 //! let log_state = ClientLogState::default();
-//! let app = your_api_router.merge(client_log_router(log_state));
+//! let app = Router::new().merge(client_log_router(log_state));
 //! ```
 //!
 //! # File location
