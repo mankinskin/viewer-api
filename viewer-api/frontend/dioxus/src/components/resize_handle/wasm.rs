@@ -118,7 +118,7 @@ fn build_mouse_handlers(
     let start_pos_move = start_pos.clone();
     let raf_pending_move = raf_pending.clone();
 
-    let move_callback: Closure<dyn FnMut(web_sys::MouseEvent)> = Closure::new(move |event| {
+    let move_callback: Closure<dyn FnMut(web_sys::MouseEvent)> = Closure::new(move |event: web_sys::MouseEvent| {
         queue_resize(
             on_resize_move.clone(),
             start_pos_move.clone(),

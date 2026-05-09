@@ -35,11 +35,38 @@ mod interaction;
 mod interop;
 #[cfg(target_arch = "wasm32")]
 mod render;
+mod settings_overlay;
 
 pub use data::{EdgeRef3D, Layout3D, Node3D, NodeCardProfile};
 pub use camera::{CameraCommand, LayoutMode, Projection};
 
 use dioxus::prelude::*;
+use self::settings_overlay::GraphSettingsOverlay;
+
+#[cfg(target_arch = "wasm32")]
+use std::{cell::RefCell, rc::Rc};
+
+#[cfg(target_arch = "wasm32")]
+use gloo_events::EventListener;
+#[cfg(target_arch = "wasm32")]
+use js_sys::Promise;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::JsCast;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::JsFuture;
+#[cfg(target_arch = "wasm32")]
+use web_sys::GpuDevice;
+
+#[cfg(target_arch = "wasm32")]
+use crate::effects::{register_frame_callback, shared_gpu, FrameCallbackHandle};
+#[cfg(target_arch = "wasm32")]
+use camera::Camera;
+#[cfg(target_arch = "wasm32")]
+use gpu::init_gpu;
+#[cfg(target_arch = "wasm32")]
+use interop::{create_buf, create_buf_init, USAGE_COPY_DST, USAGE_VERTEX};
+#[cfg(target_arch = "wasm32")]
+use render::{render_frame, RenderState};
 
 /// Returns true if the browser exposes `navigator.gpu`.
 #[cfg(target_arch = "wasm32")]
@@ -105,11 +132,7 @@ pub struct Graph3DProps {
 #[cfg(not(target_arch = "wasm32"))]
 #[component]
 pub fn Graph3D(props: Graph3DProps) -> Element {
-    let style = if props.container_style.is_empty() {
-        "position: absolute; inset: 0; overflow: hidden;".to_string()
-    } else {
-        props.container_style.clone()
-    };
+    let style = graph_container_style(&props.container_style, false);
     rsx! {
         div { id: "{props.container_id}", style: "{style}",
             {props.children}
@@ -126,168 +149,39 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 #[cfg(target_arch = "wasm32")]
 #[component]
 pub fn Graph3D(props: Graph3DProps) -> Element {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
-    use gloo_events::EventListener;
-    use js_sys::Promise;
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen_futures::JsFuture;
-    use web_sys::GpuDevice;
-
-    use crate::effects::{register_frame_callback, shared_gpu, FrameCallbackHandle};
-    use camera::{Camera, CAMERA_FOV};
-    use gpu::init_gpu;
-    use interop::{create_buf, create_buf_init, USAGE_COPY_DST, USAGE_VERTEX};
-    use render::{render_frame, RenderState};
-
-    let layout       = props.layout.clone();
+    let layout = props.layout.clone();
     let container_id = props.container_id.clone();
-    let projection   = props.projection;
-    let layout_mode  = props.layout_mode;
+    let projection = props.projection;
+    let layout_mode = props.layout_mode;
     let on_layout_mode_change = props.on_layout_mode_change.clone();
-    let on_projection_change  = props.on_projection_change.clone();
-    let style = if props.container_style.is_empty() {
-        "position: absolute; inset: 0; overflow: hidden; user-select: none; cursor: grab;".to_string()
-    } else {
-        props.container_style.clone()
-    };
+    let on_projection_change = props.on_projection_change.clone();
+    let style = graph_container_style(&props.container_style, true);
 
     let mut status: Signal<String> = use_signal(|| "Initialising WebGPU\u{2026}".to_string());
-    let _listeners: Signal<Vec<EventListener>> = use_signal(Vec::new);
+    let listeners: Signal<Vec<EventListener>> = use_signal(Vec::new);
     let render_rc: Signal<Option<Rc<RefCell<RenderState>>>> = use_signal(|| None);
-    // Holding the FrameCallbackHandle in a signal ensures the callback is
-    // unregistered from the overlay loop when this component unmounts.
     let frame_handle: Signal<Option<Rc<FrameCallbackHandle>>> = use_signal(|| None);
 
     use_effect(move || {
-        let layout       = layout.clone();
+        let layout = layout.clone();
         let container_id = container_id.clone();
-        let mut status_w = status;
-        let mut render_w = render_rc;
-        let mut listeners_w = _listeners;
-        let mut handle_w = frame_handle;
-
-        spawn(async move {
-            // Wait until the WgpuOverlay has bootstrapped its shared device.
-            let shared = loop {
-                if let Some(g) = shared_gpu() { break g; }
-                let p = Promise::new(&mut |resolve, _reject| {
-                    if let Some(win) = web_sys::window() {
-                        let _ = win.set_timeout_with_callback_and_timeout_and_arguments_0(
-                            resolve.unchecked_ref(), 16);
-                    }
-                });
-                let _ = JsFuture::from(p).await;
-            };
-
-            let device: GpuDevice = match shared.device.clone().dyn_into() {
-                Ok(d)  => d,
-                Err(_) => { status_w.set("Shared GPU device cast failed".into()); return; }
-            };
-            {
-                let lbl = js_sys::Reflect::get(&shared.device, &"label".into())
-                    .ok().and_then(|v| v.as_string()).unwrap_or_default();
-                tracing::info!(target: "graph3d::init", device_label = %lbl, "received shared device");
-            }
-
-            // Read current canvas backing-store size; the overlay loop
-            // resizes it each frame, so any value here will be replaced
-            // before our first draw — but we need an initial depth texture.
-            let (init_w, init_h) = web_sys::window()
-                .and_then(|w| w.document())
-                .and_then(|d| d.get_element_by_id("webgpu-canvas"))
-                .and_then(|el| el.dyn_into::<web_sys::HtmlCanvasElement>().ok())
-                .map(|c| (c.width().max(1), c.height().max(1)))
-                .unwrap_or((1, 1));
-
-            let gpu = match init_gpu(device, &shared.format, init_w, init_h) {
-                Ok(g)  => g,
-                Err(e) => { status_w.set(format!("GPU init failed: {e}")); return; }
-            };
-
-            // Edge instances.
-            let (edge_data, edge_count) = layout.build_edge_instances();
-            let edge_buf = if edge_data.is_empty() {
-                create_buf(&gpu.device, 48, USAGE_VERTEX | USAGE_COPY_DST)
-            } else {
-                create_buf_init(&gpu.device, &edge_data, USAGE_VERTEX)
-            };
-
-            // Camera framing.
-            let mut camera = Camera::default();
-            if !layout.nodes.is_empty() {
-                let (centre, radius) = layout.bounds();
-                let _ = CAMERA_FOV;
-                camera.frame(centre, radius);
-            }
-
-            // Node occluder quads.
-            let (node_data, node_count) = layout.build_node_quads();
-            let node_quad_buf = if node_data.is_empty() {
-                create_buf(&gpu.device, 16, USAGE_VERTEX | USAGE_COPY_DST)
-            } else {
-                create_buf_init(&gpu.device, &node_data, USAGE_VERTEX)
-            };
-
-            let state_rc = Rc::new(RefCell::new(RenderState {
-                gpu, layout, camera, edge_buf, edge_count,
-                node_quad_buf, node_count, container_id: container_id.clone(),
-                dirty_layout: false, projection,
-            }));
-            render_w.set(Some(state_rc.clone()));
-            status_w.set(String::new());
-
-            listeners_w.set(interaction::install(&container_id, state_rc.clone()));
-
-            // Register per-frame callback into the overlay's loop.
-            let state_for_cb = state_rc.clone();
-            let handle = register_frame_callback(move |frame| {
-                if let Ok(mut st) = state_for_cb.try_borrow_mut() {
-                    render_frame(&mut st, frame);
-                }
-            });
-            handle_w.set(Some(Rc::new(handle)));
-        });
+        start_graph_bootstrap(
+            layout,
+            container_id,
+            projection,
+            status,
+            render_rc,
+            listeners,
+            frame_handle,
+        );
     });
 
     let status_text = status.read().clone();
 
-    // Push layout updates from props into the live RenderState so callers can
-    // change the Layout3D (e.g. switch algorithms, edit parameters) without
-    // re-mounting the component. Setting `dirty_layout` re-uploads the GPU
-    // instance buffers on the next frame and reframes the camera if the
-    // bounds shifted significantly.
-    if let Some(rc) = render_rc.read().as_ref() {
-        if let Ok(mut st) = rc.try_borrow_mut() {
-            if st.layout != props.layout {
-                let (centre, radius) = props.layout.bounds();
-                st.layout = props.layout.clone();
-                st.dirty_layout = true;
-                st.camera.frame(centre, radius);
-            }
-            if st.projection != props.projection {
-                st.projection = props.projection;
-            }
-        }
-    }
+    sync_render_state(&render_rc, &props.layout, props.projection);
 
-    // Apply imperative camera commands.  We use a `use_hook` to remember
-    // the last applied `seq` so each unique generation triggers exactly
-    // one command.  This pattern lets the parent re-apply the same
-    // logical command (e.g. "reset camera") by simply bumping the seq.
     let mut last_cam_seq: Signal<u64> = use_hook(|| Signal::new(0));
-    if props.camera_command_seq != *last_cam_seq.peek() {
-        last_cam_seq.set(props.camera_command_seq);
-        if let Some(cmd) = props.camera_command.as_ref() {
-            if let Some(rc) = render_rc.read().as_ref() {
-                if let Ok(mut st) = rc.try_borrow_mut() {
-                    let bounds = st.layout.bounds();
-                    st.camera.apply_command(cmd, bounds);
-                }
-            }
-        }
-    }
+    apply_camera_command_update(&mut last_cam_seq, &props, &render_rc);
 
     rsx! {
         div {
@@ -310,145 +204,166 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     }
 }
 
-// ── Built-in settings overlay ─────────────────────────────────────────────
-
-#[derive(Props, Clone, PartialEq)]
-struct GraphSettingsOverlayProps {
-    layout_mode: LayoutMode,
-    projection:  Projection,
-    on_layout_mode_change: Option<EventHandler<LayoutMode>>,
-    on_projection_change:  Option<EventHandler<Projection>>,
-}
-
-fn opt_btn_style(active: bool) -> String {
-    let (bg, border, color) = if active {
-        ("rgba(79,140,255,0.20)", "1px solid rgba(79,140,255,0.50)", "#93bbff")
-    } else {
-        ("rgba(255,255,255,0.05)", "1px solid rgba(255,255,255,0.10)", "#aaa")
-    };
-    format!(
-        "flex:1; padding:5px 0; border-radius:5px; border:{border}; \
-         background:{bg}; color:{color}; font-size:11px; font-weight:500; \
-         cursor:pointer; text-align:center; white-space:nowrap;"
-    )
-}
-
-#[component]
-fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element {
-    let mut open: Signal<bool> = use_hook(|| Signal::new(false));
-    let cur_layout = props.layout_mode;
-    let cur_proj   = props.projection;
-
-    let has_callbacks =
-        props.on_layout_mode_change.is_some() || props.on_projection_change.is_some();
-
-    if !has_callbacks { return rsx! {}; }
-
-    let on_lm_change = props.on_layout_mode_change.clone();
-    let on_pr_change = props.on_projection_change.clone();
-
-    rsx! {
-        div {
-            style: "position: absolute; bottom: 12px; right: 12px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end;",
-            // Floating panel (rendered above the button when open)
-            if *open.read() {
-                div {
-                    style: "
-                        margin-bottom: 6px;
-                        min-width: 200px;
-                        background: rgba(18, 20, 28, 0.88);
-                        border: 1px solid rgba(255,255,255,0.10);
-                        border-radius: 9px;
-                        padding: 12px 14px;
-                        box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-                        font-family: sans-serif;
-                        font-size: 12px;
-                        color: #ccc;
-                        backdrop-filter: blur(8px);
-                        -webkit-backdrop-filter: blur(8px);
-                    ",
-                    if on_lm_change.is_some() {
-                        {
-                            let on_h3d = on_lm_change.clone();
-                            let on_f2d = on_lm_change.clone();
-                            rsx! {
-                                div {
-                                    style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin-bottom:7px;",
-                                    "Layout"
-                                }
-                                div { style: "display:flex; gap:6px; margin-bottom:10px;",
-                                    button {
-                                        style: "{opt_btn_style(cur_layout == LayoutMode::Hierarchical3D)}",
-                                        onclick: move |_| {
-                                            if let Some(ref cb) = on_h3d { cb.call(LayoutMode::Hierarchical3D); }
-                                        },
-                                        "Hierarchical 3D"
-                                    }
-                                    button {
-                                        style: "{opt_btn_style(cur_layout == LayoutMode::Flat2D)}",
-                                        onclick: move |_| {
-                                            if let Some(ref cb) = on_f2d { cb.call(LayoutMode::Flat2D); }
-                                        },
-                                        "Flat 2D"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if on_pr_change.is_some() {
-                        {
-                            let on_persp = on_pr_change.clone();
-                            let on_ortho = on_pr_change.clone();
-                            rsx! {
-                                div {
-                                    style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin-bottom:7px;",
-                                    "Projection"
-                                }
-                                div { style: "display:flex; gap:6px;",
-                                    button {
-                                        style: "{opt_btn_style(cur_proj == Projection::Perspective)}",
-                                        onclick: move |_| {
-                                            if let Some(ref cb) = on_persp { cb.call(Projection::Perspective); }
-                                        },
-                                        "Perspective"
-                                    }
-                                    button {
-                                        style: "{opt_btn_style(cur_proj == Projection::Orthographic)}",
-                                        onclick: move |_| {
-                                            if let Some(ref cb) = on_ortho { cb.call(Projection::Orthographic); }
-                                        },
-                                        "Orthographic"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // Gear button — minimal, transparent, bottom-right corner
-            button {
-                title: "Graph settings",
-                style: "
-                    width: 28px; height: 28px;
-                    border-radius: 6px;
-                    border: 1px solid rgba(255,255,255,0.08);
-                    background: rgba(0,0,0,0.30);
-                    color: rgba(255,255,255,0.45);
-                    font-size: 14px;
-                    cursor: pointer;
-                    display: flex; align-items: center; justify-content: center;
-                    backdrop-filter: blur(4px);
-                    -webkit-backdrop-filter: blur(4px);
-                    padding: 0;
-                    line-height: 1;
-                ",
-                onclick: move |evt| {
-                    evt.stop_propagation();
-                    let cur = *open.read();
-                    *open.write() = !cur;
-                },
-                "\u{2699}"
-            }
-        }
+fn graph_container_style(container_style: &str, interactive: bool) -> String {
+    if !container_style.is_empty() {
+        return container_style.to_string();
     }
+
+    if interactive {
+        "position: absolute; inset: 0; overflow: hidden; user-select: none; cursor: grab;"
+            .to_string()
+    } else {
+        "position: absolute; inset: 0; overflow: hidden;".to_string()
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn start_graph_bootstrap(
+    layout: Layout3D,
+    container_id: String,
+    projection: Projection,
+    mut status: Signal<String>,
+    mut render_rc: Signal<Option<Rc<RefCell<RenderState>>>>,
+    mut listeners: Signal<Vec<EventListener>>,
+    mut frame_handle: Signal<Option<Rc<FrameCallbackHandle>>>,
+) {
+    spawn(async move {
+        let shared = loop {
+            if let Some(shared) = shared_gpu() {
+                break shared;
+            }
+            let promise = Promise::new(&mut |resolve, _reject| {
+                if let Some(window) = web_sys::window() {
+                    let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                        resolve.unchecked_ref(),
+                        16,
+                    );
+                }
+            });
+            let _ = JsFuture::from(promise).await;
+        };
+
+        let device: GpuDevice = match shared.device.clone().dyn_into() {
+            Ok(device) => device,
+            Err(_) => {
+                status.set("Shared GPU device cast failed".into());
+                return;
+            }
+        };
+
+        let label = js_sys::Reflect::get(&shared.device, &"label".into())
+            .ok()
+            .and_then(|value| value.as_string())
+            .unwrap_or_default();
+        tracing::info!(target: "graph3d::init", device_label = %label, "received shared device");
+
+        let (init_w, init_h) = web_sys::window()
+            .and_then(|window| window.document())
+            .and_then(|document| document.get_element_by_id("webgpu-canvas"))
+            .and_then(|element| element.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+            .map(|canvas| (canvas.width().max(1), canvas.height().max(1)))
+            .unwrap_or((1, 1));
+
+        let gpu = match init_gpu(device, &shared.format, init_w, init_h) {
+            Ok(gpu) => gpu,
+            Err(error) => {
+                status.set(format!("GPU init failed: {error}"));
+                return;
+            }
+        };
+
+        let (edge_data, edge_count) = layout.build_edge_instances();
+        let edge_buf = if edge_data.is_empty() {
+            create_buf(&gpu.device, 48, USAGE_VERTEX | USAGE_COPY_DST)
+        } else {
+            create_buf_init(&gpu.device, &edge_data, USAGE_VERTEX)
+        };
+
+        let mut camera = Camera::default();
+        if !layout.nodes.is_empty() {
+            let (centre, radius) = layout.bounds();
+            camera.frame(centre, radius);
+        }
+
+        let (node_data, node_count) = layout.build_node_quads();
+        let node_quad_buf = if node_data.is_empty() {
+            create_buf(&gpu.device, 16, USAGE_VERTEX | USAGE_COPY_DST)
+        } else {
+            create_buf_init(&gpu.device, &node_data, USAGE_VERTEX)
+        };
+
+        let state_rc = Rc::new(RefCell::new(RenderState {
+            gpu,
+            layout,
+            camera,
+            edge_buf,
+            edge_count,
+            node_quad_buf,
+            node_count,
+            container_id: container_id.clone(),
+            dirty_layout: false,
+            projection,
+        }));
+        render_rc.set(Some(state_rc.clone()));
+        status.set(String::new());
+        listeners.set(interaction::install(&container_id, state_rc.clone()));
+
+        let state_for_callback = state_rc.clone();
+        let handle = register_frame_callback(move |frame| {
+            if let Ok(mut state) = state_for_callback.try_borrow_mut() {
+                render_frame(&mut state, frame);
+            }
+        });
+        frame_handle.set(Some(Rc::new(handle)));
+    });
+}
+
+#[cfg(target_arch = "wasm32")]
+fn sync_render_state(
+    render_rc: &Signal<Option<Rc<RefCell<RenderState>>>>,
+    layout: &Layout3D,
+    projection: Projection,
+) {
+    let Some(render_state) = render_rc.read().as_ref() else {
+        return;
+    };
+    let Ok(mut state) = render_state.try_borrow_mut() else {
+        return;
+    };
+
+    if state.layout != *layout {
+        let (centre, radius) = layout.bounds();
+        state.layout = layout.clone();
+        state.dirty_layout = true;
+        state.camera.frame(centre, radius);
+    }
+
+    if state.projection != projection {
+        state.projection = projection;
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn apply_camera_command_update(
+    last_cam_seq: &mut Signal<u64>,
+    props: &Graph3DProps,
+    render_rc: &Signal<Option<Rc<RefCell<RenderState>>>>,
+) {
+    if props.camera_command_seq == *last_cam_seq.peek() {
+        return;
+    }
+
+    last_cam_seq.set(props.camera_command_seq);
+    let Some(command) = props.camera_command.as_ref() else {
+        return;
+    };
+    let Some(render_state) = render_rc.read().as_ref() else {
+        return;
+    };
+    let Ok(mut state) = render_state.try_borrow_mut() else {
+        return;
+    };
+
+    let bounds = state.layout.bounds();
+    state.camera.apply_command(command, bounds);
 }
