@@ -6,7 +6,8 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[command(
     name = "viewer-ctl",
     about = "Config-driven lifecycle manager for context-engine viewers",
-    version
+    version,
+    arg_required_else_help = true
 )]
 pub struct Cli {
     #[command(subcommand)]
