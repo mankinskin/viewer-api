@@ -93,6 +93,10 @@ pub const DEFAULT_CONTAINER_ID: &str = "graph3d-container";
 pub struct Graph3DProps {
     /// Positioned nodes and edges to render.
     pub layout: Layout3D,
+    /// Called when the interactive canvas mutates the layout, for example
+    /// after a node drag completes.
+    #[props(default)]
+    pub on_layout_change: Option<EventHandler<Layout3D>>,
     /// Node cards. Each card must carry a `data-node-idx="N"` attribute
     /// matching its index in `layout.nodes`.
     pub children: Element,
@@ -151,13 +155,14 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 pub fn Graph3D(props: Graph3DProps) -> Element {
     let layout = props.layout.clone();
     let container_id = props.container_id.clone();
+    let on_layout_change = props.on_layout_change.clone();
     let projection = props.projection;
     let layout_mode = props.layout_mode;
     let on_layout_mode_change = props.on_layout_mode_change.clone();
     let on_projection_change = props.on_projection_change.clone();
     let style = graph_container_style(&props.container_style, true);
 
-    let mut status: Signal<String> = use_signal(|| "Initialising WebGPU\u{2026}".to_string());
+    let status: Signal<String> = use_signal(|| "Initialising WebGPU\u{2026}".to_string());
     let listeners: Signal<Vec<EventListener>> = use_signal(Vec::new);
     let render_rc: Signal<Option<Rc<RefCell<RenderState>>>> = use_signal(|| None);
     let frame_handle: Signal<Option<Rc<FrameCallbackHandle>>> = use_signal(|| None);
@@ -168,6 +173,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         start_graph_bootstrap(
             layout,
             container_id,
+            on_layout_change,
             projection,
             status,
             render_rc,
@@ -221,6 +227,7 @@ fn graph_container_style(container_style: &str, interactive: bool) -> String {
 fn start_graph_bootstrap(
     layout: Layout3D,
     container_id: String,
+    on_layout_change: Option<EventHandler<Layout3D>>,
     projection: Projection,
     mut status: Signal<String>,
     mut render_rc: Signal<Option<Rc<RefCell<RenderState>>>>,
@@ -306,7 +313,11 @@ fn start_graph_bootstrap(
         }));
         render_rc.set(Some(state_rc.clone()));
         status.set(String::new());
-        listeners.set(interaction::install(&container_id, state_rc.clone()));
+        listeners.set(interaction::install(
+            &container_id,
+            state_rc.clone(),
+            on_layout_change,
+        ));
 
         let state_for_callback = state_rc.clone();
         let handle = register_frame_callback(move |frame| {
@@ -324,7 +335,8 @@ fn sync_render_state(
     layout: &Layout3D,
     projection: Projection,
 ) {
-    let Some(render_state) = render_rc.read().as_ref() else {
+    let render_state = render_rc.read();
+    let Some(render_state) = render_state.as_ref() else {
         return;
     };
     let Ok(mut state) = render_state.try_borrow_mut() else {
@@ -357,7 +369,8 @@ fn apply_camera_command_update(
     let Some(command) = props.camera_command.as_ref() else {
         return;
     };
-    let Some(render_state) = render_rc.read().as_ref() else {
+    let render_state = render_rc.read();
+    let Some(render_state) = render_state.as_ref() else {
         return;
     };
     let Ok(mut state) = render_state.try_borrow_mut() else {

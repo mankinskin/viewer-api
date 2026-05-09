@@ -1,10 +1,12 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 
 use super::super::camera::{MouseState, CAMERA_FOV};
+use super::super::data::Layout3D;
 use super::super::render::RenderState;
 use super::{cross, normalise, target_is_passthrough_blocked, DragState, DRAG_THRESHOLD_PX};
 
@@ -78,10 +80,17 @@ pub(super) fn mouse_up_listener(
     document: &web_sys::Document,
     mouse_state: Rc<RefCell<MouseState>>,
     drag_state: Rc<RefCell<DragState>>,
+    state_rc: Rc<RefCell<RenderState>>,
+    on_layout_change: Option<EventHandler<Layout3D>>,
 ) -> EventListener {
     EventListener::new(document, "mouseup", move |_| {
         let was_drag = clear_interaction_state(&mouse_state, &drag_state);
         if was_drag {
+            if let Some(handler) = on_layout_change.clone() {
+                if let Ok(state) = state_rc.try_borrow() {
+                    handler.call(state.layout.clone());
+                }
+            }
             install_click_suppressor();
         }
     })

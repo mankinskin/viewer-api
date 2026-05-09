@@ -12,10 +12,12 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
-use wasm_bindgen::{closure::Closure, JsCast, JsValue};
+use wasm_bindgen::JsCast;
 
-use super::camera::{MouseState, CAMERA_FOV};
+use super::camera::MouseState;
+use super::data::Layout3D;
 use super::render::RenderState;
 
 mod handlers;
@@ -75,6 +77,7 @@ fn target_is_passthrough_blocked(evt: &web_sys::Event) -> bool {
 pub(crate) fn install(
     container_id: &str,
     state_rc: Rc<RefCell<RenderState>>,
+    on_layout_change: Option<EventHandler<Layout3D>>,
 ) -> Vec<EventListener> {
     let Some(document) = web_sys::window().and_then(|window| window.document()) else {
         return Vec::new();
@@ -103,7 +106,7 @@ pub(crate) fn install(
         state_rc.clone(),
         suppress_contextmenu.clone(),
     );
-    let mouse_up = mouse_up_listener(&document, mouse_state, drag_state);
+    let mouse_up = mouse_up_listener(&document, mouse_state, drag_state, state_rc.clone(), on_layout_change);
     let wheel = wheel_listener(container_target, state_rc);
     let contextmenu = contextmenu_listener(&document, suppress_contextmenu);
 
