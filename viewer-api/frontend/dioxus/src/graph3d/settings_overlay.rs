@@ -1,6 +1,22 @@
 use dioxus::prelude::*;
 
-use super::{LayoutMode, Projection};
+use crate::{
+    effects::wgpu_overlay::{
+        hex_to_rgba,
+        rgba_to_hex,
+        PaletteColor,
+    },
+    store::ThemeStore,
+};
+
+use super::{
+    theme::{
+        GraphEdgeBlendMode,
+        GraphThemeSettings,
+    },
+    LayoutMode,
+    Projection,
+};
 
 #[derive(Props, Clone, PartialEq)]
 pub(super) struct GraphSettingsOverlayProps {
@@ -12,9 +28,17 @@ pub(super) struct GraphSettingsOverlayProps {
 
 fn opt_btn_style(active: bool) -> String {
     let (background, border, color) = if active {
-        ("rgba(79,140,255,0.20)", "1px solid rgba(79,140,255,0.50)", "#93bbff")
+        (
+            "rgba(79,140,255,0.20)",
+            "1px solid rgba(79,140,255,0.50)",
+            "#93bbff",
+        )
     } else {
-        ("rgba(255,255,255,0.05)", "1px solid rgba(255,255,255,0.10)", "#aaa")
+        (
+            "rgba(255,255,255,0.05)",
+            "1px solid rgba(255,255,255,0.10)",
+            "#aaa",
+        )
     };
 
     format!(
@@ -25,16 +49,83 @@ fn opt_btn_style(active: bool) -> String {
 }
 
 #[component]
-pub(super) fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element {
+fn SliderRow(
+    label: String,
+    value_label: String,
+    min: f32,
+    max: f32,
+    step: f32,
+    value: f32,
+    on_change: EventHandler<f32>,
+) -> Element {
+    rsx! {
+        div { style: "display:flex; flex-direction:column; gap:5px; margin-bottom:10px;",
+            div { style: "display:flex; align-items:center; justify-content:space-between; gap:10px;",
+                span { style: "font-size:11px; color:#cbd5e1;", "{label}" }
+                span { style: "font-size:11px; color:#94a3b8; font-variant-numeric: tabular-nums;", "{value_label}" }
+            }
+            input {
+                r#type: "range",
+                min: "{min}",
+                max: "{max}",
+                step: "{step}",
+                value: "{value}",
+                oninput: move |event| {
+                    if let Ok(value) = event.value().parse::<f32>() {
+                        on_change.call(value);
+                    }
+                },
+            }
+        }
+    }
+}
+
+#[component]
+fn ColorRow(
+    label: String,
+    value: PaletteColor,
+    on_change: EventHandler<PaletteColor>,
+) -> Element {
+    let hex = rgba_to_hex(value);
+    rsx! {
+        label {
+            style: "display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer;",
+            span { style: "flex:1; font-size:11px; color:#cbd5e1;", "{label}" }
+            span {
+                style: "width:16px; height:16px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:{hex}; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.22);",
+            }
+            input {
+                r#type: "color",
+                value: "{hex}",
+                oninput: move |event| {
+                    if let Some(mut rgba) = hex_to_rgba(&event.value()) {
+                        rgba[3] = value[3];
+                        on_change.call(rgba);
+                    }
+                },
+            }
+        }
+    }
+}
+
+fn update_graph_theme(
+    mut store: ThemeStore,
+    mutate: impl FnOnce(&mut GraphThemeSettings),
+) {
+    let mut next = store.graph_theme();
+    mutate(&mut next);
+    store.set_graph_theme(next);
+}
+
+#[component]
+pub(super) fn GraphSettingsOverlay(
+    props: GraphSettingsOverlayProps
+) -> Element {
     let mut open: Signal<bool> = use_hook(|| Signal::new(false));
+    let theme_store = use_context::<ThemeStore>();
+    let graph_theme = theme_store.graph_theme();
     let cur_layout = props.layout_mode;
     let cur_proj = props.projection;
-
-    let has_callbacks =
-        props.on_layout_mode_change.is_some() || props.on_projection_change.is_some();
-    if !has_callbacks {
-        return rsx! {};
-    }
 
     let on_layout_mode_change = props.on_layout_mode_change.clone();
     let on_projection_change = props.on_projection_change.clone();
@@ -46,7 +137,10 @@ pub(super) fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element 
                 div {
                     style: "
                         margin-bottom: 6px;
-                        min-width: 200px;
+                        min-width: 280px;
+                        max-width: min(360px, calc(100vw - 24px));
+                        max-height: min(72vh, 640px);
+                        overflow-y: auto;
                         background: rgba(18, 20, 28, 0.88);
                         border: 1px solid rgba(255,255,255,0.10);
                         border-radius: 9px;
@@ -121,6 +215,112 @@ pub(super) fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element 
                                 }
                             }
                         }
+                    }
+                    div {
+                        style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin:12px 0 7px;",
+                        "Edge theme"
+                    }
+                    SliderRow {
+                        label: "Overlay opacity".to_string(),
+                        value_label: format!("{:.0}%", graph_theme.edge_overlay_opacity * 100.0),
+                        min: 0.20,
+                        max: 1.0,
+                        step: 0.05,
+                        value: graph_theme.edge_overlay_opacity,
+                        on_change: {
+                            let store = theme_store;
+                            move |value| update_graph_theme(store, |theme| theme.edge_overlay_opacity = value)
+                        },
+                    }
+                    div {
+                        style: "font-size:11px; color:#cbd5e1; margin-bottom:6px;",
+                        "Blend mode"
+                    }
+                    div { style: "display:flex; gap:6px; margin-bottom:10px;",
+                        for mode in GraphEdgeBlendMode::ALL {
+                            button {
+                                key: "edge-blend-{mode.css_value()}",
+                                style: "{opt_btn_style(graph_theme.edge_blend_mode == mode)}",
+                                onclick: {
+                                    let store = theme_store;
+                                    move |_| update_graph_theme(store, |theme| theme.edge_blend_mode = mode)
+                                },
+                                "{mode.label()}"
+                            }
+                        }
+                    }
+                    ColorRow {
+                        label: "Dependency edge".to_string(),
+                        value: graph_theme.edge_dependency,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.edge_dependency = color)
+                        },
+                    }
+                    ColorRow {
+                        label: "Blocking edge".to_string(),
+                        value: graph_theme.edge_blocking,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.edge_blocking = color)
+                        },
+                    }
+                    ColorRow {
+                        label: "Structural edge".to_string(),
+                        value: graph_theme.edge_structural,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.edge_structural = color)
+                        },
+                    }
+                    ColorRow {
+                        label: "Default edge".to_string(),
+                        value: graph_theme.edge_default,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.edge_default = color)
+                        },
+                    }
+
+                    div {
+                        style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin:12px 0 7px;",
+                        "Node theme"
+                    }
+                    ColorRow {
+                        label: "Card surface".to_string(),
+                        value: graph_theme.node_surface,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.node_surface = color)
+                        },
+                    }
+                    ColorRow {
+                        label: "Card border".to_string(),
+                        value: graph_theme.node_border,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.node_border = color)
+                        },
+                    }
+                    ColorRow {
+                        label: "Card text".to_string(),
+                        value: graph_theme.node_text,
+                        on_change: {
+                            let store = theme_store;
+                            move |color| update_graph_theme(store, |theme| theme.node_text = color)
+                        },
+                    }
+                    SliderRow {
+                        label: "Shadow strength".to_string(),
+                        value_label: format!("{:.0}%", graph_theme.node_shadow_alpha * 100.0),
+                        min: 0.0,
+                        max: 0.7,
+                        step: 0.02,
+                        value: graph_theme.node_shadow_alpha,
+                        on_change: {
+                            let store = theme_store;
+                            move |value| update_graph_theme(store, |theme| theme.node_shadow_alpha = value)
+                        },
                     }
                 }
             }
