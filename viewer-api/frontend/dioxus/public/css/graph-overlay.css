@@ -14,7 +14,6 @@
   position: relative;
   width: 100%;
   height: 100%;
-  isolation: isolate;
 }
 
 .graph-edge-overlay {
@@ -26,7 +25,6 @@
   overflow: visible;
   z-index: 15000;
   mix-blend-mode: var(--graph-edge-blend-mode, screen);
-  opacity: var(--graph-edge-opacity, 0.80);
 }
 
 .graph-edge-overlay line {

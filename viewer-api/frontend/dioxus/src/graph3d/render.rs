@@ -450,6 +450,9 @@ fn position_dom_edges(
             b.id.as_str(),
         );
         let (r, g, blue, _alpha) = edge_color(&edge.kind, &state.graph_theme);
+        let stroke_alpha = (stroke_opacity
+            * state.graph_theme.edge_overlay_opacity)
+            .clamp(0.0, 1.0);
         let _ = line.set_attribute("display", "block");
         let _ = line.set_attribute("x1", &format!("{x1:.1}"));
         let _ = line.set_attribute("y1", &format!("{y1:.1}"));
@@ -458,15 +461,15 @@ fn position_dom_edges(
         let _ = line.set_attribute(
             "stroke",
             &format!(
-                "rgb({:.0} {:.0} {:.0})",
+                "rgb({:.0} {:.0} {:.0} / {:.3})",
                 r * 255.0,
                 g * 255.0,
-                blue * 255.0
+                blue * 255.0,
+                stroke_alpha,
             ),
         );
-        let _ = line
-            .set_attribute("stroke-opacity", &format!("{stroke_opacity:.3}"));
-        let _ = line.set_attribute("opacity", &format!("{stroke_opacity:.3}"));
+        let _ = line.remove_attribute("stroke-opacity");
+        let _ = line.remove_attribute("opacity");
         let _ =
             line.set_attribute("stroke-width", &format!("{stroke_width:.2}"));
         let _ = line.set_attribute("vector-effect", "non-scaling-stroke");
