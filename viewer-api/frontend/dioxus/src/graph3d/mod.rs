@@ -38,7 +38,7 @@ mod render;
 mod settings_overlay;
 
 pub use data::{EdgeRef3D, Layout3D, Node3D, NodeCardProfile};
-pub use camera::{CameraCommand, LayoutMode, Projection};
+pub use camera::{Camera, CameraCommand, LayoutMode, Projection};
 
 use dioxus::prelude::*;
 use self::settings_overlay::GraphSettingsOverlay;
@@ -59,8 +59,6 @@ use web_sys::GpuDevice;
 
 #[cfg(target_arch = "wasm32")]
 use crate::effects::{register_frame_callback, shared_gpu, FrameCallbackHandle};
-#[cfg(target_arch = "wasm32")]
-use camera::Camera;
 #[cfg(target_arch = "wasm32")]
 use gpu::init_gpu;
 #[cfg(target_arch = "wasm32")]
@@ -97,6 +95,12 @@ pub struct Graph3DProps {
     /// after a node drag completes.
     #[props(default)]
     pub on_layout_change: Option<EventHandler<Layout3D>>,
+    /// Initial camera state restored on mount.
+    #[props(default)]
+    pub initial_camera: Option<Camera>,
+    /// Called when the interactive canvas mutates the camera state.
+    #[props(default)]
+    pub on_camera_change: Option<EventHandler<Camera>>,
     /// Node cards. Each card must carry a `data-node-idx="N"` attribute
     /// matching its index in `layout.nodes`.
     pub children: Element,
@@ -155,7 +159,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 pub fn Graph3D(props: Graph3DProps) -> Element {
     let layout = props.layout.clone();
     let container_id = props.container_id.clone();
+    let initial_camera = props.initial_camera.clone();
     let on_layout_change = props.on_layout_change.clone();
+    let on_camera_change = props.on_camera_change.clone();
     let projection = props.projection;
     let layout_mode = props.layout_mode;
     let on_layout_mode_change = props.on_layout_mode_change.clone();
@@ -170,10 +176,13 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     use_effect(move || {
         let layout = layout.clone();
         let container_id = container_id.clone();
+        let initial_camera = initial_camera.clone();
         start_graph_bootstrap(
             layout,
             container_id,
+            initial_camera,
             on_layout_change,
+            on_camera_change,
             projection,
             status,
             render_rc,
@@ -184,10 +193,10 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 
     let status_text = status.read().clone();
 
-    sync_render_state(&render_rc, &props.layout, props.projection);
+    sync_render_state(&render_rc, &props.layout, props.projection, props.on_camera_change.as_ref());
 
     let mut last_cam_seq: Signal<u64> = use_hook(|| Signal::new(0));
-    apply_camera_command_update(&mut last_cam_seq, &props, &render_rc);
+    apply_camera_command_update(&mut last_cam_seq, &props, &render_rc, props.on_camera_change.as_ref());
 
     rsx! {
         div {
@@ -227,7 +236,9 @@ fn graph_container_style(container_style: &str, interactive: bool) -> String {
 fn start_graph_bootstrap(
     layout: Layout3D,
     container_id: String,
+    initial_camera: Option<Camera>,
     on_layout_change: Option<EventHandler<Layout3D>>,
+    on_camera_change: Option<EventHandler<Camera>>,
     projection: Projection,
     mut status: Signal<String>,
     mut render_rc: Signal<Option<Rc<RefCell<RenderState>>>>,
@@ -286,11 +297,15 @@ fn start_graph_bootstrap(
             create_buf_init(&gpu.device, &edge_data, USAGE_VERTEX)
         };
 
-        let mut camera = Camera::default();
-        if !layout.nodes.is_empty() {
-            let (centre, radius) = layout.bounds();
-            camera.frame(centre, radius);
-        }
+        let camera = initial_camera.unwrap_or_else(|| {
+            let mut camera = Camera::default();
+            if !layout.nodes.is_empty() {
+                let (centre, radius) = layout.bounds();
+                camera.frame(centre, radius);
+            }
+            camera
+        });
+        let emitted_camera = camera.clone();
 
         let (node_data, node_count) = layout.build_node_quads();
         let node_quad_buf = if node_data.is_empty() {
@@ -313,10 +328,14 @@ fn start_graph_bootstrap(
         }));
         render_rc.set(Some(state_rc.clone()));
         status.set(String::new());
+        if let Some(handler) = on_camera_change.as_ref() {
+            handler.call(emitted_camera);
+        }
         listeners.set(interaction::install(
             &container_id,
             state_rc.clone(),
             on_layout_change,
+            on_camera_change,
         ));
 
         let state_for_callback = state_rc.clone();
@@ -334,6 +353,7 @@ fn sync_render_state(
     render_rc: &Signal<Option<Rc<RefCell<RenderState>>>>,
     layout: &Layout3D,
     projection: Projection,
+    on_camera_change: Option<&EventHandler<Camera>>,
 ) {
     let render_state = render_rc.read();
     let Some(render_state) = render_state.as_ref() else {
@@ -348,6 +368,9 @@ fn sync_render_state(
         state.layout = layout.clone();
         state.dirty_layout = true;
         state.camera.frame(centre, radius);
+        if let Some(handler) = on_camera_change {
+            handler.call(state.camera.clone());
+        }
     }
 
     if state.projection != projection {
@@ -360,6 +383,7 @@ fn apply_camera_command_update(
     last_cam_seq: &mut Signal<u64>,
     props: &Graph3DProps,
     render_rc: &Signal<Option<Rc<RefCell<RenderState>>>>,
+    on_camera_change: Option<&EventHandler<Camera>>,
 ) {
     if props.camera_command_seq == *last_cam_seq.peek() {
         return;
@@ -379,4 +403,7 @@ fn apply_camera_command_update(
 
     let bounds = state.layout.bounds();
     state.camera.apply_command(command, bounds);
+    if let Some(handler) = on_camera_change {
+        handler.call(state.camera.clone());
+    }
 }

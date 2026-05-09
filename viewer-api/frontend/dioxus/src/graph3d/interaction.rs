@@ -16,7 +16,7 @@ use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 
-use super::camera::MouseState;
+use super::camera::{Camera, MouseState};
 use super::data::Layout3D;
 use super::render::RenderState;
 
@@ -78,6 +78,7 @@ pub(crate) fn install(
     container_id: &str,
     state_rc: Rc<RefCell<RenderState>>,
     on_layout_change: Option<EventHandler<Layout3D>>,
+    on_camera_change: Option<EventHandler<Camera>>,
 ) -> Vec<EventListener> {
     let Some(document) = web_sys::window().and_then(|window| window.document()) else {
         return Vec::new();
@@ -106,8 +107,15 @@ pub(crate) fn install(
         state_rc.clone(),
         suppress_contextmenu.clone(),
     );
-    let mouse_up = mouse_up_listener(&document, mouse_state, drag_state, state_rc.clone(), on_layout_change);
-    let wheel = wheel_listener(container_target, state_rc);
+    let mouse_up = mouse_up_listener(
+        &document,
+        mouse_state,
+        drag_state,
+        state_rc.clone(),
+        on_layout_change,
+        on_camera_change.clone(),
+    );
+    let wheel = wheel_listener(container_target, state_rc, on_camera_change);
     let contextmenu = contextmenu_listener(&document, suppress_contextmenu);
 
     vec![mouse_down, mouse_move, mouse_up, wheel, contextmenu]

@@ -33,7 +33,7 @@ pub const CAM_UNIFORM_FLOATS: usize = 24;
 /// the pipeline declares the binding so the buffer must exist.)
 pub const PALETTE_FLOATS: usize = 96;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Camera {
     pub yaw:      f32,
     pub pitch:    f32,
