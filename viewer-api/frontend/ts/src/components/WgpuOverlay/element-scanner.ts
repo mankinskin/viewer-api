@@ -13,27 +13,20 @@
  */
 
 import { ELEM_FLOATS, type SelectorEntry } from './element-types';
-
-// ---------------------------------------------------------------------------
-// Tracked element
-// ---------------------------------------------------------------------------
-
-interface TrackedElement {
-    /** Weak reference to DOM node (allows GC detection). */
-    ref: WeakRef<Element>;
-    /** Which selector matched (index into _selectorMeta). */
-    selectorIdx: number;
-    /** Shader kind. */
-    kind: number;
-    /** Colour hue (0..1). */
-    hue: number;
-    /** Last measured rect (null = needs initial measurement). */
-    rect: DOMRect | null;
-    /** Whether element is in the viewport. */
-    visible: boolean;
-    /** Whether rect needs re-measurement. */
-    rectStale: boolean;
-}
+import {
+    compactDead,
+    markAllRectsStale,
+    measureStaleRects,
+    rebuildData,
+} from './element-scanner-buffer';
+import {
+    addTrackedTree,
+    fullRescan,
+    reclassifyElement,
+    removeTrackedTree,
+    type TrackedElement,
+} from './element-scanner-tracking';
+import { createElementScannerObservers } from './element-scanner-observers';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -169,38 +162,18 @@ export class ElementScanner {
 
     /** Start observing DOM. Call once after DOM is ready. */
     start(): void {
-        // IntersectionObserver for cheap visibility tracking
-        this._io = new IntersectionObserver(
-            (entries) => {
-                for (const e of entries) {
-                    const tracked = this._elementMap.get(e.target);
-                    if (tracked) {
-                        tracked.visible = e.isIntersecting;
-                        if (e.isIntersecting) {
-                            tracked.rectStale = true;
-                            this._rectsStale = true;
-                        }
-                    }
-                }
+        const observers = createElementScannerObservers({
+            elementMap: this._elementMap,
+            onRectsStale: () => {
+                this._rectsStale = true;
             },
-            { threshold: 0 },
-        );
-
-        // ResizeObserver — fires per-element when its border box changes.
-        this._ro = new ResizeObserver((entries) => {
-            for (const e of entries) {
-                const tracked = this._elementMap.get(e.target);
-                if (tracked) {
-                    tracked.rectStale = true;
-                    this._rectsStale = true;
-                }
-            }
+            onProcessMutations: (records) => {
+                this._processMutations(records);
+            },
         });
-
-        // MutationObserver for incremental DOM changes
-        this._mo = new MutationObserver((records) => {
-            this._processMutations(records);
-        });
+        this._io = observers.io;
+        this._ro = observers.ro;
+        this._mo = observers.mo;
         this._mo.observe(document.body, {
             childList: true,
             subtree: true,
@@ -332,155 +305,53 @@ export class ElementScanner {
 
     /** Recursively add an element and its descendants to the tracked set. */
     private _addTrackedTree(root: Element): void {
-        this._tryTrackElement(root);
-        const children = root.querySelectorAll('*');
-        for (let i = 0; i < children.length; i++) {
-            this._tryTrackElement(children[i]!);
-        }
-    }
-
-    /** Try to match an element against selectors and track it if matched. */
-    private _tryTrackElement(el: Element): void {
-        if (this._elementMap.has(el)) return;
-
-        for (const si of this._scanOrder) {
-            const meta = this._selectorMeta[si]!;
-            try {
-                if (el.matches(meta.sel)) {
-                    const tracked: TrackedElement = {
-                        ref: new WeakRef(el),
-                        selectorIdx: si,
-                        kind: meta.kind,
-                        hue: meta.hue,
-                        rect: null,
-                        visible: true,
-                        rectStale: true,
-                    };
-                    this._tracked.push(tracked);
-                    this._elementMap.set(el, tracked);
-                    this._io?.observe(el);
-                    this._ro?.observe(el);
-                    this._rectsStale = true;
-                    break;
-                }
-            } catch {
-                // Invalid selector — skip
-            }
+        if (addTrackedTree({
+            tracked: this._tracked,
+            elementMap: this._elementMap,
+            io: this._io,
+            ro: this._ro,
+            selectorMeta: this._selectorMeta,
+            scanOrder: this._scanOrder,
+        }, root)) {
+            this._rectsStale = true;
         }
     }
 
     /** Recursively remove an element and its descendants from tracked set. */
     private _removeTrackedTree(root: Element): void {
-        this._untrackElement(root);
-        const children = root.querySelectorAll('*');
-        for (let i = 0; i < children.length; i++) {
-            this._untrackElement(children[i]!);
-        }
-    }
-
-    private _untrackElement(el: Element): void {
-        const tracked = this._elementMap.get(el);
-        if (tracked) {
-            this._elementMap.delete(el);
-            this._io?.unobserve(el);
-            this._ro?.unobserve(el);
-        }
+        removeTrackedTree(this._elementMap, this._io, this._ro, root);
     }
 
     /** Reclassify an element after a class change. */
     private _reclassifyElement(el: Element): void {
-        const existing = this._elementMap.get(el);
-
-        let matched = false;
-        for (const si of this._scanOrder) {
-            const meta = this._selectorMeta[si]!;
-            try {
-                if (el.matches(meta.sel)) {
-                    if (existing) {
-                        if (existing.kind !== meta.kind || existing.hue !== meta.hue) {
-                            this._dataStale = true;
-                        }
-                        existing.selectorIdx = si;
-                        existing.kind = meta.kind;
-                        existing.hue = meta.hue;
-                        existing.rectStale = true;
-                    } else {
-                        const tracked: TrackedElement = {
-                            ref: new WeakRef(el),
-                            selectorIdx: si,
-                            kind: meta.kind,
-                            hue: meta.hue,
-                            rect: null,
-                            visible: true,
-                            rectStale: true,
-                        };
-                        this._tracked.push(tracked);
-                        this._elementMap.set(el, tracked);
-                        this._io?.observe(el);
-                        this._ro?.observe(el);
-                    }
-                    this._rectsStale = true;
-                    matched = true;
-                    break;
-                }
-            } catch {
-                // skip
-            }
+        const flags = reclassifyElement({
+            tracked: this._tracked,
+            elementMap: this._elementMap,
+            io: this._io,
+            ro: this._ro,
+            selectorMeta: this._selectorMeta,
+            scanOrder: this._scanOrder,
+        }, el);
+        if (flags.rectsStale) {
+            this._rectsStale = true;
         }
-
-        if (!matched && existing) {
-            this._elementMap.delete(el);
-            this._io?.unobserve(el);
-            this._ro?.unobserve(el);
+        if (flags.dataStale) {
+            this._dataStale = true;
         }
     }
 
     // --- Internal: full re-scan --------------------------------------------
 
     private _fullRescan(): void {
-        for (const tracked of this._tracked) {
-            const el = tracked.ref.deref();
-            if (el) {
-                this._io?.unobserve(el);
-                this._ro?.unobserve(el);
-            }
-        }
-        this._tracked = [];
-        this._elementMap.clear();
-
-        for (const si of this._priorityIndices) {
-            const meta = this._selectorMeta[si];
-            if (!meta) continue;
-            this._queryAndTrack(si, meta);
-        }
-
-        for (let si = 0; si < this._selectorMeta.length; si++) {
-            if (this._priorityIndices.has(si)) continue;
-            const meta = this._selectorMeta[si]!;
-            this._queryAndTrack(si, meta);
-        }
-    }
-
-    private _queryAndTrack(si: number, meta: SelectorEntry): void {
-        const elems = document.querySelectorAll(meta.sel);
-        for (let j = 0; j < elems.length; j++) {
-            const el = elems[j]!;
-            if (this._elementMap.has(el)) continue;
-
-            const tracked: TrackedElement = {
-                ref: new WeakRef(el),
-                selectorIdx: si,
-                kind: meta.kind,
-                hue: meta.hue,
-                rect: null,
-                visible: true,
-                rectStale: true,
-            };
-            this._tracked.push(tracked);
-            this._elementMap.set(el, tracked);
-            this._io?.observe(el);
-            this._ro?.observe(el);
-        }
+        const rescan = fullRescan({
+            tracked: this._tracked,
+            io: this._io,
+            ro: this._ro,
+            selectorMeta: this._selectorMeta,
+            priorityIndices: this._priorityIndices,
+        });
+        this._tracked = rescan.tracked;
+        this._elementMap = rescan.elementMap;
     }
 
     // --- Internal: maintenance ---------------------------------------------
@@ -488,105 +359,31 @@ export class ElementScanner {
     /** Remove GC'd or untracked elements. Returns true if any were removed. */
     private _compactDead(): boolean {
         const before = this._tracked.length;
-        this._tracked = this._tracked.filter(t => {
-            const el = t.ref.deref();
-            if (!el) return false;
-            return this._elementMap.has(el);
-        });
+        this._tracked = compactDead(this._tracked, this._elementMap);
         return this._tracked.length !== before;
     }
 
     private _markAllRectsStale(): void {
-        for (const t of this._tracked) {
-            t.rectStale = true;
-        }
+        markAllRectsStale(this._tracked);
         this._rectsStale = true;
     }
 
     /** Measure rects for stale + visible elements. Returns true if any changed. */
     private _measureStaleRects(): boolean {
-        let changed = false;
-        const vh = window.innerHeight;
-
-        for (const t of this._tracked) {
-            if (!t.rectStale) continue;
-            if (!t.visible && t.rect) continue;
-
-            const el = t.ref.deref();
-            if (!el) continue;
-
-            const r = el.getBoundingClientRect();
-            t.rectStale = false;
-
-            if (r.width === 0 || r.height === 0) {
-                if (t.rect) { t.rect = null; changed = true; }
-                continue;
-            }
-            if (r.bottom < 0 || r.top > vh) {
-                if (t.rect) { t.rect = null; changed = true; }
-                continue;
-            }
-
-            const prev = t.rect;
-            if (!prev ||
-                prev.left !== r.left || prev.top !== r.top ||
-                prev.width !== r.width || prev.height !== r.height) {
-                t.rect = r;
-                changed = true;
-            }
-        }
-
-        return changed;
+        return measureStaleRects(this._tracked);
     }
 
     // --- Internal: rebuild Float32Array ------------------------------------
 
     private _rebuildData(): void {
-        let count = 0;
-        for (const t of this._tracked) {
-            if (t.rect) count++;
-        }
-
-        if (count > this._capacity) {
-            this._capacity = Math.max(count, this._capacity * 2);
-            this._data = new Float32Array(this._capacity * ELEM_FLOATS);
-        }
-
-        this._data.fill(0);
-        let idx = 0;
-
-        // Priority selectors first
-        for (const t of this._tracked) {
-            if (!t.rect) continue;
-            if (!this._priorityIndices.has(t.selectorIdx)) continue;
-            const base = idx * ELEM_FLOATS;
-            this._data[base    ] = t.rect.left;
-            this._data[base + 1] = t.rect.top;
-            this._data[base + 2] = t.rect.width;
-            this._data[base + 3] = t.rect.height;
-            this._data[base + 4] = t.hue;
-            this._data[base + 5] = t.kind;
-            const el = t.ref.deref();
-            this._data[base + 6] = el ? parseFloat(el.getAttribute('data-depth') ?? '0') || 0 : 0;
-            idx++;
-        }
-
-        // Then non-priority
-        for (const t of this._tracked) {
-            if (!t.rect) continue;
-            if (this._priorityIndices.has(t.selectorIdx)) continue;
-            const base = idx * ELEM_FLOATS;
-            this._data[base    ] = t.rect.left;
-            this._data[base + 1] = t.rect.top;
-            this._data[base + 2] = t.rect.width;
-            this._data[base + 3] = t.rect.height;
-            this._data[base + 4] = t.hue;
-            this._data[base + 5] = t.kind;
-            const el2 = t.ref.deref();
-            this._data[base + 6] = el2 ? parseFloat(el2.getAttribute('data-depth') ?? '0') || 0 : 0;
-            idx++;
-        }
-
-        this._count = idx;
+        const rebuilt = rebuildData({
+            tracked: this._tracked,
+            priorityIndices: this._priorityIndices,
+            capacity: this._capacity,
+            data: this._data,
+        });
+        this._data = rebuilt.data;
+        this._count = rebuilt.count;
+        this._capacity = rebuilt.capacity;
     }
 }

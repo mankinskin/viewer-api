@@ -5,6 +5,27 @@
 
 import { signal, effect } from '@preact/signals';
 import type { Signal } from '@preact/signals';
+import {
+  brightenHex,
+  hexLuminance,
+  hexToRgba,
+  saturateHex,
+} from './theme-colors';
+import type { EffectSettings } from './theme-effects';
+
+export {
+  brightenHex,
+  hexLuminance,
+  hexToRgba,
+  hexToVec3,
+  saturateHex,
+  vec3ToHex,
+} from './theme-colors';
+export {
+  DEFAULT_EFFECT_SETTINGS,
+  DEFAULT_EFFECT_SETTINGS_OFF,
+} from './theme-effects';
+export type { EffectSettings } from './theme-effects';
 
 // ── ThemeColors interface ────────────────────────────────────────────────────
 
@@ -163,66 +184,6 @@ export interface ThemePreset extends ColorTheme {
 /** @deprecated Use `ColorTheme` instead. Kept for backward compatibility. */
 export type LegacyThemePreset = ThemePreset;
 
-// ── Color utilities ──────────────────────────────────────────────────────────
-
-/** Convert "#rrggbb" to [r, g, b] in 0..1 range (for GPU shaders). */
-export function hexToVec3(hex: string): [number, number, number] {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16) / 255;
-  const g = parseInt(h.slice(2, 4), 16) / 255;
-  const b = parseInt(h.slice(4, 6), 16) / 255;
-  return [r, g, b];
-}
-
-/** Convert [r, g, b] (0..1) to "#rrggbb". */
-export function vec3ToHex(r: number, g: number, b: number): string {
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v * 255)));
-  return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('');
-}
-
-/** Calculate relative luminance of a hex color (0 = black, 1 = white). */
-export function hexLuminance(hex: string): number {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
-}
-
-/** Convert a hex color to an rgba() string with the given alpha. */
-export function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-/**
- * Brighten a hex color by a factor (0..1 = 0%..100% brighter towards white).
- * Used to improve text readability on transparent/glass GPU backgrounds.
- */
-export function brightenHex(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  // Lerp towards white
-  const brighten = (c: number) => Math.min(255, Math.round(c + (255 - c) * factor));
-  return vec3ToHex(brighten(r) / 255, brighten(g) / 255, brighten(b) / 255);
-}
-
-/**
- * Saturate/boost a hex color by a factor (0..1).
- * Increases saturation while preserving luminance.
- */
-export function saturateHex(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const gray = 0.2989 * r + 0.587 * g + 0.114 * b;
-  const saturate = (c: number) => Math.min(1, Math.max(0, gray + (c - gray) * (1 + factor)));
-  return vec3ToHex(saturate(r), saturate(g), saturate(b));
-}
-
 // ── Theme store factory ──────────────────────────────────────────────────────
 
 export interface ThemeStore {
@@ -367,147 +328,6 @@ export function createThemeStore(
     },
   };
 }
-
-// ── EffectSettings ───────────────────────────────────────────────────────────
-// GPU particle and background effect configuration shared across viewer tools.
-
-export interface EffectSettings {
-  /** Glass panel background opacity 0–100 (maps to 0.0–0.4 alpha). */
-  glassOpacity: number;
-  /** Glass panel backdrop blur 0–100 (maps to 0–16px). */
-  glassBlur: number;
-  crtEnabled: boolean;
-  /** Horizontal scanlines (+ pixel grid) intensity 0–100. */
-  crtScanlinesH: number;
-  /** Vertical scanlines (+ pixel grid) intensity 0–100. */
-  crtScanlinesV: number;
-  /** Edge/border shadow intensity 0–100. */
-  crtEdgeShadow: number;
-  /** Torch flicker intensity 0–100. */
-  crtFlicker: number;
-  /** Scanline width/thickness 0–100. */
-  crtLineWidth: number;
-  /** Scanline tint color [R, G, B] 0–255. */
-  crtColor: [number, number, number];
-  smokeEnabled: boolean;
-  smokeIntensity: number;
-  smokeSpeed: number;
-  smokeWarmScale: number;
-  smokeCoolScale: number;
-  smokeMossScale: number;
-  grainIntensity: number;
-  grainCoarseness: number;
-  grainSize: number;
-  vignetteStrength: number;
-  underglowStrength: number;
-  sparkSpeed: number;
-  sparksEnabled: boolean;
-  emberSpeed: number;
-  embersEnabled: boolean;
-  beamSpeed: number;
-  beamsEnabled: boolean;
-  glitterSpeed: number;
-  glitterEnabled: boolean;
-  beamHeight: number;
-  beamDrift: number;
-  beamCount: number;
-  sparkCount: number;
-  sparkSize: number;
-  emberCount: number;
-  emberSize: number;
-  glitterCount: number;
-  glitterSize: number;
-  cinderSize: number;
-  cinderEnabled: boolean;
-}
-
-export const DEFAULT_EFFECT_SETTINGS: EffectSettings = {
-  glassOpacity: 35,
-  glassBlur: 25,
-  crtEnabled: true,
-  crtScanlinesH: 20,
-  crtScanlinesV: 12,
-  crtEdgeShadow: 35,
-  crtFlicker: 12,
-  crtLineWidth: 50,
-  crtColor: [100, 80, 60] as [number, number, number],
-  smokeEnabled: true,
-  smokeIntensity: 40,
-  smokeSpeed: 50,
-  smokeWarmScale: 100,
-  smokeCoolScale: 100,
-  smokeMossScale: 100,
-  grainIntensity: 20,
-  grainCoarseness: 40,
-  grainSize: 35,
-  vignetteStrength: 40,
-  underglowStrength: 25,
-  sparkSpeed: 70,
-  sparksEnabled: true,
-  emberSpeed: 70,
-  embersEnabled: true,
-  beamSpeed: 50,
-  beamsEnabled: true,
-  glitterSpeed: 60,
-  glitterEnabled: true,
-  beamHeight: 35,
-  beamDrift: 80,
-  beamCount: 48,
-  sparkCount: 40,
-  sparkSize: 70,
-  emberCount: 40,
-  emberSize: 70,
-  glitterCount: 40,
-  glitterSize: 60,
-  cinderSize: 70,
-  cinderEnabled: true,
-};
-
-/**
- * All GPU effects disabled — safe default for viewers that opt into effects only on demand.
- * Preserves glass/blur at low values to keep the UI from looking broken in GPU mode.
- */
-export const DEFAULT_EFFECT_SETTINGS_OFF: EffectSettings = {
-  glassOpacity: 0,
-  glassBlur: 0,
-  crtEnabled: false,
-  crtScanlinesH: 0,
-  crtScanlinesV: 0,
-  crtEdgeShadow: 0,
-  crtFlicker: 0,
-  crtLineWidth: 50,
-  crtColor: [100, 80, 60] as [number, number, number],
-  smokeEnabled: false,
-  smokeIntensity: 0,
-  smokeSpeed: 50,
-  smokeWarmScale: 100,
-  smokeCoolScale: 100,
-  smokeMossScale: 100,
-  grainIntensity: 0,
-  grainCoarseness: 40,
-  grainSize: 35,
-  vignetteStrength: 0,
-  underglowStrength: 0,
-  sparkSpeed: 70,
-  sparksEnabled: false,
-  emberSpeed: 70,
-  embersEnabled: false,
-  beamSpeed: 50,
-  beamsEnabled: false,
-  glitterSpeed: 60,
-  glitterEnabled: false,
-  beamHeight: 35,
-  beamDrift: 80,
-  beamCount: 48,
-  sparkCount: 40,
-  sparkSize: 70,
-  emberCount: 40,
-  emberSize: 70,
-  glitterCount: 40,
-  glitterSize: 60,
-  cinderSize: 70,
-  cinderEnabled: false,
-};
 
 // ── SavedTheme / ThemeSettingsStore ──────────────────────────────────────────
 

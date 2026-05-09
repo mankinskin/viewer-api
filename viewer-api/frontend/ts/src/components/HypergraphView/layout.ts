@@ -8,6 +8,12 @@
 
 import type { GraphSnapshot as HypergraphSnapshot, VizPathGraph } from '@context-engine/types';
 
+export type {
+    DecompositionChild,
+    DecompositionPattern,
+} from './layout-decomposition';
+export { getDecompositionPatterns } from './layout-decomposition';
+
 export interface LayoutNode {
     index: number;
     label: string;
@@ -261,69 +267,6 @@ export function computeSearchPathLayout(
     // its children are also rendered inside its DOM.
 
     return { anchorIdx: root.index, offsets };
-}
-
-// ── Decomposition patterns ──
-
-/**
- * A single child token within a decomposition pattern row.
- */
-export interface DecompositionChild {
-    index: number;
-    label: string;
-    width: number;
-    /** Fraction of the parent's width that this child occupies (0..1). */
-    fraction: number;
-    subIndex: number;
-}
-
-/**
- * One decomposition pattern (one way to split the parent into children).
- * All children's widths sum to the parent's width.
- */
-export interface DecompositionPattern {
-    patternIdx: number;
-    children: DecompositionChild[];
-}
-
-/**
- * Get all decomposition patterns for a parent node.
- * Each pattern represents a different way the parent's string can be split
- * into smaller substrings. Within each pattern, children are ordered by
- * sub_index and their widths sum to the parent width.
- */
-export function getDecompositionPatterns(
-    layout: GraphLayout,
-    parentIdx: number,
-): DecompositionPattern[] {
-    const parent = layout.nodeMap.get(parentIdx);
-    if (!parent || parent.isAtom) return [];
-
-    const byPattern = new Map<number, { to: number; subIndex: number }[]>();
-    for (const e of layout.edges) {
-        if (e.from === parentIdx) {
-            if (!byPattern.has(e.patternIdx)) byPattern.set(e.patternIdx, []);
-            byPattern.get(e.patternIdx)!.push({ to: e.to, subIndex: e.subIndex });
-        }
-    }
-
-    const patterns: DecompositionPattern[] = [];
-    for (const [patternIdx, edgeList] of [...byPattern.entries()].sort((a, b) => a[0] - b[0])) {
-        edgeList.sort((a, b) => a.subIndex - b.subIndex);
-        const children: DecompositionChild[] = edgeList.map(e => {
-            const child = layout.nodeMap.get(e.to);
-            return {
-                index: e.to,
-                label: child?.label ?? `#${e.to}`,
-                width: child?.width ?? 1,
-                fraction: (child?.width ?? 1) / parent.width,
-                subIndex: e.subIndex,
-            };
-        });
-        patterns.push({ patternIdx, children });
-    }
-
-    return patterns;
 }
 
 function simulate(

@@ -36,6 +36,7 @@ import type {
     DuplicateNode,
 } from "./types";
 import type { VizPathGraph } from "@context-engine/types";
+import { getCameraFocusIdx } from "./focus";
 
 // Hooks
 import {
@@ -75,62 +76,6 @@ export interface HypergraphViewCoreProps extends HypergraphViewProps {
      * still emitted — only the inner content changes.
      */
     renderNode?: (node: LayoutNode) => ComponentChildren;
-}
-
-/**
- * In dup=off nesting mode, child nodes are shown as clones inside their
- * expanded parent.  When the user selects such a child, the camera should
- * target the parent's 3-D position (where the child is visually displayed)
- * instead of the hidden original.
- *
- * Returns the node index whose layout position the camera should focus on.
- */
-function getCameraFocusIdx(
-    layout: GraphLayout,
-    selectedIdx: number,
-    nesting: NestingSettings,
-    searchPath: VizPathGraph | null,
-): number {
-    if (selectedIdx < 0) return selectedIdx;
-    if (!nesting.enabled || nesting.duplicateMode) return selectedIdx;
-
-    // Replicate the desiredExpanded logic from useOverlayRenderer so we know
-    // which nodes are expanded and can detect when selectedIdx lives inside
-    // one of them.
-    const desiredExpanded = new Set<number>();
-    desiredExpanded.add(selectedIdx);
-    const spRootIdx = searchPath?.root?.index;
-    if (spRootIdx != null) desiredExpanded.add(spRootIdx);
-
-    // Prune: remove any node that is a child of another expanded node
-    // (but never prune the search-path root).
-    for (const idx of [...desiredExpanded]) {
-        if (idx === spRootIdx) continue;
-        const node = layout.nodeMap.get(idx);
-        if (!node) continue;
-        for (const otherIdx of desiredExpanded) {
-            if (otherIdx === idx) continue;
-            const other = layout.nodeMap.get(otherIdx);
-            if (other && other.childIndices.includes(idx)) {
-                desiredExpanded.delete(idx);
-                break;
-            }
-        }
-    }
-
-    // If selectedIdx survived pruning it is expanded itself — focus on it.
-    if (desiredExpanded.has(selectedIdx)) return selectedIdx;
-
-    // selectedIdx was pruned → it lives inside an expanded parent.
-    // Find which expanded node owns it and redirect focus there.
-    for (const expIdx of desiredExpanded) {
-        const expNode = layout.nodeMap.get(expIdx);
-        if (expNode && expNode.childIndices.includes(selectedIdx)) {
-            return expIdx;
-        }
-    }
-
-    return selectedIdx;
 }
 
 /**
