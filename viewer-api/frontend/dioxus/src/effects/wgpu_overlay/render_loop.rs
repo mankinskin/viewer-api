@@ -7,17 +7,21 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use dioxus::prelude::*;
-use js_sys::{Array, Float32Array};
+use js_sys::Float32Array;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{HtmlCanvasElement, Window};
+use web_sys::MouseEvent;
 
-use super::element_scanner::scan_ui_rects;
 use super::element_types::*;
 use super::gpu_buffers::{mk_compute_bind_group, mk_render_bind_group, GpuBuffers};
 use super::gpu_init::{init_gpu, GpuPipelines};
 use super::settings::EffectSettings;
 use super::webgpu::*;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
+
+mod frame;
+mod uniforms;
+
+use self::frame::render_frame;
 // ── Per-frame GPU context ────────────────────────────────────────────────────
 
 pub(super) struct GpuCtx {
@@ -206,258 +210,12 @@ fn setup_raf_loop(
     *raf_jv.borrow_mut() = Some(jv);
 }
 
-// ── Per-frame render ─────────────────────────────────────────────────────────
-
-fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
-    let dt_s   = ((ts_ms - gpu.prev_time_ms) / 1000.0).min(0.1) as f32;
-    gpu.prev_time_ms = ts_ms;
-    let time_s = ((ts_ms - gpu.start_time_ms) / 1000.0) as f32;
-
-    // Snapshot the live (potentially-preview) effect settings for this frame.
-    let settings = super::live_effects();
-
-    // Re-upload the palette buffer if the UI mutated colours since last frame.
-    if super::take_palette_dirty() {
-        let flat = settings.palette_flat();
-        let fa = unsafe { Float32Array::view(&flat) };
-        queue_write_f32(&gpu.queue, &gpu.buffers.palette_buf, 0, &fa);
-    }
-
-    // Diagnostic: log every ~120 frames so we can confirm the loop is alive.
-    {
-        thread_local! { static FRAME_NO: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
-        FRAME_NO.with(|c| {
-            let n = c.get().wrapping_add(1);
-            c.set(n);
-            if n == 1 || n.is_multiple_of(120) {
-                let dev_label = js_sys::Reflect::get(&gpu.device, &"label".into())
-                    .ok().and_then(|v| v.as_string()).unwrap_or_default();
-                debug!(
-                    target: "wgpu_overlay::frame",
-                    frame_n = n,
-                    frame_time_s = time_s,
-                    frame_dt_s = dt_s,
-                    smoke = settings.smoke_intensity,
-                    device_label = %dev_label,
-                    "frame"
-                );
-            }
-        });
-    }
-
-    // ── Resize canvas to device pixels ──────────────────────────────────────
-    let Some(doc) = win.document() else { return; };
-    let Some(canvas) = doc
-        .get_element_by_id("webgpu-canvas")
-        .and_then(|el| el.dyn_into::<HtmlCanvasElement>().ok())
-    else { return; };
-    let dpr = win.device_pixel_ratio();
-    let cw  = ((canvas.client_width()  as f64 * dpr) as u32).max(1);
-    let ch  = ((canvas.client_height() as f64 * dpr) as u32).max(1);
-    if cw != canvas.width()  { canvas.set_width(cw); }
-    if ch != canvas.height() { canvas.set_height(ch); }
-
-    // Recreate depth texture if canvas was resized.
-    if cw != gpu.depth_w || ch != gpu.depth_h {
-        if let Some((dt, dv)) = create_depth_texture(&gpu.device, cw, ch) {
-            gpu.depth_tex  = dt;
-            gpu.depth_view = dv;
-            gpu.depth_w    = cw;
-            gpu.depth_h    = ch;
-        }
-    }
-
-    // ── DOM element scan ────────────────────────────────────────────────────
-    let (elem_data, elem_count) = scan_ui_rects(&doc);
-
-    // Grow the element buffer if scanned count exceeded capacity.
-    if gpu.buffers.ensure_elem_capacity(&gpu.device, elem_count) {
-        if let Some(cb) = mk_compute_bind_group(&gpu.device, &gpu.pipelines.compute_bgl, &gpu.buffers) {
-            gpu.compute_bg = cb;
-        }
-        if let Some(rb) = mk_render_bind_group(&gpu.device, &gpu.pipelines.render_bgl, &gpu.buffers) {
-            gpu.render_bg = rb;
-        }
-    }
-
-    // Upload element rects.
-    if !elem_data.is_empty() {
-        // SAFETY: `elem_data` lives for the duration of this call; the view
-        // is consumed before this function returns.
-        let fa = unsafe { Float32Array::view(&elem_data) };
-        queue_write_f32(&gpu.queue, &gpu.buffers.elem_buf, 0, &fa);
-    }
-
-    // ── Pack uniforms ───────────────────────────────────────────────────────
-    let (mx, my) = super::mouse_pos();
-    let hover_elem    = find_hovered_elem(&elem_data, elem_count, mx, my);
-    let selected_elem = find_selected_elem(&elem_data, elem_count, &doc);
-    pack_uniforms(gpu, &settings, time_s, dt_s, cw, ch, elem_count,
-                  mx, my, hover_elem, selected_elem);
-    queue_write_f32(&gpu.queue, &gpu.buffers.uniform_buf, 0, &gpu.uniforms_f32);
-
-    // ── Get current frame texture ───────────────────────────────────────────
-    let Some(frame_tex) = get_fn(&gpu.context, "getCurrentTexture")
-        .and_then(|f| f.call0(&gpu.context).ok()) else { return; };
-    let Some(frame_view) = create_tex_view(&frame_tex) else { return; };
-
-    // ── Command encoder ─────────────────────────────────────────────────────
-    let Some(encoder) = get_fn(&gpu.device, "createCommandEncoder")
-        .and_then(|f| f.call0(&gpu.device).ok()) else { return; };
-
-    // ── Compute pass (particle physics) ─────────────────────────────────────
-    if settings.particles_enabled {
-        if let Some(pass) = get_fn(&encoder, "beginComputePass")
-            .and_then(|f| f.call0(&encoder).ok())
-        {
-            call_set_pipeline(&pass, &gpu.pipelines.compute_pipeline);
-            call_set_bind_group(&pass, 0, &gpu.compute_bg);
-            let wg = ((NUM_PARTICLES + COMPUTE_WORKGROUP - 1) / COMPUTE_WORKGROUP) as u32;
-            call_dispatch(&pass, wg);
-            call_end(&pass);
-        }
-    }
-
-    // ── Render pass ─────────────────────────────────────────────────────────
-    {
-        let rp_desc = build_render_pass_desc(&frame_view, &gpu.depth_view);
-        if let Some(pass) = get_fn(&encoder, "beginRenderPass")
-            .and_then(|f| f.call1(&encoder, &rp_desc).ok())
-        {
-            // a) Background full-screen quad: smoke, element rects, CRT, grain, vignette.
-            call_set_pipeline(&pass, &gpu.pipelines.bg_pipeline);
-            call_set_bind_group(&pass, 0, &gpu.render_bg);
-            call_draw(&pass, 6, 1);
-
-            // b) Particle quads (additive blend — sparks, embers, beams, glitter).
-            if settings.particles_enabled {
-                call_set_pipeline(&pass, &gpu.pipelines.particle_pipeline);
-                call_set_bind_group(&pass, 0, &gpu.render_bg);
-                call_draw(&pass, 6, NUM_PARTICLES as u32);
-            }
-
-            call_end(&pass);
-        }
-    }
-
-    // ── Submit ──────────────────────────────────────────────────────────────
-    if let Some(finish) = get_fn(&encoder, "finish")
-        .and_then(|f| f.call0(&encoder).ok())
-    {
-        if let Some(submit) = get_fn(&gpu.queue, "submit") {
-            let cmds = Array::new();
-            cmds.push(&finish);
-            let _ = submit.call1(&gpu.queue, &cmds);
-        }
-    }
-
-    // ── Invoke registered per-frame callbacks ───────────────────────────────
-    // Secondary renderers (e.g. Graph3D) composite into the same swap-chain
-    // texture using `loadOp: "load"` so the overlay's smoke and particles
-    // remain visible underneath.
-    {
-        let frame_ctx = super::FrameContext {
-            device:     &gpu.device,
-            queue:      &gpu.queue,
-            frame_view: &frame_view,
-            canvas_w:   cw,
-            canvas_h:   ch,
-            time_s,
-        };
-        super::invoke_frame_callbacks(&frame_ctx);
-    }
-
-    // Suppress unused suggestions for fields used only for resource ownership.
-    let _ = &gpu.depth_tex;
-}
-
-// ── Uniform packing ──────────────────────────────────────────────────────────
-
-fn pack_uniforms(gpu: &GpuCtx, s: &EffectSettings, time_s: f32, dt_s: f32, cw: u32, ch: u32, elem_count: usize,
-                 mouse_x: f32, mouse_y: f32, hover_elem: f32, selected_elem: f32) {
-    let u  = &gpu.uniforms_f32;
-    let vp = ortho_vp(cw as f32, ch as f32);
-    let iv = ortho_inv_vp(cw as f32, ch as f32);
-
-    // Helper: a master-flag gates each effect group; multiplying by 0
-    // disables that group's contribution while keeping the uniform layout
-    // intact for the WGSL shader.
-    let smoke_gate    = if s.smoke_enabled    { 1.0 } else { 0.0 };
-    let crt_gate      = if s.crt_enabled      { 1.0 } else { 0.0 };
-    let grain_gate    = if s.grain_enabled    { 1.0 } else { 0.0 };
-    let vignette_gate = if s.vignette_enabled { 1.0 } else { 0.0 };
-    let particle_gate = if s.particles_enabled { 1.0 } else { 0.0 };
-
-    // Scalars [0..55]
-    u.set_index(0,  time_s);
-    u.set_index(1,  cw as f32);
-    u.set_index(2,  ch as f32);
-    u.set_index(3,  elem_count as f32);
-    u.set_index(4,  mouse_x);      // mouse_x
-    u.set_index(5,  mouse_y);      // mouse_y
-    u.set_index(6,  dt_s);
-    u.set_index(7,  hover_elem);   // hover_elem
-    u.set_index(8,  0.0);          // hover_start_time
-    u.set_index(9,  selected_elem); // selected_elem
-    u.set_index(10, s.crt_scanlines_h * crt_gate);
-    u.set_index(11, s.crt_scanlines_v * crt_gate);
-    u.set_index(12, s.crt_edge_shadow * crt_gate);
-    u.set_index(13, s.crt_flicker     * crt_gate);
-    u.set_index(14, s.crt_line_width);
-    u.set_index(15, s.smoke_intensity * smoke_gate);
-    u.set_index(16, s.smoke_speed);
-    u.set_index(17, s.smoke_warm_scale);
-    u.set_index(18, s.smoke_cool_scale);
-    u.set_index(19, s.smoke_moss_scale);
-    u.set_index(20, s.grain_intensity * grain_gate);
-    u.set_index(21, s.grain_coarseness);
-    u.set_index(22, s.grain_size);
-    u.set_index(23, s.vignette_strength * vignette_gate);
-    u.set_index(24, s.underglow_strength);
-    u.set_index(25, s.spark_speed);
-    u.set_index(26, s.ember_speed);
-    u.set_index(27, s.beam_speed);
-    u.set_index(28, s.glitter_speed);
-    u.set_index(29, s.beam_height);
-    u.set_index(30, s.beam_count * particle_gate);
-    u.set_index(31, s.beam_drift);
-    u.set_index(32, 0.0);     // scroll_dx
-    u.set_index(33, 0.0);     // scroll_dy
-    u.set_index(34, s.spark_count * particle_gate);
-    u.set_index(35, s.spark_size);
-    u.set_index(36, s.ember_count * particle_gate);
-    u.set_index(37, s.ember_size);
-    u.set_index(38, s.glitter_count * particle_gate);
-    u.set_index(39, s.glitter_size);
-    u.set_index(40, s.cinder_size);
-    u.set_index(41, 0.0);     // ref_depth
-    u.set_index(42, 1.0);     // world_scale
-    u.set_index(43, 0.0);     // vp_x
-    u.set_index(44, 0.0);     // vp_y
-    u.set_index(45, cw as f32);
-    u.set_index(46, ch as f32);
-    u.set_index(47, 0.0);     // current_view (0 = logs)
-    u.set_index(48, s.crt_color[0]);
-    u.set_index(49, s.crt_color[1]);
-    u.set_index(50, s.crt_color[2]);
-    u.set_index(51, 0.0);     // _crt_pad
-    u.set_index(52, 0.0);     // cam x
-    u.set_index(53, 0.0);     // cam y
-    u.set_index(54, 0.0);     // cam z
-    u.set_index(55, 0.0);     // _cam_pad
-    for (i, &v) in vp.iter().enumerate() { u.set_index(56 + i as u32, v); }
-    for (i, &v) in iv.iter().enumerate() { u.set_index(72 + i as u32, v); }
-}
-
 // ── Mouse listener ───────────────────────────────────────────────────────────
 
 /// Register a `mousemove` listener on `document` and store the JS closure so
 /// it is never garbage-collected.  Safe to call multiple times — the second
 /// call is a no-op because `store_mouse_listener` replaces the previous value.
 fn install_mouse_listener() {
-    use wasm_bindgen::closure::Closure;
-    use web_sys::MouseEvent;
-
     let closure = Closure::<dyn FnMut(MouseEvent)>::new(|evt: MouseEvent| {
         super::set_mouse_pos(evt.client_x() as f32, evt.client_y() as f32);
     });
@@ -471,81 +229,4 @@ fn install_mouse_listener() {
     }
     // Keep the closure alive — dropping it would silently unregister the listener.
     super::store_mouse_listener(closure.into_js_value());
-}
-
-// ── Hover / selection helpers ────────────────────────────────────────────────
-
-/// Find the index of the element whose bounding rect contains `(mx, my)`.
-/// Returns `-1.0` if nothing is under the cursor.
-/// `elem_data` is the flat `[x, y, w, h, hue, kind, depth, _pad, ...]` Vec.
-fn find_hovered_elem(elem_data: &[f32], elem_count: usize, mx: f32, my: f32) -> f32 {
-    if mx < -999.0 { return -1.0; } // off-screen sentinel
-    for i in 0..elem_count {
-        let base = i * 8; // ELEM_FLOATS = 8
-        let x = elem_data[base];
-        let y = elem_data[base + 1];
-        let w = elem_data[base + 2];
-        let h = elem_data[base + 3];
-        if mx >= x && mx <= x + w && my >= y && my <= y + h {
-            return i as f32;
-        }
-    }
-    -1.0
-}
-
-/// Find the index of the first element that is currently "selected" in the DOM
-/// (matches `.log-entry.selected` or `.spec-card--selected`).
-/// Returns `-1.0` if none.
-fn find_selected_elem(elem_data: &[f32], elem_count: usize, doc: &web_sys::Document) -> f32 {
-    let selected_el = doc
-        .query_selector(".log-entry.selected, .spec-card--selected, [aria-selected=true]")
-        .ok()
-        .flatten();
-    let sel_el = match selected_el {
-        Some(el) => el,
-        None => return -1.0,
-    };
-    // Get its bounding rect and match against the scanned list.
-    use super::webgpu::{get_fn, prop_f32};
-    let rect = match get_fn(&sel_el, "getBoundingClientRect")
-        .and_then(|f| f.call0(&sel_el).ok())
-    {
-        Some(r) => r,
-        None => return -1.0,
-    };
-    let sx = prop_f32(&rect, "x");
-    let sy = prop_f32(&rect, "y");
-    for i in 0..elem_count {
-        let base = i * 8;
-        let x = elem_data[base];
-        let y = elem_data[base + 1];
-        // Match by top-left corner within 2 px tolerance (DPR rounding).
-        if (x - sx).abs() < 2.0 && (y - sy).abs() < 2.0 {
-            return i as f32;
-        }
-    }
-    -1.0
-}
-
-// ── Math helpers ─────────────────────────────────────────────────────────────
-
-/// Column-major orthographic matrix: screen pixels → WebGPU NDC.
-/// Maps x ∈ [0, w] → [-1, +1] and y ∈ [0, h] → [+1, -1] (Y-flip).
-fn ortho_vp(w: f32, h: f32) -> [f32; 16] {
-    [
-         2.0 / w,   0.0,      0.0, 0.0,
-         0.0,      -2.0 / h,  0.0, 0.0,
-         0.0,       0.0,      1.0, 0.0,
-        -1.0,       1.0,      0.0, 1.0,
-    ]
-}
-
-/// Column-major inverse of [`ortho_vp`]: NDC → screen pixels.
-fn ortho_inv_vp(w: f32, h: f32) -> [f32; 16] {
-    [
-        w / 2.0,  0.0,       0.0, 0.0,
-        0.0,     -h / 2.0,   0.0, 0.0,
-        0.0,      0.0,       1.0, 0.0,
-        w / 2.0,  h / 2.0,   0.0, 1.0,
-    ]
 }
