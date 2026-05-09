@@ -26,7 +26,10 @@ pub use icons::{
     HomeIcon, InfoIcon, LogIcon, MinusIcon, ModuleIcon, PlusIcon, RefreshIcon, SearchIcon,
     SourceFileIcon, StatsIcon,
 };
-pub use layout::{GlassPanel, Header, Layout, Panel, PanelPlacement, Sidebar};
+pub use layout::{
+    is_mobile_sidebar_viewport, GlassPanel, Header, Layout, Panel, PanelPlacement, Sidebar,
+    SIDEBAR_MOBILE_BREAKPOINT_PX,
+};
 pub use meta_header::{Chip, ChipKind, ChipRow, MetaHeader};
 pub use modal::Overlay;
 pub use resize_handle::{PanelResizer, ResizeDirection, ResizeEdge, ResizeHandle};

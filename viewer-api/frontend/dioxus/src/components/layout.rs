@@ -9,6 +9,26 @@ use crate::components::{
     ChevronRightIcon, CloseIcon, HamburgerIcon, ResizeDirection, ResizeEdge, ResizeHandle,
 };
 
+pub const SIDEBAR_MOBILE_BREAKPOINT_PX: f64 = 768.0;
+
+pub fn is_mobile_sidebar_viewport() -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        use web_sys::window;
+
+        window()
+            .and_then(|win| win.inner_width().ok())
+            .and_then(|width| width.as_f64())
+            .map(|width| width <= SIDEBAR_MOBILE_BREAKPOINT_PX)
+            .unwrap_or(false)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        false
+    }
+}
+
 // ── Header ────────────────────────────────────────────────────────────────────
 
 /// Slim top bar matching `.header` / `.header-left` / `.header-right` CSS.
@@ -190,6 +210,7 @@ pub fn Sidebar(
     };
 
     // ── Swipe-right-to-close gesture state ────────────────────────────────
+    #[cfg_attr(not(target_arch = "wasm32"), allow(unused_mut, unused_variables))]
     let mut touch_start_x: Signal<f64> = use_signal(|| 0.0);
 
     // Capture the X position of the first touch on touchstart.
@@ -277,7 +298,7 @@ pub fn Sidebar(
                 if let Some(b) = &badge {
                     span { class: "sidebar-badge", "{b}" }
                 }
-                // Mobile close button (visible only at ≤480px via CSS).
+                // Mobile close button (visible at the shared mobile breakpoint via CSS).
                 // min 44×44px tap target per WCAG AAA.
                 button {
                     class: "sidebar-close-btn",
@@ -320,17 +341,17 @@ pub fn Sidebar(
         }
 
         // Hamburger toggle — hidden on desktop, shown on mobile via CSS.
-        // Callers that place a hamburger inside their Header should also wire
-        // the `mobile_open` / `on_mobile_open_change` props so both toggle
-        // the same state.  This standalone button is kept for convenience and
-        // for the uncontrolled default use case.
-        // min 44×44px tap target per WCAG AAA.
-        button {
-            class: "sidebar-hamburger",
-            style: "min-width: 44px; min-height: 44px;",
-            aria_label: "Open sidebar",
-            onclick: move |_| open_drawer(),
-            HamburgerIcon {}
+        // In controlled mobile mode the caller is expected to own the header
+        // toggle, so we suppress this floating button to avoid duplicate
+        // affordances and stale overlay artifacts in the content area.
+        if mobile_open.is_none() {
+            button {
+                class: "sidebar-hamburger",
+                style: "min-width: 44px; min-height: 44px;",
+                aria_label: "Open sidebar",
+                onclick: move |_| open_drawer(),
+                HamburgerIcon {}
+            }
         }
     }
 }
