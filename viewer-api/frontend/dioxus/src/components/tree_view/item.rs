@@ -2,10 +2,19 @@ use std::collections::BTreeSet;
 
 use dioxus::prelude::*;
 
-use super::types::{NodeIcon, TreeNode};
+use super::types::{
+    NodeIcon,
+    TreeNode,
+};
 use crate::components::{
-    ChevronRightIcon, CrateIcon, DocumentIcon, FileIcon, FolderIcon, FolderOpenIcon,
-    ModuleIcon, SourceFileIcon,
+    ChevronRightIcon,
+    CrateIcon,
+    DocumentIcon,
+    FileIcon,
+    FolderIcon,
+    FolderOpenIcon,
+    ModuleIcon,
+    SourceFileIcon,
 };
 
 #[component]
@@ -26,10 +35,16 @@ pub(super) fn TreeItem(
     let selected_id_key = node.id.clone();
     let multi_id = node.id.clone();
     let focus_id_key = node.id.clone();
-    let is_expanded = use_memo(move || expanded_ids.read().contains(&expanded_id));
-    let is_selected = selected_id.as_deref().is_some_and(|selected| selected == selected_id_key);
-    let is_in_multi = use_memo(move || multi_selected.read().contains(&multi_id));
-    let is_focused = use_memo(move || focused_id.read().as_deref() == Some(focus_id_key.as_str()));
+    let is_expanded =
+        use_memo(move || expanded_ids.read().contains(&expanded_id));
+    let is_selected = selected_id
+        .as_deref()
+        .is_some_and(|selected| selected == selected_id_key);
+    let is_in_multi =
+        use_memo(move || multi_selected.read().contains(&multi_id));
+    let is_focused = use_memo(move || {
+        focused_id.read().as_deref() == Some(focus_id_key.as_str())
+    });
 
     let expanded = *is_expanded.read();
     let in_multi = *is_in_multi.read();
@@ -37,7 +52,11 @@ pub(super) fn TreeItem(
     let has_children = !node.children.is_empty();
     let is_dir_node = node.is_dir;
     let indent = format!("padding-left: {}px", depth * 16);
-    let row_selected = if show_checkboxes { in_multi } else { is_selected };
+    let row_selected = if show_checkboxes {
+        in_multi
+    } else {
+        is_selected
+    };
     let row_class = tree_row_class(row_selected, focused);
     let toggle_class = tree_toggle_class(has_children, expanded);
     let icon = render_node_icon(&node, expanded);
@@ -163,7 +182,8 @@ fn handle_label_click(
     on_selection_change: EventHandler<BTreeSet<String>>,
 ) {
     if show_checkboxes {
-        let new_selection = next_multi_selection(&node_id, shift, last_clicked, visible_order);
+        let new_selection =
+            next_multi_selection(&node_id, shift, last_clicked, visible_order);
         multi_selected.set(new_selection.clone());
         focused_id.set(Some(node_id));
         on_selection_change.call(new_selection);
@@ -196,7 +216,11 @@ fn next_multi_selection(
     collect_range_selection(&order, &anchor, node_id)
 }
 
-fn collect_range_selection(order: &[String], anchor: &str, node_id: &str) -> BTreeSet<String> {
+fn collect_range_selection(
+    order: &[String],
+    anchor: &str,
+    node_id: &str,
+) -> BTreeSet<String> {
     let from = order.iter().position(|id| id == anchor);
     let to = order.iter().position(|id| id == node_id);
 
@@ -208,12 +232,15 @@ fn collect_range_selection(order: &[String], anchor: &str, node_id: &str) -> BTr
                 (end, start)
             };
             order[start..=end].iter().cloned().collect()
-        }
+        },
         _ => std::iter::once(node_id.to_string()).collect(),
     }
 }
 
-fn toggle_expanded(mut expanded_ids: Signal<Vec<String>>, node_id: &str) {
+fn toggle_expanded(
+    mut expanded_ids: Signal<Vec<String>>,
+    node_id: &str,
+) {
     let mut ids = expanded_ids.write();
     if let Some(position) = ids.iter().position(|id| id == node_id) {
         ids.remove(position);
@@ -222,7 +249,10 @@ fn toggle_expanded(mut expanded_ids: Signal<Vec<String>>, node_id: &str) {
     }
 }
 
-fn tree_row_class(row_selected: bool, is_focused: bool) -> &'static str {
+fn tree_row_class(
+    row_selected: bool,
+    is_focused: bool,
+) -> &'static str {
     match (row_selected, is_focused) {
         (true, true) => "tree-item-row selected focused",
         (true, false) => "tree-item-row selected",
@@ -231,7 +261,10 @@ fn tree_row_class(row_selected: bool, is_focused: bool) -> &'static str {
     }
 }
 
-fn tree_toggle_class(has_children: bool, is_expanded: bool) -> &'static str {
+fn tree_toggle_class(
+    has_children: bool,
+    is_expanded: bool,
+) -> &'static str {
     if !has_children {
         return "tree-toggle empty";
     }
@@ -243,23 +276,29 @@ fn tree_toggle_class(has_children: bool, is_expanded: bool) -> &'static str {
     }
 }
 
-fn render_node_icon(node: &TreeNode, is_expanded: bool) -> Element {
+fn render_node_icon(
+    node: &TreeNode,
+    is_expanded: bool,
+) -> Element {
     match node.icon {
-        NodeIcon::Auto => {
+        NodeIcon::Auto =>
             if node.is_dir {
                 render_folder_icon(is_expanded)
             } else {
                 rsx! { FileIcon { size: 16, class: "tree-icon file" } }
-            }
-        }
+            },
         NodeIcon::Folder => render_folder_icon(is_expanded),
-        NodeIcon::File => rsx! { FileIcon { size: 16, class: "tree-icon file" } },
-        NodeIcon::Doc => rsx! { DocumentIcon { size: 16, class: "tree-icon doc" } },
-        NodeIcon::Crate => rsx! { CrateIcon { size: 16, class: "tree-icon crate" } },
-        NodeIcon::Module => rsx! { ModuleIcon { size: 16, class: "tree-icon module" } },
+        NodeIcon::File =>
+            rsx! { FileIcon { size: 16, class: "tree-icon file" } },
+        NodeIcon::Doc =>
+            rsx! { DocumentIcon { size: 16, class: "tree-icon doc" } },
+        NodeIcon::Crate =>
+            rsx! { CrateIcon { size: 16, class: "tree-icon crate" } },
+        NodeIcon::Module =>
+            rsx! { ModuleIcon { size: 16, class: "tree-icon module" } },
         NodeIcon::SourceFile => {
             rsx! { SourceFileIcon { size: 16, class: "tree-icon source-file" } }
-        }
+        },
     }
 }
 

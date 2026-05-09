@@ -1,14 +1,35 @@
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    rc::Rc,
+};
 
 use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
-use wasm_bindgen::{closure::Closure, JsCast, JsValue};
+use wasm_bindgen::{
+    closure::Closure,
+    JsCast,
+    JsValue,
+};
 
-use super::super::camera::{Camera, MouseState, CAMERA_FOV};
-use super::super::data::Layout3D;
-use super::super::render::RenderState;
-use super::{cross, normalise, target_is_passthrough_blocked, DragState, DRAG_THRESHOLD_PX};
+use super::{
+    super::{
+        camera::{
+            Camera,
+            MouseState,
+            CAMERA_FOV,
+        },
+        data::Layout3D,
+        render::RenderState,
+    },
+    cross,
+    normalise,
+    target_is_passthrough_blocked,
+    DragState,
+    DRAG_THRESHOLD_PX,
+};
 
 pub(super) fn mouse_down_listener(
     container_target: &web_sys::EventTarget,
@@ -32,7 +53,13 @@ pub(super) fn mouse_down_listener(
 
             if let Some(card_idx) = find_card_index(event) {
                 if event.button() == 0 {
-                    record_drag_candidate(&drag_state, &state_rc, card_idx, cursor_x, cursor_y);
+                    record_drag_candidate(
+                        &drag_state,
+                        &state_rc,
+                        card_idx,
+                        cursor_x,
+                        cursor_y,
+                    );
                     return;
                 }
             }
@@ -129,7 +156,9 @@ pub(super) fn wheel_listener(
             let delta = event.delta_y() as f32;
             let factor = if delta < 0.0 { 0.92 } else { 1.08 };
             if let Ok(mut state) = state_rc.try_borrow_mut() {
-                state.camera.distance = (state.camera.distance * factor).clamp(3.0, 100.0);
+                state.camera_goal = None;
+                state.camera.distance =
+                    (state.camera.distance * factor).clamp(3.0, 100.0);
                 if let Some(handler) = on_camera_change.as_ref() {
                     handler.call(state.camera.clone());
                 }
@@ -185,11 +214,8 @@ fn record_drag_candidate(
     drag.anchor = [node.x, node.y, node.z];
     let eye = state.camera.eye();
     let target = state.camera.target;
-    let forward = normalise([
-        target[0] - eye[0],
-        target[1] - eye[1],
-        target[2] - eye[2],
-    ]);
+    let forward =
+        normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
     let right = normalise(cross(forward, [0.0, 1.0, 0.0]));
     let up = normalise(cross(right, forward));
     drag.cam_right = right;
@@ -200,7 +226,9 @@ fn record_drag_candidate(
         drag.anchor[1] - eye[1],
         drag.anchor[2] - eye[2],
     ];
-    let depth = (to_node[0] * forward[0] + to_node[1] * forward[1] + to_node[2] * forward[2])
+    let depth = (to_node[0] * forward[0]
+        + to_node[1] * forward[1]
+        + to_node[2] * forward[2])
         .abs()
         .max(0.1);
     let dpr = web_sys::window()
@@ -299,8 +327,18 @@ fn update_dragged_node(
             node.x = new_x;
             node.y = new_y;
             node.z = new_z;
-            state.dirty_layout = true;
         }
+        if let Some(node) = state.target_layout.nodes.get_mut(idx) {
+            node.x = new_x;
+            node.y = new_y;
+            node.z = new_z;
+        }
+        if let Some(node) = state.base_layout.nodes.get_mut(idx) {
+            node.x = new_x;
+            node.y = new_y;
+            node.z = new_z;
+        }
+        state.dirty_layout = true;
     }
 }
 
@@ -323,9 +361,11 @@ fn update_camera_motion(
     let Ok(mut render_state) = state_rc.try_borrow_mut() else {
         return;
     };
+    render_state.camera_goal = None;
     if state.orbiting {
         render_state.camera.yaw -= dx * 0.005;
-        render_state.camera.pitch = (render_state.camera.pitch + dy * 0.005).clamp(-1.4, 1.4);
+        render_state.camera.pitch =
+            (render_state.camera.pitch + dy * 0.005).clamp(-1.4, 1.4);
     } else if state.panning {
         let speed = render_state.camera.distance * 0.002;
         let cos_y = render_state.camera.yaw.cos();
@@ -358,23 +398,26 @@ fn clear_interaction_state(
 }
 
 fn install_click_suppressor() {
-    let Some(document) = web_sys::window().and_then(|window| window.document()) else {
+    let Some(document) = web_sys::window().and_then(|window| window.document())
+    else {
         return;
     };
     let target: web_sys::EventTarget = document.into();
-    let callback_holder: Rc<RefCell<Option<Closure<dyn FnMut(web_sys::Event)>>>> =
-        Rc::new(RefCell::new(None));
+    let callback_holder: Rc<
+        RefCell<Option<Closure<dyn FnMut(web_sys::Event)>>>,
+    > = Rc::new(RefCell::new(None));
     let callback_holder_for_click = callback_holder.clone();
     let target_for_click = target.clone();
     let callback = Closure::wrap(Box::new(move |evt: web_sys::Event| {
         evt.stop_propagation();
         evt.prevent_default();
         if let Some(callback) = callback_holder_for_click.borrow_mut().take() {
-            let _ = target_for_click.remove_event_listener_with_callback_and_bool(
-                "click",
-                callback.as_ref().unchecked_ref(),
-                true,
-            );
+            let _ = target_for_click
+                .remove_event_listener_with_callback_and_bool(
+                    "click",
+                    callback.as_ref().unchecked_ref(),
+                    true,
+                );
             drop(callback);
         }
     }) as Box<dyn FnMut(web_sys::Event)>);
@@ -389,12 +432,15 @@ fn install_click_suppressor() {
         let target_for_timeout = target.clone();
         let callback_holder_for_timeout = callback_holder.clone();
         let timer = Closure::once_into_js(move || {
-            if let Some(callback) = callback_holder_for_timeout.borrow_mut().take() {
-                let _ = target_for_timeout.remove_event_listener_with_callback_and_bool(
-                    "click",
-                    callback.as_ref().unchecked_ref(),
-                    true,
-                );
+            if let Some(callback) =
+                callback_holder_for_timeout.borrow_mut().take()
+            {
+                let _ = target_for_timeout
+                    .remove_event_listener_with_callback_and_bool(
+                        "click",
+                        callback.as_ref().unchecked_ref(),
+                        true,
+                    );
             }
         });
         let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(

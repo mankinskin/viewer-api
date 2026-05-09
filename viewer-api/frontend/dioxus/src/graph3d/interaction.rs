@@ -9,21 +9,34 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    rc::Rc,
+};
 
 use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 
-use super::camera::{Camera, MouseState};
-use super::data::Layout3D;
-use super::render::RenderState;
+use super::{
+    camera::{
+        Camera,
+        MouseState,
+    },
+    data::Layout3D,
+    render::RenderState,
+};
 
 mod handlers;
 
 use self::handlers::{
-    contextmenu_listener, mouse_down_listener, mouse_move_listener, mouse_up_listener,
+    contextmenu_listener,
+    mouse_down_listener,
+    mouse_move_listener,
+    mouse_up_listener,
     wheel_listener,
 };
 
@@ -45,12 +58,15 @@ struct DragState {
     anchor: [f32; 3],
     /// Camera basis snapshot at drag start (so the drag plane stays fixed).
     cam_right: [f32; 3],
-    cam_up:    [f32; 3],
+    cam_up: [f32; 3],
     /// Pixels-per-world-unit at the node's depth.
     px_per_world: f32,
 }
 
-fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+fn cross(
+    a: [f32; 3],
+    b: [f32; 3],
+) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -60,16 +76,27 @@ fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
 
 fn normalise(v: [f32; 3]) -> [f32; 3] {
     let len = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    if len < 1e-6 { [0.0, 0.0, 1.0] } else { [v[0]/len, v[1]/len, v[2]/len] }
+    if len < 1e-6 {
+        [0.0, 0.0, 1.0]
+    } else {
+        [v[0] / len, v[1] / len, v[2] / len]
+    }
 }
 
 /// Returns `true` if the event's target lives inside a DOM subtree marked
 /// with `data-graph-passthrough="false"`. Used to keep settings panels and
 /// other overlay UI from triggering camera orbit/pan/zoom.
 fn target_is_passthrough_blocked(evt: &web_sys::Event) -> bool {
-    let Some(target) = evt.target() else { return false };
-    let Ok(el) = target.dyn_into::<web_sys::Element>() else { return false };
-    matches!(el.closest("[data-graph-passthrough=\"false\"]"), Ok(Some(_)))
+    let Some(target) = evt.target() else {
+        return false;
+    };
+    let Ok(el) = target.dyn_into::<web_sys::Element>() else {
+        return false;
+    };
+    matches!(
+        el.closest("[data-graph-passthrough=\"false\"]"),
+        Ok(Some(_))
+    )
 }
 
 /// Install mouse listeners on the graph container + document, returning the
@@ -80,7 +107,8 @@ pub(crate) fn install(
     on_layout_change: Option<EventHandler<Layout3D>>,
     on_camera_change: Option<EventHandler<Camera>>,
 ) -> Vec<EventListener> {
-    let Some(document) = web_sys::window().and_then(|window| window.document()) else {
+    let Some(document) = web_sys::window().and_then(|window| window.document())
+    else {
         return Vec::new();
     };
     let container = document.get_element_by_id(container_id);

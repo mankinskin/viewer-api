@@ -56,7 +56,7 @@ pub(super) async fn proxy_websocket(
 }
 
 fn take_browser_upgrade(
-    req: &mut Request,
+    req: &mut Request
 ) -> Option<hyper::upgrade::OnUpgrade> {
     let upgrade = req.extensions_mut().remove::<hyper::upgrade::OnUpgrade>();
     if upgrade.is_none() {
@@ -86,7 +86,7 @@ async fn forward_websocket_upgrade(
 }
 
 fn build_upgrade_response(
-    headers: &hyper::HeaderMap,
+    headers: &hyper::HeaderMap
 ) -> Result<Response, Response> {
     let mut resp_builder =
         Response::builder().status(StatusCode::SWITCHING_PROTOCOLS);
@@ -131,8 +131,7 @@ async fn bridge_websocket_io(
         Ok((browser_to_vite, vite_to_browser)) => {
             debug!(
                 browser_to_vite,
-                vite_to_browser,
-                "WebSocket proxy connection closed"
+                vite_to_browser, "WebSocket proxy connection closed"
             );
         },
         Err(error) => {

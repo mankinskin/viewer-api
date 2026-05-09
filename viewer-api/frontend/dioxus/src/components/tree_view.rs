@@ -8,6 +8,13 @@ mod item;
 mod types;
 mod view;
 
-pub use self::file_tree::FileTree;
-pub use self::types::{FilterDef, NodeIcon, SortKey, TreeNode};
-pub use self::view::TreeView;
+pub use self::{
+    file_tree::FileTree,
+    types::{
+        FilterDef,
+        NodeIcon,
+        SortKey,
+        TreeNode,
+    },
+    view::TreeView,
+};

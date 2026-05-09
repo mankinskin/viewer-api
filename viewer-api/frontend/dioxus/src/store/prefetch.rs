@@ -13,12 +13,16 @@
 //! end up cached but only the second insert is retained.  Callers that
 //! need strict de-duplication should serialise their own fetches.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::future::Future;
-use std::hash::Hash;
-use std::rc::Rc;
+use std::{
+    cell::RefCell,
+    collections::{
+        HashMap,
+        VecDeque,
+    },
+    future::Future,
+    hash::Hash,
+    rc::Rc,
+};
 
 /// LRU cache with `O(1)` `get` / `insert` and capacity-bounded eviction.
 ///
@@ -76,7 +80,10 @@ where
     }
 
     /// Returns the cached value for `key`, marking it as most-recently-used.
-    pub fn get(&self, key: &K) -> Option<V> {
+    pub fn get(
+        &self,
+        key: &K,
+    ) -> Option<V> {
         let mut inner = self.inner.borrow_mut();
         let value = inner.map.get(key).cloned()?;
         // Bump LRU order.
@@ -89,7 +96,11 @@ where
 
     /// Inserts `value` for `key`, evicting the least-recently-used entry
     /// if capacity is exceeded.
-    pub fn insert(&self, key: K, value: V) {
+    pub fn insert(
+        &self,
+        key: K,
+        value: V,
+    ) {
         let mut inner = self.inner.borrow_mut();
         if inner.capacity == 0 {
             return;
@@ -121,7 +132,11 @@ where
     /// `fetcher(key)`, caches the result, and returns it.
     ///
     /// See the module-level docs for single-flight caveats.
-    pub async fn get_or_fetch<E, Fut, F>(&self, key: K, fetcher: F) -> Result<V, E>
+    pub async fn get_or_fetch<E, Fut, F>(
+        &self,
+        key: K,
+        fetcher: F,
+    ) -> Result<V, E>
     where
         F: FnOnce(K) -> Fut,
         Fut: Future<Output = Result<V, E>>,
@@ -206,7 +221,8 @@ mod tests {
     fn get_or_fetch_caches_miss() {
         // Use a tiny ad-hoc executor: futures with no `await` resolve in poll().
         let p: Prefetcher<String, u32> = Prefetcher::with_capacity(4);
-        let fut = p.get_or_fetch::<(), _, _>("k".to_string(), |_| async { Ok(42u32) });
+        let fut = p
+            .get_or_fetch::<(), _, _>("k".to_string(), |_| async { Ok(42u32) });
         let v = futures_test_util::block_on(fut).unwrap();
         assert_eq!(v, 42);
         assert_eq!(p.get(&"k".into()), Some(42));
@@ -224,9 +240,17 @@ mod tests {
 
     /// Minimal poll-once executor sufficient for futures that never yield.
     mod futures_test_util {
-        use std::future::Future;
-        use std::pin::Pin;
-        use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+        use std::{
+            future::Future,
+            pin::Pin,
+            task::{
+                Context,
+                Poll,
+                RawWaker,
+                RawWakerVTable,
+                Waker,
+            },
+        };
 
         pub fn block_on<F: Future>(mut fut: F) -> F::Output {
             // SAFETY: we never poll past one yield point; create a no-op waker.
@@ -235,7 +259,8 @@ mod tests {
                 fn clone(_: *const ()) -> RawWaker {
                     raw()
                 }
-                static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, no_op, no_op, no_op);
+                static VTABLE: RawWakerVTable =
+                    RawWakerVTable::new(clone, no_op, no_op, no_op);
                 RawWaker::new(std::ptr::null(), &VTABLE)
             }
             let waker = unsafe { Waker::from_raw(raw()) };
@@ -244,7 +269,8 @@ mod tests {
             let fut = unsafe { Pin::new_unchecked(&mut fut) };
             match fut.poll(&mut cx) {
                 Poll::Ready(v) => v,
-                Poll::Pending => panic!("test future yielded; expected immediate resolution"),
+                Poll::Pending =>
+                    panic!("test future yielded; expected immediate resolution"),
             }
         }
     }

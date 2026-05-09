@@ -1,12 +1,17 @@
 use dioxus::prelude::*;
-use viewer_api_dioxus::{clear_session, get_session_id, with_session};
+use viewer_api_dioxus::{
+    clear_session,
+    get_session_id,
+    with_session,
+};
 
 #[component]
 pub(super) fn SessionDemo() -> Element {
     let mut session_id = use_signal(get_session_id);
-    let init_headers = with_session(vec![
-        ("Content-Type".to_owned(), "application/json".to_owned()),
-    ]);
+    let init_headers = with_session(vec![(
+        "Content-Type".to_owned(),
+        "application/json".to_owned(),
+    )]);
     let mut headers_display = use_signal(move || {
         init_headers
             .into_iter()

@@ -2,10 +2,15 @@ use std::collections::BTreeSet;
 
 use dioxus::prelude::*;
 
-use super::item::TreeItem;
-use super::types::TreeNode;
+use super::{
+    item::TreeItem,
+    types::TreeNode,
+};
 
-fn collect_visible_ids(nodes: &[TreeNode], expanded_ids: &[String]) -> Vec<String> {
+fn collect_visible_ids(
+    nodes: &[TreeNode],
+    expanded_ids: &[String],
+) -> Vec<String> {
     let mut result = Vec::new();
     for node in nodes {
         result.push(node.id.clone());
@@ -19,27 +24,23 @@ fn collect_visible_ids(nodes: &[TreeNode], expanded_ids: &[String]) -> Vec<Strin
 #[component]
 pub fn TreeView(
     nodes: Vec<TreeNode>,
-    #[props(default)]
-    selected_id: Option<String>,
-    #[props(default)]
-    on_select: EventHandler<String>,
-    #[props(default)]
-    initially_expanded: Vec<String>,
-    #[props(default)]
-    class: String,
-    #[props(default = false)]
-    show_checkboxes: bool,
-    #[props(default)]
-    on_selection_change: EventHandler<BTreeSet<String>>,
+    #[props(default)] selected_id: Option<String>,
+    #[props(default)] on_select: EventHandler<String>,
+    #[props(default)] initially_expanded: Vec<String>,
+    #[props(default)] class: String,
+    #[props(default = false)] show_checkboxes: bool,
+    #[props(default)] on_selection_change: EventHandler<BTreeSet<String>>,
 ) -> Element {
     let expanded_ids = use_signal(|| initially_expanded);
-    let mut multi_selected: Signal<BTreeSet<String>> = use_signal(BTreeSet::new);
+    let mut multi_selected: Signal<BTreeSet<String>> =
+        use_signal(BTreeSet::new);
     let mut focused_id: Signal<Option<String>> = use_signal(|| None);
     let last_clicked: Signal<Option<String>> = use_signal(|| None);
 
     let nodes_for_order = nodes.clone();
-    let visible_order: Memo<Vec<String>> =
-        use_memo(move || collect_visible_ids(&nodes_for_order, &expanded_ids.read()));
+    let visible_order: Memo<Vec<String>> = use_memo(move || {
+        collect_visible_ids(&nodes_for_order, &expanded_ids.read())
+    });
 
     let combined = if class.is_empty() {
         "tree-view".to_string()

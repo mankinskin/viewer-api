@@ -7,7 +7,10 @@
 
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 use serde::Deserialize;
@@ -126,10 +129,12 @@ impl Config {
     /// Load the config from `<repo_root>/viewer-ctl.toml`.
     pub fn load(repo_root: &Path) -> Result<Self, String> {
         let path = repo_root.join("viewer-ctl.toml");
-        let text = fs::read_to_string(&path)
-            .map_err(|e| format!("failed to read {}: {e}", crate::paths::disp(&path)))?;
-        let cfg: Config = toml::from_str(&text)
-            .map_err(|e| format!("failed to parse {}: {e}", crate::paths::disp(&path)))?;
+        let text = fs::read_to_string(&path).map_err(|e| {
+            format!("failed to read {}: {e}", crate::paths::disp(&path))
+        })?;
+        let cfg: Config = toml::from_str(&text).map_err(|e| {
+            format!("failed to parse {}: {e}", crate::paths::disp(&path))
+        })?;
         cfg.validate()?;
         Ok(cfg)
     }
@@ -153,7 +158,10 @@ impl Config {
     /// extensions. Returns `None` if no match.  Components of different
     /// kinds may share a name (e.g. server + frontend with the same name);
     /// callers needing to disambiguate should use the typed accessors.
-    pub fn lookup(&self, name: &str) -> Option<Component<'_>> {
+    pub fn lookup(
+        &self,
+        name: &str,
+    ) -> Option<Component<'_>> {
         if let Some(s) = self.server(name) {
             return Some(Component::Server(s));
         }
@@ -166,24 +174,39 @@ impl Config {
         None
     }
 
-    pub fn server(&self, name: &str) -> Option<&Server> {
+    pub fn server(
+        &self,
+        name: &str,
+    ) -> Option<&Server> {
         self.servers.iter().find(|s| s.name == name)
     }
 
-    pub fn frontend(&self, name: &str) -> Option<&Frontend> {
+    pub fn frontend(
+        &self,
+        name: &str,
+    ) -> Option<&Frontend> {
         self.frontends.iter().find(|f| f.name == name)
     }
 
-    pub fn extension(&self, name: &str) -> Option<&Extension> {
+    pub fn extension(
+        &self,
+        name: &str,
+    ) -> Option<&Extension> {
         self.extensions.iter().find(|e| e.name == name)
     }
 
-    pub fn task(&self, name: &str) -> Option<&Task> {
+    pub fn task(
+        &self,
+        name: &str,
+    ) -> Option<&Task> {
         self.tasks.iter().find(|t| t.name == name)
     }
 
     /// Find the frontend (if any) whose `serves` field links it to `server_name`.
-    pub fn frontend_for_server(&self, server_name: &str) -> Option<&Frontend> {
+    pub fn frontend_for_server(
+        &self,
+        server_name: &str,
+    ) -> Option<&Frontend> {
         self.frontends
             .iter()
             .find(|f| f.serves.as_deref() == Some(server_name))
@@ -195,14 +218,19 @@ impl Config {
     }
 
     /// Resolve the install dir for one specific frontend.
-    pub fn frontend_install_dir(&self, frontend_name: &str) -> PathBuf {
+    pub fn frontend_install_dir(
+        &self,
+        frontend_name: &str,
+    ) -> PathBuf {
         self.frontend_install_root().join(frontend_name)
     }
 }
 
 /// Expand a leading `~` to the user's home directory.
 pub fn expand_tilde(path: &str) -> PathBuf {
-    if let Some(stripped) = path.strip_prefix("~/").or_else(|| path.strip_prefix("~\\")) {
+    if let Some(stripped) =
+        path.strip_prefix("~/").or_else(|| path.strip_prefix("~\\"))
+    {
         if let Some(home) = dirs::home_dir() {
             return home.join(stripped);
         }

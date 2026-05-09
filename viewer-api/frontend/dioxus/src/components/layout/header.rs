@@ -5,14 +5,10 @@ use dioxus::prelude::*;
 /// Slot props default to `None` so callers only supply what they need.
 #[component]
 pub fn Header(
-    #[props(default)]
-    left: Option<Element>,
-    #[props(default)]
-    middle: Option<Element>,
-    #[props(default)]
-    right: Option<Element>,
-    #[props(default)]
-    class: String,
+    #[props(default)] left: Option<Element>,
+    #[props(default)] middle: Option<Element>,
+    #[props(default)] right: Option<Element>,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "header".to_string()
@@ -45,11 +41,9 @@ pub fn Header(
 /// `.main-layout` flex row that holds sidebar + content children.
 #[component]
 pub fn Layout(
-    #[props(default)]
-    header: Option<Element>,
+    #[props(default)] header: Option<Element>,
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "app".to_string()

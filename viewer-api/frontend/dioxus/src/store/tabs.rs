@@ -23,7 +23,10 @@ pub struct Tab<T> {
 }
 
 impl<T> Tab<T> {
-    pub fn new(id: impl Into<String>, payload: T) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        payload: T,
+    ) -> Self {
         Self {
             id: id.into(),
             payload,
@@ -53,7 +56,11 @@ impl<T: Clone + PartialEq> TabsStateInner<T> {
     ///
     /// On opening a fresh tab, it becomes the active tab.  Re-opening an
     /// existing id replaces the payload and activates it.
-    pub fn open(&mut self, id: impl Into<String>, payload: T) {
+    pub fn open(
+        &mut self,
+        id: impl Into<String>,
+        payload: T,
+    ) {
         let id = id.into();
         if let Some(existing) = self.tabs.iter_mut().find(|t| t.id == id) {
             existing.payload = payload;
@@ -68,7 +75,10 @@ impl<T: Clone + PartialEq> TabsStateInner<T> {
     /// If the closed tab was active, the next-best neighbour (the tab
     /// that previously sat to its right, falling back to its left) is
     /// activated.  When the last tab closes, `active` becomes `None`.
-    pub fn close(&mut self, id: &str) {
+    pub fn close(
+        &mut self,
+        id: &str,
+    ) {
         let Some(idx) = self.tabs.iter().position(|t| t.id == id) else {
             return;
         };
@@ -84,7 +94,10 @@ impl<T: Clone + PartialEq> TabsStateInner<T> {
     }
 
     /// Activate `id` if it exists.  No-op if the id is unknown.
-    pub fn activate(&mut self, id: &str) {
+    pub fn activate(
+        &mut self,
+        id: &str,
+    ) {
         if self.tabs.iter().any(|t| t.id == id) {
             self.active = Some(id.to_owned());
         }
@@ -94,7 +107,11 @@ impl<T: Clone + PartialEq> TabsStateInner<T> {
     ///
     /// If `active` is `Some` but doesn't match any tab id, the first tab
     /// (if any) is activated instead.
-    pub fn set_tabs(&mut self, tabs: Vec<Tab<T>>, active: Option<String>) {
+    pub fn set_tabs(
+        &mut self,
+        tabs: Vec<Tab<T>>,
+        active: Option<String>,
+    ) {
         let resolved_active = match active {
             Some(id) if tabs.iter().any(|t| t.id == id) => Some(id),
             _ => tabs.first().map(|t| t.id.clone()),
@@ -160,28 +177,42 @@ impl<T: Clone + PartialEq + 'static> TabsStore<T> {
 
     /// Open or replace the tab with the given `id`.  See
     /// [`TabsStateInner::open`].
-    pub fn open(&mut self, id: impl Into<String>, payload: T) {
+    pub fn open(
+        &mut self,
+        id: impl Into<String>,
+        payload: T,
+    ) {
         let mut inner = self.snapshot();
         inner.open(id, payload);
         self.commit(inner);
     }
 
     /// Close the tab with the given `id`.
-    pub fn close(&mut self, id: &str) {
+    pub fn close(
+        &mut self,
+        id: &str,
+    ) {
         let mut inner = self.snapshot();
         inner.close(id);
         self.commit(inner);
     }
 
     /// Activate the tab with the given `id`.
-    pub fn activate(&mut self, id: &str) {
+    pub fn activate(
+        &mut self,
+        id: &str,
+    ) {
         let mut inner = self.snapshot();
         inner.activate(id);
         self.commit(inner);
     }
 
     /// Replace the entire tab set.
-    pub fn set_tabs(&mut self, tabs: Vec<Tab<T>>, active: Option<String>) {
+    pub fn set_tabs(
+        &mut self,
+        tabs: Vec<Tab<T>>,
+        active: Option<String>,
+    ) {
         let mut inner = self.snapshot();
         inner.set_tabs(tabs, active);
         self.commit(inner);
@@ -193,7 +224,10 @@ impl<T: Clone + PartialEq + 'static> TabsStore<T> {
         self.tabs.read().iter().find(|t| t.id == id).cloned()
     }
 
-    fn commit(&mut self, inner: TabsStateInner<T>) {
+    fn commit(
+        &mut self,
+        inner: TabsStateInner<T>,
+    ) {
         self.tabs.set(inner.tabs);
         self.active.set(inner.active);
     }

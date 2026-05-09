@@ -14,10 +14,22 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::sync::{Arc, Mutex};
-use tracing::{Event, Subscriber};
-use tracing_subscriber::{layer::Context, Layer};
-use wasm_bindgen::{JsCast, JsValue};
+use std::sync::{
+    Arc,
+    Mutex,
+};
+use tracing::{
+    Event,
+    Subscriber,
+};
+use tracing_subscriber::{
+    layer::Context,
+    Layer,
+};
+use wasm_bindgen::{
+    JsCast,
+    JsValue,
+};
 
 // ── Public layer type ─────────────────────────────────────────────────────────
 
@@ -57,7 +69,11 @@ impl NetworkLayer {
 }
 
 impl<S: Subscriber> Layer<S> for NetworkLayer {
-    fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
+    fn on_event(
+        &self,
+        event: &Event<'_>,
+        _ctx: Context<'_, S>,
+    ) {
         let record = serialize_event(event);
         let mut guard = self.buffer.lock().unwrap();
         guard.push(record);
@@ -72,25 +88,49 @@ impl<S: Subscriber> Layer<S> for NetworkLayer {
 struct FieldCollector(serde_json::Map<String, serde_json::Value>);
 
 impl tracing::field::Visit for FieldCollector {
-    fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+    fn record_str(
+        &mut self,
+        field: &tracing::field::Field,
+        value: &str,
+    ) {
         self.0.insert(field.name().to_string(), value.into());
     }
-    fn record_f64(&mut self, field: &tracing::field::Field, value: f64) {
+    fn record_f64(
+        &mut self,
+        field: &tracing::field::Field,
+        value: f64,
+    ) {
         self.0.insert(field.name().to_string(), value.into());
     }
-    fn record_i64(&mut self, field: &tracing::field::Field, value: i64) {
+    fn record_i64(
+        &mut self,
+        field: &tracing::field::Field,
+        value: i64,
+    ) {
         self.0.insert(field.name().to_string(), value.into());
     }
-    fn record_u64(&mut self, field: &tracing::field::Field, value: u64) {
+    fn record_u64(
+        &mut self,
+        field: &tracing::field::Field,
+        value: u64,
+    ) {
         self.0.insert(
             field.name().to_string(),
             serde_json::Value::Number(value.into()),
         );
     }
-    fn record_bool(&mut self, field: &tracing::field::Field, value: bool) {
+    fn record_bool(
+        &mut self,
+        field: &tracing::field::Field,
+        value: bool,
+    ) {
         self.0.insert(field.name().to_string(), value.into());
     }
-    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+    fn record_debug(
+        &mut self,
+        field: &tracing::field::Field,
+        value: &dyn std::fmt::Debug,
+    ) {
         self.0
             .insert(field.name().to_string(), format!("{value:?}").into());
     }
@@ -124,8 +164,9 @@ async fn sleep_ms(ms: i32) {
 }
 
 async fn post_records(records: &[serde_json::Value]) -> Result<(), String> {
-    let body = serde_json::to_string(&serde_json::json!({ "records": records }))
-        .map_err(|e| e.to_string())?;
+    let body =
+        serde_json::to_string(&serde_json::json!({ "records": records }))
+            .map_err(|e| e.to_string())?;
 
     let opts = web_sys::RequestInit::new();
     opts.set_method("POST");
@@ -138,8 +179,9 @@ async fn post_records(records: &[serde_json::Value]) -> Result<(), String> {
         .map_err(|e| format!("{e:?}"))?;
     opts.set_headers(&headers);
 
-    let request = web_sys::Request::new_with_str_and_init("/api/client-log", &opts)
-        .map_err(|e| format!("{e:?}"))?;
+    let request =
+        web_sys::Request::new_with_str_and_init("/api/client-log", &opts)
+            .map_err(|e| format!("{e:?}"))?;
 
     let win = web_sys::window().ok_or("no window")?;
     let promise = win.fetch_with_request(&request);

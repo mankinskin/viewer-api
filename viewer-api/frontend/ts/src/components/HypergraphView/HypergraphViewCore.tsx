@@ -35,7 +35,6 @@ import type {
     NestingSettings,
     DuplicateNode,
 } from "./types";
-import type { VizPathGraph } from "@context-engine/types";
 import { getCameraFocusIdx } from "./focus";
 
 // Hooks

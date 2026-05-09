@@ -7,10 +7,19 @@
 #![cfg(target_arch = "wasm32")]
 
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element, NodeList};
+use web_sys::{
+    Document,
+    Element,
+    NodeList,
+};
 
-use super::element_types::*;
-use super::webgpu::{get_fn, prop_f32};
+use super::{
+    element_types::*,
+    webgpu::{
+        get_fn,
+        prop_f32,
+    },
+};
 
 /// Scan `#ui-root` (and the rest of the document) for elements matching
 /// [`UI_SELECTORS`] and return `(packed_data, count)`.
@@ -27,14 +36,20 @@ pub(super) fn scan_ui_rects(doc: &Document) -> (Vec<f32>, usize) {
         };
 
         for j in 0..node_list.length() {
-            let Some(node) = node_list.get(j) else { continue; };
-            let Ok(el) = node.dyn_into::<Element>() else { continue; };
+            let Some(node) = node_list.get(j) else {
+                continue;
+            };
+            let Ok(el) = node.dyn_into::<Element>() else {
+                continue;
+            };
 
             // Reflect into el.getBoundingClientRect() — avoids the DomRect
             // web-sys feature.
             let Some(rect_val) = get_fn(&el, "getBoundingClientRect")
                 .and_then(|f| f.call0(&el).ok())
-            else { continue; };
+            else {
+                continue;
+            };
 
             let x = prop_f32(&rect_val, "x");
             let y = prop_f32(&rect_val, "y");
@@ -42,7 +57,9 @@ pub(super) fn scan_ui_rects(doc: &Document) -> (Vec<f32>, usize) {
             let h = prop_f32(&rect_val, "height");
 
             // Skip zero-size elements.
-            if w < 1.0 || h < 1.0 { continue; }
+            if w < 1.0 || h < 1.0 {
+                continue;
+            }
 
             data.push(x);
             data.push(y);

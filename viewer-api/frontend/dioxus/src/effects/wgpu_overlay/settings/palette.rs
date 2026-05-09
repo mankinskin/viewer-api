@@ -1,4 +1,7 @@
-use super::{PaletteColor, PALETTE_LEN};
+use super::{
+    PaletteColor,
+    PALETTE_LEN,
+};
 
 /// Human-readable label and hint for each palette slot.  Index matches the
 /// WGSL `PaletteUniform` array order — keep in sync with `types.wgsl`.

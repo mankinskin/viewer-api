@@ -2,12 +2,9 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn CrateIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -29,12 +26,9 @@ pub fn CrateIcon(
 
 #[component]
 pub fn LogIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -58,12 +52,9 @@ pub fn LogIcon(
 
 #[component]
 pub fn CodeIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -84,12 +75,9 @@ pub fn CodeIcon(
 
 #[component]
 pub fn GraphIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -113,12 +101,9 @@ pub fn GraphIcon(
 
 #[component]
 pub fn StatsIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -140,12 +125,9 @@ pub fn StatsIcon(
 
 #[component]
 pub fn HomeIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -166,12 +148,9 @@ pub fn HomeIcon(
 
 #[component]
 pub fn ModuleIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -194,12 +173,9 @@ pub fn ModuleIcon(
 
 #[component]
 pub fn SourceFileIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -222,12 +198,9 @@ pub fn SourceFileIcon(
 
 #[component]
 pub fn HamburgerIcon(
-    #[props(default = 20)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 20)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {

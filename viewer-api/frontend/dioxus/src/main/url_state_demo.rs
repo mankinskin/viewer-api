@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
 use std::rc::Rc;
 use viewer_api_dioxus::{
-    get_hash_param, remove_hash_param, set_hash_param, UrlStateManager,
+    get_hash_param,
+    remove_hash_param,
+    set_hash_param,
+    UrlStateManager,
 };
 
 #[component]

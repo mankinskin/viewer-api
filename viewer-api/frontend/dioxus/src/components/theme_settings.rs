@@ -9,5 +9,8 @@ mod presets;
 mod preview;
 mod tokens;
 
-pub use model::{CustomTheme, ThemeSnapshot};
+pub use model::{
+    CustomTheme,
+    ThemeSnapshot,
+};
 pub use panel::ThemeSettings;

@@ -70,9 +70,13 @@ impl UrlStateManager {
     {
         #[cfg(target_arch = "wasm32")]
         let _guard = web_sys::window().and_then(|window| {
-            let closure = Closure::wrap(Box::new(on_change) as Box<dyn FnMut()>);
+            let closure =
+                Closure::wrap(Box::new(on_change) as Box<dyn FnMut()>);
             window
-                .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
+                .add_event_listener_with_callback(
+                    "popstate",
+                    closure.as_ref().unchecked_ref(),
+                )
                 .ok()?;
             Some(PopstateGuard { window, closure })
         });
@@ -156,7 +160,10 @@ pub fn get_hash_param(key: &str) -> Option<String> {
 ///
 /// All other existing params are preserved.  The browser records a new history
 /// entry so that back navigation restores the previous hash state.
-pub fn set_hash_param(key: &str, value: &str) {
+pub fn set_hash_param(
+    key: &str,
+    value: &str,
+) {
     #[cfg(target_arch = "wasm32")]
     {
         if let Some(window) = web_sys::window() {

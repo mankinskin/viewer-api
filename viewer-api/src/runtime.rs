@@ -17,10 +17,10 @@ use tracing::{
     info,
 };
 use tracing_subscriber::{
-    EnvFilter,
     fmt,
     layer::SubscriberExt,
     util::SubscriberInitExt,
+    EnvFilter,
 };
 
 use crate::to_unix_path;
@@ -210,7 +210,10 @@ pub fn display_host(host: &str) -> &str {
 
 mod cli;
 
-pub use cli::{ServerArgs, init_tracing};
+pub use cli::{
+    init_tracing,
+    ServerArgs,
+};
 
 pub fn default_cors() -> CorsLayer {
     CorsLayer::new()
@@ -231,10 +234,10 @@ pub fn with_static_files(
     use axum::{
         body::Body,
         http::{
+            header,
             HeaderValue,
             Response,
             StatusCode,
-            header,
         },
         response::IntoResponse,
     };
@@ -256,8 +259,7 @@ pub fn with_static_files(
                     Ok::<_, std::convert::Infallible>(res)
                 }
             });
-            router
-                .fallback_service(ServeDir::new(&dir).fallback(spa_fallback))
+            router.fallback_service(ServeDir::new(&dir).fallback(spa_fallback))
         } else {
             router
         }

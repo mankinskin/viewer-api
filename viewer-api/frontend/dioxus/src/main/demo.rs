@@ -1,11 +1,23 @@
 use dioxus::prelude::*;
 use viewer_api_dioxus::{
-    FileTree, FilterDef, GlassPanel, Header, Layout, Panel, PanelPlacement, Sidebar, SortKey,
-    ThemeSettings, TreeNode, TreeView,
+    FileTree,
+    FilterDef,
+    GlassPanel,
+    Header,
+    Layout,
+    Panel,
+    PanelPlacement,
+    Sidebar,
+    SortKey,
+    ThemeSettings,
+    TreeNode,
+    TreeView,
 };
 
-use crate::session_demo::SessionDemo;
-use crate::url_state_demo::UrlStateDemo;
+use crate::{
+    session_demo::SessionDemo,
+    url_state_demo::UrlStateDemo,
+};
 
 #[component]
 pub(super) fn Demo() -> Element {
@@ -29,22 +41,48 @@ pub(super) fn Demo() -> Element {
                         TreeNode::leaf("resize_handle", "resize_handle.rs"),
                     ],
                 ),
-                TreeNode::dir("store", "store", vec![TreeNode::leaf("theme_rs", "theme.rs")]),
+                TreeNode::dir(
+                    "store",
+                    "store",
+                    vec![TreeNode::leaf("theme_rs", "theme.rs")],
+                ),
                 TreeNode::leaf("main_rs", "main.rs"),
                 TreeNode::leaf("lib_rs", "lib.rs"),
             ],
         ),
-        TreeNode::dir("public", "public", vec![TreeNode::leaf("css", "viewer-api.css")]),
+        TreeNode::dir(
+            "public",
+            "public",
+            vec![TreeNode::leaf("css", "viewer-api.css")],
+        ),
     ];
 
     let sort_keys = vec![
-        SortKey { key: "name".into(), label: "Name".into(), ascending: true },
-        SortKey { key: "type".into(), label: "Type".into(), ascending: false },
+        SortKey {
+            key: "name".into(),
+            label: "Name".into(),
+            ascending: true,
+        },
+        SortKey {
+            key: "type".into(),
+            label: "Type".into(),
+            ascending: false,
+        },
     ];
 
     let filters = vec![
-        FilterDef { key: "rs".into(), label: ".rs files".into(), count: 7, color: Some("var(--accent-orange)".into()) },
-        FilterDef { key: "dirs".into(), label: "Dirs".into(), count: 3, color: Some("var(--accent-yellow)".into()) },
+        FilterDef {
+            key: "rs".into(),
+            label: ".rs files".into(),
+            count: 7,
+            color: Some("var(--accent-orange)".into()),
+        },
+        FilterDef {
+            key: "dirs".into(),
+            label: "Dirs".into(),
+            count: 3,
+            color: Some("var(--accent-yellow)".into()),
+        },
     ];
 
     rsx! {

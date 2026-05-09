@@ -16,7 +16,7 @@ use tracing::{
 };
 
 pub(super) fn ensure_npm_installed(
-    frontend_dir: &Path,
+    frontend_dir: &Path
 ) -> Result<(), Box<dyn std::error::Error>> {
     let bin_dir = frontend_dir.join("node_modules/.bin");
     let has_vite =
@@ -93,7 +93,9 @@ fn run_npm_install(dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
             .stderr(Stdio::inherit())
             .status()
             .or_else(|_| {
-                debug!("npm not found directly, trying via cmd.exe (WSL/bash.exe)");
+                debug!(
+                    "npm not found directly, trying via cmd.exe (WSL/bash.exe)"
+                );
                 Command::new("cmd.exe")
                     .args(["/c", "npm", "install"])
                     .current_dir(dir)

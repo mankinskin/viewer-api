@@ -8,6 +8,19 @@ mod header;
 mod panel;
 mod sidebar;
 
-pub use self::header::{Header, Layout};
-pub use self::panel::{GlassPanel, Panel, PanelPlacement};
-pub use self::sidebar::{Sidebar, SIDEBAR_MOBILE_BREAKPOINT_PX, is_mobile_sidebar_viewport};
+pub use self::{
+    header::{
+        Header,
+        Layout,
+    },
+    panel::{
+        GlassPanel,
+        Panel,
+        PanelPlacement,
+    },
+    sidebar::{
+        is_mobile_sidebar_viewport,
+        Sidebar,
+        SIDEBAR_MOBILE_BREAKPOINT_PX,
+    },
+};

@@ -2,12 +2,20 @@
 
 use std::path::Path;
 
-use crate::{config::Config, paths::disp, shell::run_cmd_owned};
+use crate::{
+    config::Config,
+    paths::disp,
+    shell::run_cmd_owned,
+};
 
-pub fn cmd_task(cfg: &Config, root: &Path, name: &str) -> Result<(), String> {
-    let task = cfg
-        .task(name)
-        .ok_or_else(|| format!("no [[task]] named `{name}` in viewer-ctl.toml"))?;
+pub fn cmd_task(
+    cfg: &Config,
+    root: &Path,
+    name: &str,
+) -> Result<(), String> {
+    let task = cfg.task(name).ok_or_else(|| {
+        format!("no [[task]] named `{name}` in viewer-ctl.toml")
+    })?;
     let tag = task.name.as_str();
     if !task.description.is_empty() {
         info!(tag, "{}", task.description);

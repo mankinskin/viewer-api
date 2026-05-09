@@ -15,8 +15,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn Card(
     title: String,
-    #[props(default)]
-    description: Option<String>,
+    #[props(default)] description: Option<String>,
     /// Optional small text rendered in the top-right corner (e.g. a count).
     #[props(default)]
     badge: Option<String>,
@@ -76,8 +75,7 @@ pub fn Card(
 #[component]
 pub fn CardGrid(
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "card-grid".to_string()
@@ -95,11 +93,9 @@ pub fn CardGrid(
 #[component]
 pub fn CardSection(
     title: String,
-    #[props(default)]
-    count: Option<usize>,
+    #[props(default)] count: Option<usize>,
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "card-section".to_string()

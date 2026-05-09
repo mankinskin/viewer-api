@@ -14,9 +14,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 pub enum SourceBackend {
     /// Read source files from the local filesystem.
-    Local {
-        workspace_root: PathBuf,
-    },
+    Local { workspace_root: PathBuf },
     /// Fetch source files from a remote repository via raw HTTP.
     ///
     /// `raw_base_url` is the prefix that, when joined with a relative source path,
@@ -79,12 +77,15 @@ impl SourceBackend {
     /// Build the URL (remote) or absolute path (local) for a given relative source path.
     ///
     /// Returns `Err` if the path is invalid (traversal attempt, etc.).
-    pub fn resolve_url_or_path(&self, path: &str) -> Result<SourceLocation, String> {
+    pub fn resolve_url_or_path(
+        &self,
+        path: &str,
+    ) -> Result<SourceLocation, String> {
         match self {
             Self::Local { workspace_root } => {
                 let full_path = resolve_source_path(workspace_root, path)?;
                 Ok(SourceLocation::Path(full_path))
-            }
+            },
             Self::Remote {
                 raw_base_url,
                 source_tree_path,
@@ -106,7 +107,7 @@ impl SourceBackend {
                     format!("{}/{}", raw_base_url, clean)
                 };
                 Ok(SourceLocation::Url(url))
-            }
+            },
         }
     }
 }
@@ -269,9 +270,12 @@ mod tests {
     #[test]
     fn test_source_backend_local_resolves_path() {
         let root = PathBuf::from("/workspace");
-        let backend = SourceBackend::Local { workspace_root: root };
+        let backend = SourceBackend::Local {
+            workspace_root: root,
+        };
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
-            SourceLocation::Path(p) => assert_eq!(p, Path::new("/workspace/src/main.rs")),
+            SourceLocation::Path(p) =>
+                assert_eq!(p, Path::new("/workspace/src/main.rs")),
             SourceLocation::Url(_) => panic!("expected local path"),
         }
     }
@@ -279,20 +283,23 @@ mod tests {
     #[test]
     fn test_source_backend_local_rejects_traversal() {
         let root = PathBuf::from("/workspace");
-        let backend = SourceBackend::Local { workspace_root: root };
+        let backend = SourceBackend::Local {
+            workspace_root: root,
+        };
         assert!(backend.resolve_url_or_path("../etc/passwd").is_err());
     }
 
     #[test]
     fn test_source_backend_remote_builds_url() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
+                .to_string(),
             source_tree_path: None,
         };
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
             SourceLocation::Url(url) => {
                 assert_eq!(url, "https://raw.githubusercontent.com/owner/repo/abc123/src/main.rs");
-            }
+            },
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }
@@ -300,13 +307,14 @@ mod tests {
     #[test]
     fn test_source_backend_remote_with_tree_path() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
+                .to_string(),
             source_tree_path: Some("crates/my-crate".to_string()),
         };
         match backend.resolve_url_or_path("src/lib.rs").unwrap() {
             SourceLocation::Url(url) => {
                 assert_eq!(url, "https://raw.githubusercontent.com/owner/repo/abc123/crates/my-crate/src/lib.rs");
-            }
+            },
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }
@@ -314,7 +322,8 @@ mod tests {
     #[test]
     fn test_source_backend_remote_rejects_traversal() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
+                .to_string(),
             source_tree_path: None,
         };
         assert!(backend.resolve_url_or_path("../etc/passwd").is_err());
@@ -331,7 +340,7 @@ mod tests {
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
             SourceLocation::Url(url) => {
                 assert_eq!(url, "https://raw.githubusercontent.com/myowner/myrepo/deadbeef/subdir/src/main.rs");
-            }
+            },
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }

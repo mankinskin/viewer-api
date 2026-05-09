@@ -35,8 +35,8 @@
 //! }
 //! ```
 
-pub mod dev_proxy;
 pub mod client_log;
+pub mod dev_proxy;
 
 // New shared primitives for ticket-viewer and future viewer tools
 pub mod auth;
@@ -54,15 +54,7 @@ pub mod source;
 // Re-export commonly used types
 pub use axum;
 pub use rmcp;
-pub use tokio;
-pub use tower_http;
-pub use tracing;
-pub use tracing_appender;
 pub use runtime::{
-    McpServerFactory,
-    ServerArgs,
-    ServerConfig,
-    TracingConfig,
     default_cors,
     display_host,
     init_tracing,
@@ -70,7 +62,15 @@ pub use runtime::{
     run_server,
     shutdown_signal,
     with_static_files,
+    McpServerFactory,
+    ServerArgs,
+    ServerConfig,
+    TracingConfig,
 };
+pub use tokio;
+pub use tower_http;
+pub use tracing;
+pub use tracing_appender;
 
 // Re-export domain types from context-api for downstream consumers
 // (log-viewer, doc-viewer, etc.)

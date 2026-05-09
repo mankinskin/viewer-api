@@ -8,13 +8,27 @@ use dioxus::prelude::*;
 
 use crate::components::CodeViewer;
 
+fn markdown_class(class: &str) -> String {
+    if class.is_empty() {
+        "markdown-body".to_string()
+    } else {
+        format!("markdown-body {class}")
+    }
+}
+
 fn is_markdown(filename: &str) -> bool {
     let lower = filename.to_lowercase();
-    lower.ends_with(".md") || lower.ends_with(".mdx") || lower.ends_with(".markdown")
+    lower.ends_with(".md")
+        || lower.ends_with(".mdx")
+        || lower.ends_with(".markdown")
 }
 
 fn render_markdown(content: &str) -> String {
-    use pulldown_cmark::{html, Options, Parser};
+    use pulldown_cmark::{
+        html,
+        Options,
+        Parser,
+    };
 
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
@@ -28,6 +42,22 @@ fn render_markdown(content: &str) -> String {
     html_buf
 }
 
+#[component]
+pub fn MarkdownContent(
+    content: String,
+    #[props(default)] class: String,
+) -> Element {
+    let html = render_markdown(&content);
+    let outer_css = markdown_class(&class);
+
+    rsx! {
+        div {
+            class: "{outer_css}",
+            dangerous_inner_html: "{html}",
+        }
+    }
+}
+
 /// Displays file content with automatic type detection.
 ///
 /// If `custom_renderer` is provided it receives `(filename, content)` and can
@@ -35,21 +65,17 @@ fn render_markdown(content: &str) -> String {
 #[component]
 pub fn FileContentViewer(
     content: String,
-    #[props(default)]
-    filename: String,
-    #[props(default)]
-    language: Option<String>,
+    #[props(default)] filename: String,
+    #[props(default)] language: Option<String>,
     /// 1-based line to highlight (forwarded to CodeViewer).
     #[props(default)]
     highlighted_line: Option<usize>,
-    #[props(default = true)]
-    show_line_numbers: bool,
+    #[props(default = true)] show_line_numbers: bool,
     /// Optional override renderer: receives `(filename, content)`, returns
     /// `Some(Element)` to take over rendering, or `None` for default.
     #[props(default)]
     custom_renderer: Option<Callback<(String, String), Option<Element>>>,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     // Check custom renderer first.
     if let Some(renderer) = &custom_renderer {
@@ -59,16 +85,10 @@ pub fn FileContentViewer(
     }
 
     if is_markdown(&filename) {
-        let html = render_markdown(&content);
-        let outer_css = if class.is_empty() {
-            "markdown-body".to_string()
-        } else {
-            format!("markdown-body {class}")
-        };
         return rsx! {
-            div {
-                class: "{outer_css}",
-                dangerous_inner_html: "{html}",
+            MarkdownContent {
+                content,
+                class,
             }
         };
     }

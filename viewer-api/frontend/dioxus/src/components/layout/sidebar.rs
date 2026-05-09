@@ -1,7 +1,12 @@
 use dioxus::prelude::*;
 
 use crate::components::{
-    ChevronRightIcon, CloseIcon, HamburgerIcon, ResizeDirection, ResizeEdge, ResizeHandle,
+    ChevronRightIcon,
+    CloseIcon,
+    HamburgerIcon,
+    ResizeDirection,
+    ResizeEdge,
+    ResizeHandle,
 };
 
 pub const SIDEBAR_MOBILE_BREAKPOINT_PX: f64 = 768.0;
@@ -28,26 +33,16 @@ pub fn is_mobile_sidebar_viewport() -> bool {
 #[component]
 pub fn Sidebar(
     children: Element,
-    #[props(default)]
-    title: Option<String>,
-    #[props(default)]
-    badge: Option<String>,
-    #[props(default = false)]
-    collapsed: bool,
-    #[props(default)]
-    on_toggle: EventHandler<()>,
-    #[props(default = true)]
-    resizable: bool,
-    #[props(default = 280.0)]
-    initial_width: f64,
-    #[props(default = 120.0)]
-    min_width: f64,
-    #[props(default)]
-    class: String,
-    #[props(default)]
-    mobile_open: Option<bool>,
-    #[props(default)]
-    on_mobile_open_change: EventHandler<bool>,
+    #[props(default)] title: Option<String>,
+    #[props(default)] badge: Option<String>,
+    #[props(default = false)] collapsed: bool,
+    #[props(default)] on_toggle: EventHandler<()>,
+    #[props(default = true)] resizable: bool,
+    #[props(default = 280.0)] initial_width: f64,
+    #[props(default = 120.0)] min_width: f64,
+    #[props(default)] class: String,
+    #[props(default)] mobile_open: Option<bool>,
+    #[props(default)] on_mobile_open_change: EventHandler<bool>,
 ) -> Element {
     let mut width = use_signal(|| initial_width);
     let mut drawer_open = use_signal(|| false);
@@ -72,7 +67,10 @@ pub fn Sidebar(
         }
     };
 
-    #[cfg_attr(not(target_arch = "wasm32"), allow(unused_mut, unused_variables))]
+    #[cfg_attr(
+        not(target_arch = "wasm32"),
+        allow(unused_mut, unused_variables)
+    )]
     let mut touch_start_x: Signal<f64> = use_signal(|| 0.0);
 
     let on_touch_start = move |evt: Event<TouchData>| {

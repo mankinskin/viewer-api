@@ -1,14 +1,27 @@
 //! Frontend lifecycle: build (with optional prebuild steps) and install.
 
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::Path,
+};
 
 use crate::{
-    config::{Config, Frontend, PrebuildStep},
-    paths::{copy_dir_contents, disp},
+    config::{
+        Config,
+        Frontend,
+        PrebuildStep,
+    },
+    paths::{
+        copy_dir_contents,
+        disp,
+    },
     shell::run_cmd_owned,
 };
 
-pub fn build_frontend(root: &Path, f: &Frontend) -> Result<(), String> {
+pub fn build_frontend(
+    root: &Path,
+    f: &Frontend,
+) -> Result<(), String> {
     let tag = f.name.as_str();
     let source = root.join(&f.source_dir);
     if !source.is_dir() {
@@ -26,7 +39,12 @@ pub fn build_frontend(root: &Path, f: &Frontend) -> Result<(), String> {
         run_cmd_owned(&step.cmd, &dir, tag)?;
     }
 
-    info!(tag, "build: {} (cwd={})", f.build_cmd.join(" "), disp(&source));
+    info!(
+        tag,
+        "build: {} (cwd={})",
+        f.build_cmd.join(" "),
+        disp(&source)
+    );
     run_cmd_owned(&f.build_cmd, &source, tag)?;
 
     let output = root.join(&f.build_output);
@@ -49,7 +67,11 @@ pub fn build_frontend(root: &Path, f: &Frontend) -> Result<(), String> {
     Ok(())
 }
 
-pub fn install_frontend(cfg: &Config, root: &Path, f: &Frontend) -> Result<(), String> {
+pub fn install_frontend(
+    cfg: &Config,
+    root: &Path,
+    f: &Frontend,
+) -> Result<(), String> {
     let tag = f.name.as_str();
     let output = root.join(&f.build_output);
     if !output.join("index.html").exists() {
@@ -77,7 +99,10 @@ pub fn install_frontend(cfg: &Config, root: &Path, f: &Frontend) -> Result<(), S
     Ok(())
 }
 
-fn should_run_prebuild(dir: &Path, step: &PrebuildStep) -> bool {
+fn should_run_prebuild(
+    dir: &Path,
+    step: &PrebuildStep,
+) -> bool {
     let Some(cond) = &step.condition else {
         return true;
     };

@@ -5,8 +5,13 @@
 //! `.btn-icon` / `.btn-active` classes from `buttons.css`.
 use dioxus::prelude::*;
 
-use crate::components::{AlertIcon, FilterIcon, HomeIcon, RefreshIcon};
-use crate::components::icons::InfoIcon;
+use crate::components::{
+    icons::InfoIcon,
+    AlertIcon,
+    FilterIcon,
+    HomeIcon,
+    RefreshIcon,
+};
 
 /// Button row for the viewer header.
 ///

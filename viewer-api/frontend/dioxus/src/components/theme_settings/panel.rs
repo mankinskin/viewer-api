@@ -1,28 +1,39 @@
 use dioxus::prelude::*;
 
-use crate::effects::wgpu_overlay::EffectSettings;
-use crate::store::ThemeStore;
+use crate::{
+    effects::wgpu_overlay::EffectSettings,
+    store::ThemeStore,
+};
 
-use super::custom_themes::CustomThemesSection;
-use super::effects::EffectControls;
-use super::model::{load_custom_themes, CustomTheme, ThemeSnapshot};
-use super::presets::render_preset_section;
-use super::preview::{inject_preview_css, remove_preview_css};
-use super::tokens::TokenSections;
+use super::{
+    custom_themes::CustomThemesSection,
+    effects::EffectControls,
+    model::{
+        load_custom_themes,
+        CustomTheme,
+        ThemeSnapshot,
+    },
+    presets::render_preset_section,
+    preview::{
+        inject_preview_css,
+        remove_preview_css,
+    },
+    tokens::TokenSections,
+};
 
 #[component]
 pub fn ThemeSettings(
-    #[props(default)]
-    on_close: EventHandler<()>,
-    #[props(default)]
-    class: String,
+    #[props(default)] on_close: EventHandler<()>,
+    #[props(default)] class: String,
 ) -> Element {
     let mut store = use_context::<ThemeStore>();
     let mut draft = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
-    let mut committed = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
+    let mut committed =
+        use_signal(|| ThemeSnapshot::from_colors(store.colors()));
     let mut effects_draft = use_signal(|| store.effects_committed());
     let mut effects_committed_local = use_signal(|| store.effects_committed());
-    let mut custom_themes: Signal<Vec<CustomTheme>> = use_signal(load_custom_themes);
+    let mut custom_themes: Signal<Vec<CustomTheme>> =
+        use_signal(load_custom_themes);
     let mut save_name = use_signal(String::new);
     let mut rename_idx: Signal<Option<usize>> = use_signal(|| None);
     let mut rename_name = use_signal(String::new);

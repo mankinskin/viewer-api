@@ -2,37 +2,34 @@ use std::collections::BTreeSet;
 
 use dioxus::prelude::*;
 
-use super::types::{FilterDef, SortKey, TreeNode};
-use super::view::TreeView;
-use crate::components::{FilterIcon, Spinner};
+use super::{
+    types::{
+        FilterDef,
+        SortKey,
+        TreeNode,
+    },
+    view::TreeView,
+};
+use crate::components::{
+    FilterIcon,
+    Spinner,
+};
 
 #[component]
 pub fn FileTree(
     nodes: Vec<TreeNode>,
-    #[props(default)]
-    sort_keys: Vec<SortKey>,
-    #[props(default)]
-    on_sort: EventHandler<String>,
-    #[props(default)]
-    filters: Vec<FilterDef>,
-    #[props(default)]
-    active_filters: Vec<String>,
-    #[props(default)]
-    on_filter: EventHandler<String>,
-    #[props(default)]
-    selected_id: Option<String>,
-    #[props(default)]
-    on_select: EventHandler<String>,
-    #[props(default)]
-    initially_expanded: Vec<String>,
-    #[props(default = false)]
-    loading: bool,
-    #[props(default)]
-    class: String,
-    #[props(default = false)]
-    show_checkboxes: bool,
-    #[props(default)]
-    on_selection_change: EventHandler<BTreeSet<String>>,
+    #[props(default)] sort_keys: Vec<SortKey>,
+    #[props(default)] on_sort: EventHandler<String>,
+    #[props(default)] filters: Vec<FilterDef>,
+    #[props(default)] active_filters: Vec<String>,
+    #[props(default)] on_filter: EventHandler<String>,
+    #[props(default)] selected_id: Option<String>,
+    #[props(default)] on_select: EventHandler<String>,
+    #[props(default)] initially_expanded: Vec<String>,
+    #[props(default = false)] loading: bool,
+    #[props(default)] class: String,
+    #[props(default = false)] show_checkboxes: bool,
+    #[props(default)] on_selection_change: EventHandler<BTreeSet<String>>,
 ) -> Element {
     let combined = if class.is_empty() {
         "file-tree".to_string()

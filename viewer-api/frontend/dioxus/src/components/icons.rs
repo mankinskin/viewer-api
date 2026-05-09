@@ -8,11 +8,39 @@ mod navigation;
 mod specialized;
 mod status;
 
-pub use self::actions::{CloseIcon, FilterIcon, MinusIcon, PlusIcon, RefreshIcon, SearchIcon};
-pub use self::files::{DocumentIcon, FileIcon, FolderIcon, FolderOpenIcon};
-pub use self::navigation::{ChevronDownIcon, ChevronRightIcon};
-pub use self::specialized::{
-    CodeIcon, CrateIcon, GraphIcon, HamburgerIcon, HomeIcon, LogIcon, ModuleIcon,
-    SourceFileIcon, StatsIcon,
+pub use self::{
+    actions::{
+        CloseIcon,
+        FilterIcon,
+        MinusIcon,
+        PlusIcon,
+        RefreshIcon,
+        SearchIcon,
+    },
+    files::{
+        DocumentIcon,
+        FileIcon,
+        FolderIcon,
+        FolderOpenIcon,
+    },
+    navigation::{
+        ChevronDownIcon,
+        ChevronRightIcon,
+    },
+    specialized::{
+        CodeIcon,
+        CrateIcon,
+        GraphIcon,
+        HamburgerIcon,
+        HomeIcon,
+        LogIcon,
+        ModuleIcon,
+        SourceFileIcon,
+        StatsIcon,
+    },
+    status::{
+        AlertIcon,
+        CheckIcon,
+        InfoIcon,
+    },
 };
-pub use self::status::{AlertIcon, CheckIcon, InfoIcon};

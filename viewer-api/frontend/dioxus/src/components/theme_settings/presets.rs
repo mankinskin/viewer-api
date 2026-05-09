@@ -1,9 +1,22 @@
 use dioxus::prelude::*;
 
-use crate::store::{ThemeColors, ThemePreset, ThemeStore, ARCADIA, DARK, PAPER, SCRATCHBOARD};
+use crate::store::{
+    ThemeColors,
+    ThemePreset,
+    ThemeStore,
+    ARCADIA,
+    DARK,
+    PAPER,
+    SCRATCHBOARD,
+};
 
-use super::model::{CustomTheme, ThemeSnapshot};
-use super::preview::inject_preview_css;
+use super::{
+    model::{
+        CustomTheme,
+        ThemeSnapshot,
+    },
+    preview::inject_preview_css,
+};
 
 pub(super) fn render_preset_section(
     mut store: ThemeStore,

@@ -1,7 +1,12 @@
 //! TabBar component — horizontal list of closeable, reorderable tabs.
 use dioxus::prelude::*;
 
-use crate::components::{CloseIcon, ResizeHandle, ResizeEdge, ResizeDirection};
+use crate::components::{
+    CloseIcon,
+    ResizeDirection,
+    ResizeEdge,
+    ResizeHandle,
+};
 
 /// A single tab descriptor.
 #[derive(Clone, PartialEq)]
@@ -17,7 +22,10 @@ pub struct TabItem {
 }
 
 impl TabItem {
-    pub fn new(id: impl Into<String>, label: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        label: impl Into<String>,
+    ) -> Self {
         TabItem {
             id: id.into(),
             label: label.into(),
@@ -39,18 +47,12 @@ impl TabItem {
 #[component]
 pub fn TabBar(
     tabs: Vec<TabItem>,
-    #[props(default)]
-    active_id: String,
-    #[props(default)]
-    on_select: EventHandler<String>,
-    #[props(default)]
-    on_close: EventHandler<String>,
-    #[props(default = false)]
-    resizable: bool,
-    #[props(default = 40.0)]
-    initial_height: f64,
-    #[props(default)]
-    class: String,
+    #[props(default)] active_id: String,
+    #[props(default)] on_select: EventHandler<String>,
+    #[props(default)] on_close: EventHandler<String>,
+    #[props(default = false)] resizable: bool,
+    #[props(default = 40.0)] initial_height: f64,
+    #[props(default)] class: String,
 ) -> Element {
     let mut height = use_signal(|| initial_height);
 

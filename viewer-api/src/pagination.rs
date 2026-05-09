@@ -4,7 +4,10 @@
 //! Consumers must treat it as an opaque blob — do not parse or construct it
 //! manually.
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 /// An opaque pagination cursor (base64-encoded JSON checkpoint).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -12,14 +15,18 @@ pub struct PageCursor(pub String);
 
 impl PageCursor {
     /// Encode an arbitrary serializable checkpoint into a cursor.
-    pub fn encode<T: Serialize>(checkpoint: &T) -> Result<Self, serde_json::Error> {
+    pub fn encode<T: Serialize>(
+        checkpoint: &T
+    ) -> Result<Self, serde_json::Error> {
         let json = serde_json::to_string(checkpoint)?;
         // Opaque cursor — JSON directly. Switch to Base64URL in production.
         Ok(PageCursor(json))
     }
 
     /// Decode the cursor back to a checkpoint.
-    pub fn decode<T: for<'de> Deserialize<'de>>(&self) -> Result<T, serde_json::Error> {
+    pub fn decode<T: for<'de> Deserialize<'de>>(
+        &self
+    ) -> Result<T, serde_json::Error> {
         serde_json::from_str(&self.0)
     }
 
@@ -61,7 +68,10 @@ pub struct PageResult<T: Serialize> {
 }
 
 impl<T: Serialize> PageResult<T> {
-    pub fn new(items: Vec<T>, next_cursor: Option<PageCursor>) -> Self {
+    pub fn new(
+        items: Vec<T>,
+        next_cursor: Option<PageCursor>,
+    ) -> Self {
         Self { items, next_cursor }
     }
 
@@ -86,7 +96,10 @@ mod tests {
             offset: u64,
             generation: u64,
         }
-        let cp = Checkpoint { offset: 42, generation: 7 };
+        let cp = Checkpoint {
+            offset: 42,
+            generation: 7,
+        };
         let cursor = PageCursor::encode(&cp).unwrap();
         let decoded: Checkpoint = cursor.decode().unwrap();
         assert_eq!(decoded, cp);

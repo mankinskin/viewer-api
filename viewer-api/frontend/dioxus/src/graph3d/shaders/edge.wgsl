@@ -52,6 +52,7 @@ struct EdgeVsOut {
     // World-space t where the shaft exits the source / enters the destination card.
     @location(5) srcExitT  : f32,
     @location(6) dstExitT  : f32,
+    @location(7) eyeDist   : f32,
 };
 
 fn screen_fraction_to_world_t(s: f32, inv_w_a: f32, inv_w_b: f32) -> f32 {
@@ -60,6 +61,12 @@ fn screen_fraction_to_world_t(s: f32, inv_w_a: f32, inv_w_b: f32) -> f32 {
         return clamp(s, 0.0, 1.0);
     }
     return clamp((s * inv_w_b) / denom, 0.0, 1.0);
+}
+
+fn wrapped_pulse(coord: f32, center: f32, width: f32) -> f32 {
+    let delta = abs(coord - center);
+    let wrapped = min(delta, 1.0 - delta);
+    return 1.0 - smoothstep(width, width * 2.3, wrapped);
 }
 
 // edgeType encoding:
@@ -84,13 +91,27 @@ fn vs_edge(
     let viewDir = normalize(cam.eye.xyz - center);
     let lineDir = normalize(dir);
     let side = normalize(cross(lineDir, viewDir));
+    let is_selected = flags > 1.5;
+    let is_hovered = flags > 0.5 && !is_selected;
+    let is_dimmed = flags < -0.5;
 
     var halfWidth: f32;
     if (edgeType < 0.5) {
-        halfWidth = select(0.015, 0.035, flags > 0.5);
+        halfWidth = 0.008;
+        if (flags > 0.5) {
+            halfWidth = 0.020;
+        }
     } else {
-        // Wider quad to accommodate arrowhead; constant for the entire edge.
-        halfWidth = select(0.07, 0.10, flags > 0.5);
+        halfWidth = 0.16;
+        if (is_hovered) {
+            halfWidth = 0.20;
+        }
+        if (is_selected) {
+            halfWidth = 0.24;
+        }
+        if (is_dimmed) {
+            halfWidth = 0.12;
+        }
     }
 
     // ── Enforce a minimum screen-space pixel width ─────────────────────
@@ -98,7 +119,19 @@ fn vs_edge(
     let center_clip = cam.viewProj * vec4(center, 1.0);
     let depth_w = max(abs(center_clip.w), 0.0001);
     let world_per_px = (2.0 * 0.41421356 * depth_w) / viewport_h;
-    let min_px = select(1.25, 1.5, edgeType < 0.5);
+    var min_px = 3.8;
+    if (edgeType < 0.5) {
+        min_px = 0.75;
+    }
+    if (is_dimmed && edgeType >= 0.5) {
+        min_px = 2.8;
+    }
+    if (is_hovered) {
+        min_px = 4.6;
+    }
+    if (is_selected) {
+        min_px = 5.2;
+    }
     let min_world = world_per_px * min_px;
     halfWidth = max(halfWidth, min_world);
 
@@ -152,6 +185,7 @@ fn vs_edge(
     out.edgeLen  = edgeLength;
     out.srcExitT = src_exit_t;
     out.dstExitT = dst_exit_t;
+    out.eyeDist  = distance(cam.eye.xyz, center);
     return out;
 }
 
@@ -170,7 +204,7 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
             a *= 1.4;
         }
         let endFade = smoothstep(0.0, 0.08, 0.5 - abs(in.edgeUV.x));
-        a *= endFade;
+        a *= endFade * 0.65;
         return vec4(col * a, a);
     }
 
@@ -181,7 +215,7 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     //   [arrow_start_t .. t_dst_exit]  = arrowhead (triangle, widens then tapers to point)
     //
     const ARROW_LEN_F : f32 = 0.45;   // world-space arrowhead length
-    const SHAFT_HALF  : f32 = 0.22;   // shaft half-width in quad-UV space (y in -1..1)
+    const SHAFT_HALF  : f32 = 0.30;   // shaft half-width in quad-UV space (y in -1..1)
     const ARROW_HALF  : f32 = 0.90;   // arrowhead max half-width at base (quad-UV)
     const AA          : f32 = 0.04;   // anti-alias softness
     let visible_start = min(in.srcExitT, in.dstExitT);
@@ -194,6 +228,7 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
 
     // ── Determine inside/outside for the current region ──────────────────
     var inside = false;
+    var shape_half = SHAFT_HALF;
 
     if (t < arrow_start_t) {
         // Shaft region — constant-width rectangle.
@@ -202,6 +237,7 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
         // Arrowhead region — triangle that tapers to a point at visible_end.
         let arrow_t = clamp((t - arrow_start_t) / max(visible_end - arrow_start_t, 0.0001), 0.0, 1.0);
         let tri_edge = ARROW_HALF * (1.0 - arrow_t);
+        shape_half = tri_edge;
         inside = across <= tri_edge + AA;
     }
 
@@ -211,10 +247,12 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     var a: f32;
     if (t < arrow_start_t) {
         let d = across - SHAFT_HALF;
+        shape_half = SHAFT_HALF;
         a = 1.0 - smoothstep(-AA, AA, d);
     } else {
         let arrow_t = clamp((t - arrow_start_t) / max(visible_end - arrow_start_t, 0.0001), 0.0, 1.0);
         let tri_edge = ARROW_HALF * (1.0 - arrow_t);
+        shape_half = tri_edge;
         let d = across - tri_edge;
         a = 1.0 - smoothstep(-AA, AA, d);
     }
@@ -225,9 +263,62 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
 
     if (a < 0.002) { discard; }
 
-    var col = in.color.rgb;
-    if (in.flags > 0.5) {
-        col = mix(col, vec3(1.0), 0.25);
+    let visible_len = max(visible_end - visible_start, 0.0001);
+    let norm_t = clamp((t - visible_start) / visible_len, 0.0, 1.0);
+    let profile = clamp(across / max(shape_half + AA, 0.0001), 0.0, 1.0);
+    let core_mask = 1.0 - smoothstep(0.0, 0.25, profile);
+    let inner_mask = 1.0 - smoothstep(0.18, 0.72, profile);
+    let halo_mask = 1.0 - smoothstep(0.55, 1.0, profile);
+    let direction_bias = 0.82 + 0.18 * smoothstep(0.10, 0.95, norm_t);
+    let depth_soft = clamp(1.36 - in.eyeDist / 135.0, 0.84, 1.15);
+    let is_selected = in.flags > 1.5;
+    let is_hovered = in.flags > 0.5 && !is_selected;
+    let is_dimmed = in.flags < -0.5;
+
+    var edge_rgb = mix(in.color.rgb, palette.beam_edge.rgb, 0.12);
+    var halo_rgb = mix(edge_rgb, palette.glitter_cool.rgb, 0.16);
+    var core_rgb = mix(edge_rgb, palette.beam_center.rgb, 0.22);
+    var packet_rgb = palette.spark_core.rgb;
+    var alpha_scale = 2.35;
+    var packet_strength = 0.0;
+
+    if (is_selected) {
+        edge_rgb = mix(palette.kind_selected.rgb, palette.beam_center.rgb, 0.28);
+        halo_rgb = mix(palette.spark_ember.rgb, edge_rgb, 0.45);
+        core_rgb = mix(edge_rgb, palette.spark_core.rgb, 0.42);
+        packet_rgb = mix(palette.spark_core.rgb, palette.beam_center.rgb, 0.40);
+        alpha_scale = 2.75;
+        packet_strength = 1.0;
+    } else if (is_hovered) {
+        edge_rgb = mix(palette.kind_info.rgb, palette.glitter_cool.rgb, 0.35);
+        halo_rgb = mix(palette.smoke_cool.rgb, edge_rgb, 0.60);
+        core_rgb = mix(edge_rgb, palette.glitter_cool.rgb, 0.36);
+        packet_rgb = mix(palette.glitter_cool.rgb, palette.spark_core.rgb, 0.28);
+        alpha_scale = 2.30;
+        packet_strength = 0.72;
+    } else if (is_dimmed) {
+        edge_rgb = mix(in.color.rgb, palette.cinder_ash.rgb, 0.68);
+        halo_rgb = mix(edge_rgb, palette.smoke_cool.rgb, 0.76);
+        core_rgb = mix(edge_rgb, halo_rgb, 0.25);
+        alpha_scale = 0.95;
     }
-    return vec4(col * a, a);
+
+    var lit_rgb = halo_rgb * (0.26 + 0.32 * halo_mask);
+    lit_rgb += edge_rgb * (0.55 + 0.85 * inner_mask) * direction_bias;
+    lit_rgb += core_rgb * (0.72 + 1.18 * core_mask);
+
+    var packet = 0.0;
+    if (packet_strength > 0.0) {
+        let seed = fract(in.edgeLen * 0.173 + in.color.r * 0.37 + in.color.g * 0.53);
+        let packet_coord = fract(norm_t * 3.0 - cam.time.x * (0.55 + 0.35 * packet_strength) + seed);
+        packet = wrapped_pulse(packet_coord, 0.5, 0.18) * core_mask;
+        lit_rgb += packet_rgb * packet * (1.0 + packet_strength);
+    }
+
+    var opacity = a * depth_soft * alpha_scale;
+    opacity *= 1.08 + 0.38 * inner_mask + 0.32 * core_mask;
+    opacity = clamp(opacity + packet * packet_strength * 0.22, 0.0, 1.0);
+
+    if (opacity < 0.002) { discard; }
+    return vec4(lit_rgb * opacity, opacity);
 }

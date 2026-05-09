@@ -1,11 +1,19 @@
 //! TCP-port discovery, process termination, and inspection.
 
 use std::{
-    process::{Command, Stdio},
+    process::{
+        Command,
+        Stdio,
+    },
     time::Duration,
 };
 
-use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{
+    Pid,
+    ProcessRefreshKind,
+    RefreshKind,
+    System,
+};
 
 /// Find PIDs of processes listening on `port`.
 ///
@@ -61,14 +69,20 @@ pub fn pids_on_port(port: u16) -> Vec<Pid> {
 
     if let Ok(out) = Command::new("netstat").args(["-ano"]).output() {
         if out.status.success() {
-            return parse_netstat_pids(&String::from_utf8_lossy(&out.stdout), port);
+            return parse_netstat_pids(
+                &String::from_utf8_lossy(&out.stdout),
+                port,
+            );
         }
     }
 
     vec![]
 }
 
-fn parse_ss_pids(output: &str, port: u16) -> Vec<Pid> {
+fn parse_ss_pids(
+    output: &str,
+    port: u16,
+) -> Vec<Pid> {
     let suffix = format!(":{port}");
     let mut pids = Vec::new();
     for line in output.lines() {
@@ -93,7 +107,10 @@ fn parse_ss_pids(output: &str, port: u16) -> Vec<Pid> {
     pids
 }
 
-fn parse_netstat_pids(output: &str, port: u16) -> Vec<Pid> {
+fn parse_netstat_pids(
+    output: &str,
+    port: u16,
+) -> Vec<Pid> {
     let suffix = format!(":{port}");
     let mut pids = Vec::new();
     for line in output.lines() {
@@ -119,7 +136,10 @@ fn parse_netstat_pids(output: &str, port: u16) -> Vec<Pid> {
 
 /// Try increasingly aggressive kill strategies. Returns `true` if the process
 /// is no longer alive when the function returns.
-pub fn kill_process(pid: Pid, tag: &str) -> bool {
+pub fn kill_process(
+    pid: Pid,
+    tag: &str,
+) -> bool {
     warn!(tag, "killing PID {pid}");
     if cfg!(windows) {
         let result = Command::new("taskkill")
@@ -172,7 +192,10 @@ pub fn pids_by_image_name(package: &str) -> Vec<Pid> {
 }
 
 /// Print best-effort identifying info for `pid` (image name, args).
-pub fn print_process_info(pid: Pid, tag: &str) {
+pub fn print_process_info(
+    pid: Pid,
+    tag: &str,
+) {
     if let Ok(out) = Command::new("tasklist")
         .args(["/FI", &format!("PID eq {}", pid.as_u32()), "/FO", "LIST"])
         .output()

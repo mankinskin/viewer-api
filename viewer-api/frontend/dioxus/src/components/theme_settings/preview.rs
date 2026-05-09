@@ -58,10 +58,13 @@ pub(super) fn inject_preview_css(snapshot: &ThemeSnapshot) {
 
         if let Some(window) = web_sys::window() {
             if let Some(document) = window.document() {
-                let element = if let Some(existing) = document.get_element_by_id(PREVIEW_STYLE_ID) {
+                let element = if let Some(existing) =
+                    document.get_element_by_id(PREVIEW_STYLE_ID)
+                {
                     existing
                 } else {
-                    let new_element = document.create_element("style").expect("create style");
+                    let new_element =
+                        document.create_element("style").expect("create style");
                     new_element.set_id(PREVIEW_STYLE_ID);
                     if let Some(head) = document.head() {
                         let _ = head.append_child(&new_element);
@@ -81,7 +84,9 @@ pub(super) fn remove_preview_css() {
     {
         if let Some(window) = web_sys::window() {
             if let Some(document) = window.document() {
-                if let Some(element) = document.get_element_by_id(PREVIEW_STYLE_ID) {
+                if let Some(element) =
+                    document.get_element_by_id(PREVIEW_STYLE_ID)
+                {
                     if let Some(parent) = element.parent_node() {
                         let _ = parent.remove_child(&element);
                     }

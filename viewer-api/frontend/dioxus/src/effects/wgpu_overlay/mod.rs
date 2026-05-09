@@ -32,14 +32,24 @@ use dioxus::prelude::*;
 mod element_types;
 pub mod settings;
 
-#[cfg(target_arch = "wasm32")] mod webgpu;
-#[cfg(target_arch = "wasm32")] mod gpu_init;
-#[cfg(target_arch = "wasm32")] mod gpu_buffers;
-#[cfg(target_arch = "wasm32")] mod element_scanner;
-#[cfg(target_arch = "wasm32")] mod render_loop;
+#[cfg(target_arch = "wasm32")]
+mod element_scanner;
+#[cfg(target_arch = "wasm32")]
+mod gpu_buffers;
+#[cfg(target_arch = "wasm32")]
+mod gpu_init;
+#[cfg(target_arch = "wasm32")]
+mod render_loop;
+#[cfg(target_arch = "wasm32")]
+mod webgpu;
 
 pub use settings::{
-    hex_to_rgba, rgba_to_hex, EffectSettings, PaletteColor, PALETTE_LABELS, PALETTE_LEN,
+    hex_to_rgba,
+    rgba_to_hex,
+    EffectSettings,
+    PaletteColor,
+    PALETTE_LABELS,
+    PALETTE_LEN,
 };
 
 // ── Shared GPU handles + frame-callback registry ────────────────────────────
@@ -52,7 +62,10 @@ pub use settings::{
 // uninterrupted when secondary renderers come and go.
 
 #[cfg(target_arch = "wasm32")]
-use std::cell::{Cell, RefCell};
+use std::cell::{
+    Cell,
+    RefCell,
+};
 #[cfg(target_arch = "wasm32")]
 use std::rc::Rc;
 #[cfg(target_arch = "wasm32")]
@@ -63,26 +76,26 @@ use wasm_bindgen::JsValue;
 /// own adapter/device.
 #[cfg(target_arch = "wasm32")]
 pub struct SharedGpu {
-    pub device:  JsValue,
-    pub queue:   JsValue,
+    pub device: JsValue,
+    pub queue: JsValue,
     pub context: JsValue,
     /// Preferred canvas format string (e.g. `"bgra8unorm"`).
-    pub format:  String,
+    pub format: String,
 }
 
 /// Per-frame context handed to each registered [`FrameCallback`].
 #[cfg(target_arch = "wasm32")]
 pub struct FrameContext<'a> {
-    pub device:    &'a JsValue,
-    pub queue:     &'a JsValue,
+    pub device: &'a JsValue,
+    pub queue: &'a JsValue,
     /// View of the swap-chain texture for this frame. Use `loadOp: "load"`
     /// when binding it as a colour attachment so the overlay's render is
     /// preserved underneath.
     pub frame_view: &'a JsValue,
     /// Canvas backing-store size in physical pixels.
-    pub canvas_w:  u32,
-    pub canvas_h:  u32,
-    pub time_s:    f32,
+    pub canvas_w: u32,
+    pub canvas_h: u32,
+    pub time_s: f32,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -128,7 +141,9 @@ thread_local! {
 ///
 /// The canvas is always owned by [`WgpuOverlay`]; secondary renderers
 /// composite into the same frame via [`register_frame_callback`].
-#[deprecated(note = "secondary renderers should use register_frame_callback instead")]
+#[deprecated(
+    note = "secondary renderers should use register_frame_callback instead"
+)]
 pub fn set_gpu_canvas_owner(_taken: bool) {}
 
 /// Enable or disable the WebGPU overlay master switch.
@@ -189,7 +204,11 @@ pub fn register_frame_callback<F>(cb: F) -> FrameCallbackHandle
 where
     F: FnMut(&FrameContext) + 'static,
 {
-    let id = NEXT_CB_ID.with(|n| { let v = n.get(); n.set(v + 1); v });
+    let id = NEXT_CB_ID.with(|n| {
+        let v = n.get();
+        n.set(v + 1);
+        v
+    });
     let boxed: Rc<RefCell<FrameCallback>> = Rc::new(RefCell::new(Box::new(cb)));
     FRAME_CALLBACKS.with(|c| c.borrow_mut().push((id, boxed)));
     FrameCallbackHandle(id)
@@ -242,7 +261,10 @@ pub(crate) fn take_palette_dirty() -> bool {
 /// Store the current cursor position (CSS client coordinates).
 /// Called by the `mousemove` listener installed during overlay bootstrap.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn set_mouse_pos(x: f32, y: f32) {
+pub(crate) fn set_mouse_pos(
+    x: f32,
+    y: f32,
+) {
     MOUSE_X.with(|c| c.set(x));
     MOUSE_Y.with(|c| c.set(y));
 }

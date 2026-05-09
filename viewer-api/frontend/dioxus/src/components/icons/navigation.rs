@@ -2,12 +2,9 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn ChevronRightIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -25,12 +22,9 @@ pub fn ChevronRightIcon(
 
 #[component]
 pub fn ChevronDownIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {

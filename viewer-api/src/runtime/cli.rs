@@ -1,8 +1,8 @@
 use tracing_subscriber::{
-    EnvFilter,
     fmt,
     layer::SubscriberExt,
     util::SubscriberInitExt,
+    EnvFilter,
 };
 
 #[derive(Debug, Clone)]

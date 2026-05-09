@@ -2,12 +2,9 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn SearchIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -28,12 +25,9 @@ pub fn SearchIcon(
 
 #[component]
 pub fn FilterIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -53,12 +47,9 @@ pub fn FilterIcon(
 
 #[component]
 pub fn RefreshIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -80,12 +71,9 @@ pub fn RefreshIcon(
 
 #[component]
 pub fn CloseIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -106,12 +94,9 @@ pub fn CloseIcon(
 
 #[component]
 pub fn PlusIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -132,12 +117,9 @@ pub fn PlusIcon(
 
 #[component]
 pub fn MinusIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {

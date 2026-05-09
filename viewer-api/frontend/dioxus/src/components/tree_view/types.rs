@@ -28,8 +28,12 @@ pub struct TreeNode {
 }
 
 impl PartialEq for TreeNode {
-    fn eq(&self, other: &Self) -> bool {
-        let tooltip_equal = match (&self.tooltip_render, &other.tooltip_render) {
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool {
+        let tooltip_equal = match (&self.tooltip_render, &other.tooltip_render)
+        {
             (None, None) => true,
             (Some(left), Some(right)) => Rc::ptr_eq(left, right),
             _ => false,
@@ -48,7 +52,10 @@ impl PartialEq for TreeNode {
 }
 
 impl TreeNode {
-    pub fn leaf(id: impl Into<String>, label: impl Into<String>) -> Self {
+    pub fn leaf(
+        id: impl Into<String>,
+        label: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
@@ -62,7 +69,11 @@ impl TreeNode {
         }
     }
 
-    pub fn dir(id: impl Into<String>, label: impl Into<String>, children: Vec<TreeNode>) -> Self {
+    pub fn dir(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        children: Vec<TreeNode>,
+    ) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
@@ -76,7 +87,10 @@ impl TreeNode {
         }
     }
 
-    pub fn with_tooltip_render<F>(mut self, render: F) -> Self
+    pub fn with_tooltip_render<F>(
+        mut self,
+        render: F,
+    ) -> Self
     where
         F: Fn() -> Element + 'static,
     {
@@ -93,7 +107,10 @@ pub struct SortKey {
 }
 
 impl SortKey {
-    pub fn new(key: impl Into<String>, label: impl Into<String>) -> Self {
+    pub fn new(
+        key: impl Into<String>,
+        label: impl Into<String>,
+    ) -> Self {
         Self {
             key: key.into(),
             label: label.into(),
@@ -111,7 +128,11 @@ pub struct FilterDef {
 }
 
 impl FilterDef {
-    pub fn new(key: impl Into<String>, label: impl Into<String>, count: usize) -> Self {
+    pub fn new(
+        key: impl Into<String>,
+        label: impl Into<String>,
+        count: usize,
+    ) -> Self {
         Self {
             key: key.into(),
             label: label.into(),

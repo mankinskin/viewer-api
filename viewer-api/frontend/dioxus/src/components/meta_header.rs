@@ -46,8 +46,7 @@ impl Default for ChipKind {
 #[component]
 pub fn Chip(
     text: String,
-    #[props(default)]
-    kind: ChipKind,
+    #[props(default)] kind: ChipKind,
     /// Extra CSS classes appended to the root `.chip` span.
     #[props(default)]
     class: String,
@@ -66,8 +65,7 @@ pub fn Chip(
 #[component]
 pub fn ChipRow(
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "chip-row".to_string()
@@ -86,17 +84,13 @@ pub fn ChipRow(
 #[component]
 pub fn MetaHeader(
     title: String,
-    #[props(default)]
-    date: Option<String>,
-    #[props(default)]
-    tags: Vec<String>,
-    #[props(default)]
-    status: Option<String>,
+    #[props(default)] date: Option<String>,
+    #[props(default)] tags: Vec<String>,
+    #[props(default)] status: Option<String>,
     /// Optional content rendered below the meta row (e.g. a description).
     #[props(default)]
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "meta-header".to_string()

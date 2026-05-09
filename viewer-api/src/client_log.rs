@@ -39,7 +39,11 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
-use std::{io::Write, path::PathBuf, sync::Arc};
+use std::{
+    io::Write,
+    path::PathBuf,
+    sync::Arc,
+};
 use tokio::sync::Mutex;
 use tracing::warn;
 
@@ -92,7 +96,10 @@ async fn ingest(
     body: Bytes,
 ) -> Result<StatusCode, (StatusCode, String)> {
     if body.len() > MAX_BODY_BYTES {
-        return Err((StatusCode::PAYLOAD_TOO_LARGE, "body exceeds 1 MiB limit".into()));
+        return Err((
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "body exceeds 1 MiB limit".into(),
+        ));
     }
 
     let payload: IngestPayload = serde_json::from_slice(&body)
@@ -114,8 +121,9 @@ async fn ingest(
                 .append(true)
                 .open(&path)?;
             for record in &records {
-                let line = serde_json::to_string(record)
-                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                let line = serde_json::to_string(record).map_err(|e| {
+                    std::io::Error::new(std::io::ErrorKind::InvalidData, e)
+                })?;
                 writeln!(file, "{line}")?;
             }
             Ok(())

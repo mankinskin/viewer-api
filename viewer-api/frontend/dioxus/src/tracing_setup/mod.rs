@@ -23,7 +23,11 @@
 mod network_layer;
 
 use std::sync::OnceLock;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+    EnvFilter,
+};
 
 static INSTALLED: OnceLock<()> = OnceLock::new();
 

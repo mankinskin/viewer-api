@@ -1,24 +1,44 @@
 //! Extension lifecycle. Currently only the VS Code installer kind is wired up.
 
 use std::{
-    env, fs,
-    path::{Path, PathBuf},
+    env,
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 use crate::{
-    config::{Config, Extension},
-    paths::{copy_dir_contents, disp},
-    shell::{run_cmd_args, run_cmd_owned},
+    config::{
+        Config,
+        Extension,
+    },
+    paths::{
+        copy_dir_contents,
+        disp,
+    },
+    shell::{
+        run_cmd_args,
+        run_cmd_owned,
+    },
 };
 
-pub fn build_extension(root: &Path, e: &Extension) -> Result<(), String> {
+pub fn build_extension(
+    root: &Path,
+    e: &Extension,
+) -> Result<(), String> {
     let tag = e.name.as_str();
     let dir = root.join(&e.source_dir);
     info!(tag, "build: {} (cwd={})", e.build_cmd.join(" "), disp(&dir));
     run_cmd_owned(&e.build_cmd, &dir, tag)
 }
 
-pub fn install_extension(_cfg: &Config, root: &Path, e: &Extension) -> Result<(), String> {
+pub fn install_extension(
+    _cfg: &Config,
+    root: &Path,
+    e: &Extension,
+) -> Result<(), String> {
     // Build first so out/ is fresh.
     build_extension(root, e)?;
     match e.kind.as_str() {
@@ -36,7 +56,10 @@ struct PkgJson {
     version: String,
 }
 
-fn install_vscode_extension(root: &Path, e: &Extension) -> Result<(), String> {
+fn install_vscode_extension(
+    root: &Path,
+    e: &Extension,
+) -> Result<(), String> {
     let tag = e.name.as_str();
     let ext_dir = root.join(&e.source_dir);
 
@@ -103,7 +126,11 @@ fn install_vscode_extension(root: &Path, e: &Extension) -> Result<(), String> {
         info!(tag, "installing {}...", disp(&vsix));
         run_cmd_args(
             "code",
-            &["--install-extension", vsix.to_str().unwrap_or(""), "--force"],
+            &[
+                "--install-extension",
+                vsix.to_str().unwrap_or(""),
+                "--force",
+            ],
             &ext_dir,
             tag,
         )?;

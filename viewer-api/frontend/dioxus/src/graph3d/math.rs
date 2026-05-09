@@ -4,12 +4,17 @@
 //! z ∈ [0, 1].
 
 /// Perspective projection matrix (WebGPU clip-space z ∈ [0, 1]).
-pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
+pub fn perspective(
+    fov: f32,
+    aspect: f32,
+    near: f32,
+    far: f32,
+) -> [f32; 16] {
     let f = 1.0 / (fov * 0.5).tan();
     let nf = 1.0 / (near - far);
     let mut m = [0.0f32; 16];
-    m[0]  = f / aspect;
-    m[5]  = f;
+    m[0] = f / aspect;
+    m[5] = f;
     m[10] = far * nf;
     m[11] = -1.0;
     m[14] = near * far * nf;
@@ -20,12 +25,17 @@ pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
 ///
 /// `half_h` is the half-height of the visible world-space volume.  Use
 /// `camera.distance * (fov * 0.5).tan()` to obtain a matching scale.
-pub fn orthographic(half_h: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
+pub fn orthographic(
+    half_h: f32,
+    aspect: f32,
+    near: f32,
+    far: f32,
+) -> [f32; 16] {
     let half_w = half_h * aspect;
     let inv_depth = 1.0 / (near - far);
     let mut m = [0.0f32; 16];
-    m[0]  = 1.0 / half_w;
-    m[5]  = 1.0 / half_h;
+    m[0] = 1.0 / half_w;
+    m[5] = 1.0 / half_h;
     m[10] = inv_depth;
     m[14] = near * inv_depth;
     m[15] = 1.0;
@@ -33,27 +43,37 @@ pub fn orthographic(half_h: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] 
 }
 
 /// Look-at view matrix (column-major, right-handed).
-pub fn look_at(eye: [f32; 3], target: [f32; 3], up: [f32; 3]) -> [f32; 16] {
-    let fwd = normalise([
-        target[0] - eye[0],
-        target[1] - eye[1],
-        target[2] - eye[2],
-    ]);
+pub fn look_at(
+    eye: [f32; 3],
+    target: [f32; 3],
+    up: [f32; 3],
+) -> [f32; 16] {
+    let fwd =
+        normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
     let side = normalise(cross(fwd, up));
-    let u    = cross(side, fwd);
+    let u = cross(side, fwd);
     let mut m = [0.0f32; 16];
-    m[0]  = side[0]; m[4] = side[1]; m[8]  = side[2];
-    m[1]  = u[0];    m[5] = u[1];    m[9]  = u[2];
-    m[2]  = -fwd[0]; m[6] = -fwd[1]; m[10] = -fwd[2];
+    m[0] = side[0];
+    m[4] = side[1];
+    m[8] = side[2];
+    m[1] = u[0];
+    m[5] = u[1];
+    m[9] = u[2];
+    m[2] = -fwd[0];
+    m[6] = -fwd[1];
+    m[10] = -fwd[2];
     m[12] = -dot(side, eye);
     m[13] = -dot(u, eye);
-    m[14] =  dot(fwd, eye);
+    m[14] = dot(fwd, eye);
     m[15] = 1.0;
     m
 }
 
 /// Column-major 4×4 multiply: out = a · b.
-pub fn mul(a: [f32; 16], b: [f32; 16]) -> [f32; 16] {
+pub fn mul(
+    a: [f32; 16],
+    b: [f32; 16],
+) -> [f32; 16] {
     let mut out = [0.0f32; 16];
     for col in 0..4 {
         for row in 0..4 {
@@ -69,11 +89,16 @@ pub fn mul(a: [f32; 16], b: [f32; 16]) -> [f32; 16] {
 
 fn normalise(v: [f32; 3]) -> [f32; 3] {
     let len = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    if len < 1e-10 { return [0.0, 0.0, 1.0]; }
+    if len < 1e-10 {
+        return [0.0, 0.0, 1.0];
+    }
     [v[0] / len, v[1] / len, v[2] / len]
 }
 
-fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+fn cross(
+    a: [f32; 3],
+    b: [f32; 3],
+) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -81,6 +106,9 @@ fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     ]
 }
 
-fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+fn dot(
+    a: [f32; 3],
+    b: [f32; 3],
+) -> f32 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }

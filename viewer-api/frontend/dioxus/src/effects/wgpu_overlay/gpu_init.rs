@@ -12,43 +12,57 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{Array, Function, Object, Promise, Reflect};
-use wasm_bindgen::{JsCast, JsValue};
+use js_sys::{
+    Array,
+    Function,
+    Object,
+    Promise,
+    Reflect,
+};
+use tracing::{
+    error,
+    info,
+    warn,
+};
+use wasm_bindgen::{
+    JsCast,
+    JsValue,
+};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
-use tracing::{info, warn, error};
 
 use super::webgpu::*;
 
 // ── Embedded WGSL shaders ────────────────────────────────────────────────────
 // Concatenation order matches the TypeScript reference:
 //   palette → types → noise → [particle_shading] → pipeline-specific
-const PALETTE_WGSL:          &str = include_str!("../shaders/palette.wgsl");
-const TYPES_WGSL:            &str = include_str!("../shaders/types.wgsl");
-const NOISE_WGSL:            &str = include_str!("../shaders/noise.wgsl");
-const PARTICLE_SHADING_WGSL: &str = include_str!("../shaders/particle_shading.wgsl");
-const BACKGROUND_WGSL:       &str = include_str!("../shaders/background.wgsl");
-const PARTICLES_WGSL:        &str = include_str!("../shaders/particles.wgsl");
-const COMPUTE_WGSL:          &str = include_str!("../shaders/compute.wgsl");
+const PALETTE_WGSL: &str = include_str!("../shaders/palette.wgsl");
+const TYPES_WGSL: &str = include_str!("../shaders/types.wgsl");
+const NOISE_WGSL: &str = include_str!("../shaders/noise.wgsl");
+const PARTICLE_SHADING_WGSL: &str =
+    include_str!("../shaders/particle_shading.wgsl");
+const BACKGROUND_WGSL: &str = include_str!("../shaders/background.wgsl");
+const PARTICLES_WGSL: &str = include_str!("../shaders/particles.wgsl");
+const COMPUTE_WGSL: &str = include_str!("../shaders/compute.wgsl");
 
 pub(super) struct GpuPipelines {
-    pub bg_pipeline:       JsValue,
+    pub bg_pipeline: JsValue,
     pub particle_pipeline: JsValue,
-    pub compute_pipeline:  JsValue,
-    pub compute_bgl:       JsValue,
-    pub render_bgl:        JsValue,
+    pub compute_pipeline: JsValue,
+    pub compute_bgl: JsValue,
+    pub render_bgl: JsValue,
 }
 
 pub(super) struct InitOutput {
-    pub device:        JsValue,
-    pub queue:         JsValue,
-    pub context:       JsValue,
+    pub device: JsValue,
+    pub queue: JsValue,
+    pub context: JsValue,
     /// Preferred canvas format string (e.g. `"bgra8unorm"`). Republished
     /// via [`super::SharedGpu`] for secondary renderers that need to build
     /// pipelines targeting the same swap-chain format.
-    pub format:        String,
-    pub pipelines:     GpuPipelines,
-    pub canvas_width:  u32,
+    pub format: String,
+    pub pipelines: GpuPipelines,
+    pub canvas_width: u32,
     pub canvas_height: u32,
 }
 
@@ -66,7 +80,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         .dyn_into::<HtmlCanvasElement>()
         .ok()?;
     let dpr = win.device_pixel_ratio();
-    let init_w = ((canvas.client_width()  as f64 * dpr) as u32).max(1);
+    let init_w = ((canvas.client_width() as f64 * dpr) as u32).max(1);
     let init_h = ((canvas.client_height() as f64 * dpr) as u32).max(1);
     canvas.set_width(init_w);
     canvas.set_height(init_h);
@@ -82,9 +96,12 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── requestAdapter() ────────────────────────────────────────────────────
     let request_adapter: Function = get_fn(&gpu_js, "requestAdapter")?;
-    let adapter_promise: Promise = request_adapter.call0(&gpu_js).ok()?.dyn_into().ok()?;
+    let adapter_promise: Promise =
+        request_adapter.call0(&gpu_js).ok()?.dyn_into().ok()?;
     let adapter = JsFuture::from(adapter_promise).await.ok()?;
-    if adapter.is_null() || adapter.is_undefined() { return None; }
+    if adapter.is_null() || adapter.is_undefined() {
+        return None;
+    }
 
     // ── requestDevice() ─────────────────────────────────────────────────────
     let request_device: Function = get_fn(&adapter, "requestDevice")?;
@@ -92,9 +109,15 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     let dev_desc = Object::new();
     let dev_label = format!("overlay-device-{}", js_sys::Date::now() as u64);
     set_prop(&dev_desc, "label", &dev_label.clone().into());
-    let device_promise: Promise = request_device.call1(&adapter, &dev_desc.into()).ok()?.dyn_into().ok()?;
+    let device_promise: Promise = request_device
+        .call1(&adapter, &dev_desc.into())
+        .ok()?
+        .dyn_into()
+        .ok()?;
     let device = JsFuture::from(device_promise).await.ok()?;
-    if device.is_null() || device.is_undefined() { return None; }
+    if device.is_null() || device.is_undefined() {
+        return None;
+    }
     info!(target: "wgpu_overlay::init", device_label = %dev_label, "device created");
 
     // Install onuncapturederror so any validation errors show device labels.
@@ -102,9 +125,12 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         use wasm_bindgen::closure::Closure;
         let label_for_err = dev_label.clone();
         let cb = Closure::<dyn FnMut(JsValue)>::new(move |ev: JsValue| {
-            let err = Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
+            let err =
+                Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
             let msg = Reflect::get(&err, &"message".into())
-                .ok().and_then(|v| v.as_string()).unwrap_or_default();
+                .ok()
+                .and_then(|v| v.as_string())
+                .unwrap_or_default();
             error!(target: "wgpu_overlay::uncaught", device_label = %label_for_err, error_msg = %msg, "uncaptured WebGPU validation error");
         });
         let _ = Reflect::set(&device, &"onuncapturederror".into(), cb.as_ref());
@@ -115,28 +141,45 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── Canvas WebGPU context ───────────────────────────────────────────────
     let context: JsValue = canvas.get_context("webgpu").ok()??.into();
-    let format: JsValue = get_fn(&gpu_js, "getPreferredCanvasFormat")?.call0(&gpu_js).ok()?;
+    let format: JsValue = get_fn(&gpu_js, "getPreferredCanvasFormat")?
+        .call0(&gpu_js)
+        .ok()?;
     info!(target: "wgpu_overlay::init", "context + format obtained");
 
     // Configure the canvas context. `alphaMode: "opaque"` matches the
     // TypeScript reference — the canvas paints a full opaque background and
     // the DOM stacks above it via normal z-index ordering.
     let cfg = Object::new();
-    set_prop(&cfg, "device",    &device);
-    set_prop(&cfg, "format",    &format);
+    set_prop(&cfg, "device", &device);
+    set_prop(&cfg, "format", &format);
     set_prop(&cfg, "alphaMode", &"opaque".into());
-    get_fn(&context, "configure")?.call1(&context, &cfg.into()).ok()?;
+    get_fn(&context, "configure")?
+        .call1(&context, &cfg.into())
+        .ok()?;
     info!(target: "wgpu_overlay::init", "context configured");
 
     // ── Shader modules ──────────────────────────────────────────────────────
-    let shared_code   = format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
+    let shared_code =
+        format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
     let render_shared = format!("{}{}\n", shared_code, PARTICLE_SHADING_WGSL);
 
-    let bg_shader       = create_shader(&device, "background", &format!("{}{}", render_shared, BACKGROUND_WGSL))?;
+    let bg_shader = create_shader(
+        &device,
+        "background",
+        &format!("{}{}", render_shared, BACKGROUND_WGSL),
+    )?;
     info!(target: "wgpu_overlay::init", "bg shader compiled");
-    let particle_shader = create_shader(&device, "particles",  &format!("{}{}", render_shared, PARTICLES_WGSL))?;
+    let particle_shader = create_shader(
+        &device,
+        "particles",
+        &format!("{}{}", render_shared, PARTICLES_WGSL),
+    )?;
     info!(target: "wgpu_overlay::init", "particle shader compiled");
-    let compute_shader  = create_shader(&device, "compute",    &format!("{}{}", shared_code,   COMPUTE_WGSL))?;
+    let compute_shader = create_shader(
+        &device,
+        "compute",
+        &format!("{}{}", shared_code, COMPUTE_WGSL),
+    )?;
     info!(target: "wgpu_overlay::init", "compute shader compiled");
 
     // ── Bind-group layouts ──────────────────────────────────────────────────
@@ -171,16 +214,29 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── Pipeline layouts ────────────────────────────────────────────────────
     let compute_layout = create_pipeline_layout(&device, &[&compute_bgl])?;
-    let render_layout  = create_pipeline_layout(&device, &[&render_bgl])?;
+    let render_layout = create_pipeline_layout(&device, &[&render_bgl])?;
 
     // ── Pipelines ───────────────────────────────────────────────────────────
-    let compute_pipeline  = create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
+    let compute_pipeline =
+        create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
     info!(target: "wgpu_overlay::init", "compute pipeline built");
-    let bg_pipeline       = create_render_pipeline(
-        &device, &render_layout, &bg_shader,       &bg_shader,       &format, /*additive=*/ false)?;
+    let bg_pipeline = create_render_pipeline(
+        &device,
+        &render_layout,
+        &bg_shader,
+        &bg_shader,
+        &format,
+        /*additive=*/ false,
+    )?;
     info!(target: "wgpu_overlay::init", "bg pipeline built");
     let particle_pipeline = create_render_pipeline(
-        &device, &render_layout, &particle_shader, &particle_shader, &format, /*additive=*/ true)?;
+        &device,
+        &render_layout,
+        &particle_shader,
+        &particle_shader,
+        &format,
+        /*additive=*/ true,
+    )?;
     info!(target: "wgpu_overlay::init", "particle pipeline built");
     info!(target: "wgpu_overlay::init", "init complete");
 
@@ -188,7 +244,9 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         device,
         queue,
         context,
-        format: format.as_string().unwrap_or_else(|| "bgra8unorm".to_string()),
+        format: format
+            .as_string()
+            .unwrap_or_else(|| "bgra8unorm".to_string()),
         pipelines: GpuPipelines {
             bg_pipeline,
             particle_pipeline,
@@ -196,7 +254,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
             compute_bgl,
             render_bgl,
         },
-        canvas_width:  init_w,
+        canvas_width: init_w,
         canvas_height: init_h,
     })
 }

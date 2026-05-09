@@ -44,27 +44,27 @@ pub(super) const USAGE_COPY_DST: u32 = 0x0008;
 /// `(selector, kind)` pairs scanned each frame.  Hue is `idx / len`.
 pub(super) const UI_SELECTORS: &[(&str, u32)] = &[
     // Structural regions → kind 0
-    (".header",              0),
-    (".sidebar",             0),
-    (".tab-bar",             0),
-    (".filter-panel",        0),
-    (".view-container",      0),
-    (".log-list",            0),
-    (".code-viewer",         0),
+    (".header", 0),
+    (".sidebar", 0),
+    (".tab-bar", 0),
+    (".filter-panel", 0),
+    (".view-container", 0),
+    (".log-list", 0),
+    (".code-viewer", 0),
     // Main content panel (shared viewer-api class — ticket-viewer, spec-viewer) → kind 0
-    (".content",             0),
+    (".content", 0),
     // Spec-viewer list items → kind 0
-    (".spec-card",           0),
+    (".spec-card", 0),
     // Per-severity log entries → kinds 1-4
     (".log-entry.level-error", 1),
-    (".log-entry.level-warn",  2),
-    (".log-entry.level-info",  3),
+    (".log-entry.level-warn", 2),
+    (".log-entry.level-info", 3),
     (".log-entry.level-debug", 4),
     (".log-entry.level-trace", 4),
     // Interactive states → kinds 5-7
     (".log-entry.span-highlighted", 5),
-    (".log-entry.selected",         6),
-    (".log-entry.panic-entry",      7),
+    (".log-entry.selected", 6),
+    (".log-entry.panic-entry", 7),
     // Spec-viewer selected item → kind 6
-    (".spec-card--selected",  6),
+    (".spec-card--selected", 6),
 ];

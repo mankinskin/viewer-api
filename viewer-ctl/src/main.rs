@@ -35,12 +35,19 @@ mod paths;
 mod process;
 mod shell;
 
-use std::{path::Path, process::ExitCode, time::Duration};
+use std::{
+    path::Path,
+    process::ExitCode,
+    time::Duration,
+};
 
 use clap::Parser;
 
 use crate::{
-    cli::{Cli, Cmd},
+    cli::{
+        Cli,
+        Cmd,
+    },
     config::Config,
 };
 
@@ -52,8 +59,10 @@ fn dispatch_command(
     match command {
         Cmd::List => commands::cmd_list(cfg),
         Cmd::Status { name } => commands::cmd_status(cfg, name.as_deref()),
-        Cmd::Build { name, kind } => commands::cmd_build(cfg, root, &name, kind),
-        Cmd::Install { name, kind } => commands::cmd_install(cfg, root, &name, kind),
+        Cmd::Build { name, kind } =>
+            commands::cmd_build(cfg, root, &name, kind),
+        Cmd::Install { name, kind } =>
+            commands::cmd_install(cfg, root, &name, kind),
         Cmd::Start {
             server,
             foreground,
@@ -91,7 +100,7 @@ fn main() -> ExitCode {
         Err(e) => {
             eprintln!("error: {e}");
             return ExitCode::FAILURE;
-        }
+        },
     };
 
     let result = dispatch_command(&cfg, &root, cli.command);
@@ -101,6 +110,6 @@ fn main() -> ExitCode {
         Err(e) => {
             eprintln!("error: {e}");
             ExitCode::FAILURE
-        }
+        },
     }
 }

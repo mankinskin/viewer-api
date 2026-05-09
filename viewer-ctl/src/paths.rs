@@ -1,8 +1,12 @@
 //! Filesystem helpers and repo-root resolution.
 
 use std::{
-    env, fs,
-    path::{Path, PathBuf},
+    env,
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 /// Render a path for human-readable output with forward slashes regardless
@@ -16,7 +20,11 @@ pub fn disp(p: &Path) -> String {
 ///
 /// `tag` is currently unused but kept in the signature so callers may attach
 /// per-step logging in the future.
-pub fn copy_dir_contents(src: &Path, dst: &Path, _tag: &str) -> Result<(), String> {
+pub fn copy_dir_contents(
+    src: &Path,
+    dst: &Path,
+    _tag: &str,
+) -> Result<(), String> {
     for entry in fs::read_dir(src).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let dest_path = dst.join(entry.file_name());

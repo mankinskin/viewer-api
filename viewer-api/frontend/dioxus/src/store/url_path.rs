@@ -17,12 +17,18 @@ use std::collections::HashSet;
 /// for every id the codec accepts.
 pub trait PathCodec {
     /// Encode a logical id into a URL path fragment.
-    fn encode(&self, id: &str) -> String;
+    fn encode(
+        &self,
+        id: &str,
+    ) -> String;
 
     /// Decode a URL path fragment back into a logical id.
     ///
     /// Returns `None` if the path is not a valid encoding for this codec.
-    fn decode(&self, path: &str) -> Option<String>;
+    fn decode(
+        &self,
+        path: &str,
+    ) -> Option<String>;
 }
 
 /// Default codec: replaces ':' with '/' on encode, '/' with ':' on decode.
@@ -33,11 +39,17 @@ pub trait PathCodec {
 pub struct ColonSegmented;
 
 impl PathCodec for ColonSegmented {
-    fn encode(&self, id: &str) -> String {
+    fn encode(
+        &self,
+        id: &str,
+    ) -> String {
         id.replace(':', "/")
     }
 
-    fn decode(&self, path: &str) -> Option<String> {
+    fn decode(
+        &self,
+        path: &str,
+    ) -> Option<String> {
         if path.is_empty() {
             return None;
         }
@@ -60,7 +72,10 @@ impl PathCodec for ColonSegmented {
 /// assert!(set.contains("spec:auth"));
 /// assert!(set.contains("spec:auth:login"));
 /// ```
-pub fn expand_path_to(set: &mut HashSet<String>, segments: &[&str]) {
+pub fn expand_path_to(
+    set: &mut HashSet<String>,
+    segments: &[&str],
+) {
     for i in 1..=segments.len() {
         set.insert(segments[..i].join(":"));
     }

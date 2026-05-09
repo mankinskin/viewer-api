@@ -14,19 +14,38 @@ use std::path::Path;
 
 use crate::{
     cli::KindArg,
-    config::{Component, Config},
+    config::{
+        Component,
+        Config,
+    },
     paths::disp,
-    process::{kill_process, pids_by_image_name, pids_on_port},
+    process::{
+        kill_process,
+        pids_by_image_name,
+        pids_on_port,
+    },
 };
 
 use self::{
-    extension::{build_extension, install_extension},
-    frontend::{build_frontend, install_frontend},
-    server::{build_server, install_server},
+    extension::{
+        build_extension,
+        install_extension,
+    },
+    frontend::{
+        build_frontend,
+        install_frontend,
+    },
+    server::{
+        build_server,
+        install_server,
+    },
 };
 
 pub use self::{
-    server::{cmd_start, cmd_stop},
+    server::{
+        cmd_start,
+        cmd_stop,
+    },
     task::cmd_task,
 };
 
@@ -70,11 +89,17 @@ pub fn cmd_list(cfg: &Config) -> Result<(), String> {
     Ok(())
 }
 
-pub fn cmd_status(cfg: &Config, name: Option<&str>) -> Result<(), String> {
+pub fn cmd_status(
+    cfg: &Config,
+    name: Option<&str>,
+) -> Result<(), String> {
     let servers: Vec<_> = match name {
         Some(n) => match cfg.server(n) {
             Some(s) => vec![s],
-            None => return Err(format!("no [[server]] named `{n}` in viewer-ctl.toml")),
+            None =>
+                return Err(format!(
+                    "no [[server]] named `{n}` in viewer-ctl.toml"
+                )),
         },
         None => cfg.servers.iter().collect(),
     };
@@ -83,7 +108,8 @@ pub fn cmd_status(cfg: &Config, name: Option<&str>) -> Result<(), String> {
         if pids.is_empty() {
             println!("  {:<16}  port={}  (down)", s.name, s.port);
         } else {
-            let pid_list: Vec<String> = pids.iter().map(|p| p.as_u32().to_string()).collect();
+            let pid_list: Vec<String> =
+                pids.iter().map(|p| p.as_u32().to_string()).collect();
             println!(
                 "  {:<16}  port={}  pids=[{}]",
                 s.name,
@@ -182,10 +208,14 @@ pub fn cmd_install(
 ///
 /// If the server exists but no frontend declares `serves = "<server>"`,
 /// the port is still freed and the command succeeds without building.
-pub fn cmd_prepare(cfg: &Config, root: &Path, server_name: &str) -> Result<(), String> {
-    let server = cfg
-        .server(server_name)
-        .ok_or_else(|| format!("no [[server]] named `{server_name}` in viewer-ctl.toml"))?;
+pub fn cmd_prepare(
+    cfg: &Config,
+    root: &Path,
+    server_name: &str,
+) -> Result<(), String> {
+    let server = cfg.server(server_name).ok_or_else(|| {
+        format!("no [[server]] named `{server_name}` in viewer-ctl.toml")
+    })?;
 
     // Free the port so the cargo debug build can replace the running binary
     // (Windows holds a file lock on the .exe of any running process).
@@ -229,12 +259,18 @@ pub fn cmd_prepare(cfg: &Config, root: &Path, server_name: &str) -> Result<(), S
 ///
 /// Errors if the server is unknown or has no linked frontend. Does not
 /// build or install.
-pub fn cmd_static_dir(cfg: &Config, server_name: &str) -> Result<(), String> {
-    let server = cfg
-        .server(server_name)
-        .ok_or_else(|| format!("no [[server]] named `{server_name}` in viewer-ctl.toml"))?;
+pub fn cmd_static_dir(
+    cfg: &Config,
+    server_name: &str,
+) -> Result<(), String> {
+    let server = cfg.server(server_name).ok_or_else(|| {
+        format!("no [[server]] named `{server_name}` in viewer-ctl.toml")
+    })?;
     let fe = cfg.frontend_for_server(&server.name).ok_or_else(|| {
-        format!("server `{}` has no linked frontend in viewer-ctl.toml", server.name)
+        format!(
+            "server `{}` has no linked frontend in viewer-ctl.toml",
+            server.name
+        )
     })?;
     let install = cfg.frontend_install_dir(&fe.name);
     println!("{}", disp(&install));

@@ -1,6 +1,10 @@
 use dioxus::prelude::*;
 
-use crate::components::{ResizeDirection, ResizeEdge, ResizeHandle};
+use crate::components::{
+    ResizeDirection,
+    ResizeEdge,
+    ResizeHandle,
+};
 
 #[derive(Clone, PartialEq, Default)]
 pub enum PanelPlacement {
@@ -32,8 +36,10 @@ impl PanelPlacement {
 
     fn resize_direction(&self) -> ResizeDirection {
         match self {
-            PanelPlacement::Left | PanelPlacement::Right => ResizeDirection::Horizontal,
-            PanelPlacement::Top | PanelPlacement::Bottom => ResizeDirection::Vertical,
+            PanelPlacement::Left | PanelPlacement::Right =>
+                ResizeDirection::Horizontal,
+            PanelPlacement::Top | PanelPlacement::Bottom =>
+                ResizeDirection::Vertical,
         }
     }
 
@@ -46,16 +52,11 @@ impl PanelPlacement {
 #[component]
 pub fn Panel(
     children: Element,
-    #[props(default)]
-    placement: PanelPlacement,
-    #[props(default = 300.0)]
-    initial_size: f64,
-    #[props(default = 80.0)]
-    min_size: f64,
-    #[props(default = true)]
-    resizable: bool,
-    #[props(default)]
-    class: String,
+    #[props(default)] placement: PanelPlacement,
+    #[props(default = 300.0)] initial_size: f64,
+    #[props(default = 80.0)] min_size: f64,
+    #[props(default = true)] resizable: bool,
+    #[props(default)] class: String,
 ) -> Element {
     let mut size = use_signal(|| initial_size);
     let resizing = use_signal(|| false);
@@ -109,11 +110,9 @@ pub fn Panel(
 /// Frosted-glass card panel — `backdrop-filter: blur` overlay.
 #[component]
 pub fn GlassPanel(
-    #[props(default)]
-    title: Option<String>,
+    #[props(default)] title: Option<String>,
     children: Element,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     let combined = if class.is_empty() {
         "glass-panel".to_string()

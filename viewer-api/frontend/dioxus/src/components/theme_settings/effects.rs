@@ -1,7 +1,12 @@
 use dioxus::prelude::*;
 
 use crate::effects::wgpu_overlay::{
-    hex_to_rgba, rgba_to_hex, EffectSettings, PaletteColor, PALETTE_LABELS, PALETTE_LEN,
+    hex_to_rgba,
+    rgba_to_hex,
+    EffectSettings,
+    PaletteColor,
+    PALETTE_LABELS,
+    PALETTE_LEN,
 };
 
 #[component]

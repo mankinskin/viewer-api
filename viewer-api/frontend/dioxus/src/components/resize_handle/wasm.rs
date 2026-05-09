@@ -1,7 +1,14 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+};
 
 use dioxus::prelude::*;
-use wasm_bindgen::{closure::Closure, JsCast, JsValue};
+use wasm_bindgen::{
+    closure::Closure,
+    JsCast,
+    JsValue,
+};
 
 pub(super) type DragState = Rc<RefCell<Option<(JsValue, JsValue)>>>;
 
@@ -9,7 +16,10 @@ pub(super) fn new_drag_state() -> DragState {
     Rc::new(RefCell::new(None))
 }
 
-pub(super) fn cleanup_drag_states(mouse_state: &DragState, touch_state: &DragState) {
+pub(super) fn cleanup_drag_states(
+    mouse_state: &DragState,
+    touch_state: &DragState,
+) {
     let document = current_document();
     cleanup_state(mouse_state, document.as_ref(), "mousemove", "mouseup");
     cleanup_state(touch_state, document.as_ref(), "touchmove", "touchend");
@@ -46,7 +56,13 @@ pub(super) fn start_mouse_drag(
         raf_pending,
     );
 
-    add_listener_pair(&document, "mousemove", &move_handle, "mouseup", &end_handle);
+    add_listener_pair(
+        &document,
+        "mousemove",
+        &move_handle,
+        "mouseup",
+        &end_handle,
+    );
     *mouse_state.borrow_mut() = Some((move_handle, end_handle));
 }
 
@@ -66,7 +82,9 @@ pub(super) fn start_touch_drag(
     let initial = evt
         .data()
         .try_as_web_event()
-        .and_then(|event: web_sys::TouchEvent| touch_position_from_event(&event, is_horizontal))
+        .and_then(|event: web_sys::TouchEvent| {
+            touch_position_from_event(&event, is_horizontal)
+        })
         .unwrap_or(0.0);
 
     let start_pos = Rc::new(RefCell::new(initial));
@@ -81,7 +99,13 @@ pub(super) fn start_touch_drag(
         raf_pending,
     );
 
-    add_listener_pair(&document, "touchmove", &move_handle, "touchend", &end_handle);
+    add_listener_pair(
+        &document,
+        "touchmove",
+        &move_handle,
+        "touchend",
+        &end_handle,
+    );
     *touch_state.borrow_mut() = Some((move_handle, end_handle));
 }
 
@@ -100,7 +124,13 @@ fn cleanup_state(
     };
 
     if let Some(document) = document {
-        remove_listener_pair(document, move_event, &move_handle, end_event, &end_handle);
+        remove_listener_pair(
+            document,
+            move_event,
+            &move_handle,
+            end_event,
+            &end_handle,
+        );
     }
 
     drop((move_handle, end_handle));
@@ -118,22 +148,33 @@ fn build_mouse_handlers(
     let start_pos_move = start_pos.clone();
     let raf_pending_move = raf_pending.clone();
 
-    let move_callback: Closure<dyn FnMut(web_sys::MouseEvent)> = Closure::new(move |event: web_sys::MouseEvent| {
-        queue_resize(
-            on_resize_move.clone(),
-            start_pos_move.clone(),
-            raf_pending_move.clone(),
-            axis_position(event.client_x() as f64, event.client_y() as f64, is_horizontal),
-        );
-    });
+    let move_callback: Closure<dyn FnMut(web_sys::MouseEvent)> =
+        Closure::new(move |event: web_sys::MouseEvent| {
+            queue_resize(
+                on_resize_move.clone(),
+                start_pos_move.clone(),
+                raf_pending_move.clone(),
+                axis_position(
+                    event.client_x() as f64,
+                    event.client_y() as f64,
+                    is_horizontal,
+                ),
+            );
+        });
     let move_handle = move_callback.into_js_value();
 
     let end_document = document.clone();
     let end_mouse_state = mouse_state.clone();
-    let end_callback: Closure<dyn FnMut(web_sys::MouseEvent)> = Closure::new(move |_| {
-        cleanup_state(&end_mouse_state, Some(&end_document), "mousemove", "mouseup");
-        clear_body_cursor(&end_document);
-    });
+    let end_callback: Closure<dyn FnMut(web_sys::MouseEvent)> =
+        Closure::new(move |_| {
+            cleanup_state(
+                &end_mouse_state,
+                Some(&end_document),
+                "mousemove",
+                "mouseup",
+            );
+            clear_body_cursor(&end_document);
+        });
     let end_handle = end_callback.into_js_value();
 
     (move_handle, end_handle)
@@ -151,25 +192,34 @@ fn build_touch_handlers(
     let start_pos_move = start_pos.clone();
     let raf_pending_move = raf_pending.clone();
 
-    let move_callback: Closure<dyn FnMut(web_sys::TouchEvent)> = Closure::new(move |event| {
-        let Some(position) = touch_position_from_event(&event, is_horizontal) else {
-            return;
-        };
+    let move_callback: Closure<dyn FnMut(web_sys::TouchEvent)> =
+        Closure::new(move |event| {
+            let Some(position) =
+                touch_position_from_event(&event, is_horizontal)
+            else {
+                return;
+            };
 
-        queue_resize(
-            on_resize_move.clone(),
-            start_pos_move.clone(),
-            raf_pending_move.clone(),
-            position,
-        );
-    });
+            queue_resize(
+                on_resize_move.clone(),
+                start_pos_move.clone(),
+                raf_pending_move.clone(),
+                position,
+            );
+        });
     let move_handle = move_callback.into_js_value();
 
     let end_document = document.clone();
     let end_touch_state = touch_state.clone();
-    let end_callback: Closure<dyn FnMut(web_sys::TouchEvent)> = Closure::new(move |_| {
-        cleanup_state(&end_touch_state, Some(&end_document), "touchmove", "touchend");
-    });
+    let end_callback: Closure<dyn FnMut(web_sys::TouchEvent)> =
+        Closure::new(move |_| {
+            cleanup_state(
+                &end_touch_state,
+                Some(&end_document),
+                "touchmove",
+                "touchend",
+            );
+        });
     let end_handle = end_callback.into_js_value();
 
     (move_handle, end_handle)
@@ -195,7 +245,9 @@ fn queue_resize(
             *pending_flag.borrow_mut() = false;
             on_resize.call(delta);
         });
-        let _ = window.request_animation_frame(frame_callback.unchecked_ref::<js_sys::Function>());
+        let _ = window.request_animation_frame(
+            frame_callback.unchecked_ref::<js_sys::Function>(),
+        );
     }
 }
 
@@ -233,8 +285,15 @@ fn remove_listener_pair(
     );
 }
 
-fn set_body_cursor(document: &web_sys::Document, is_horizontal: bool) {
-    let cursor = if is_horizontal { "col-resize" } else { "row-resize" };
+fn set_body_cursor(
+    document: &web_sys::Document,
+    is_horizontal: bool,
+) {
+    let cursor = if is_horizontal {
+        "col-resize"
+    } else {
+        "row-resize"
+    };
     if let Some(body) = document.body() {
         let _ = body.style().set_property("cursor", cursor);
     }
@@ -246,7 +305,10 @@ fn clear_body_cursor(document: &web_sys::Document) {
     }
 }
 
-fn touch_position_from_event(event: &web_sys::TouchEvent, is_horizontal: bool) -> Option<f64> {
+fn touch_position_from_event(
+    event: &web_sys::TouchEvent,
+    is_horizontal: bool,
+) -> Option<f64> {
     let touch = event.touches().get(0)?;
     Some(axis_position(
         touch.client_x() as f64,
@@ -255,6 +317,14 @@ fn touch_position_from_event(event: &web_sys::TouchEvent, is_horizontal: bool) -
     ))
 }
 
-fn axis_position(x: f64, y: f64, is_horizontal: bool) -> f64 {
-    if is_horizontal { x } else { y }
+fn axis_position(
+    x: f64,
+    y: f64,
+    is_horizontal: bool,
+) -> f64 {
+    if is_horizontal {
+        x
+    } else {
+        y
+    }
 }

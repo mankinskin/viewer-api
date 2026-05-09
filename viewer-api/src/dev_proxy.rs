@@ -50,8 +50,13 @@ use tracing::{
 mod process;
 mod websocket;
 
-use self::process::{ensure_npm_installed, spawn_vite_process};
-use self::websocket::proxy_websocket;
+use self::{
+    process::{
+        ensure_npm_installed,
+        spawn_vite_process,
+    },
+    websocket::proxy_websocket,
+};
 
 /// A running Vite dev server process.
 ///

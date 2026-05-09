@@ -2,12 +2,9 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn DocumentIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -29,12 +26,9 @@ pub fn DocumentIcon(
 
 #[component]
 pub fn FileIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -53,12 +47,9 @@ pub fn FileIcon(
 
 #[component]
 pub fn FolderIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -74,12 +65,9 @@ pub fn FolderIcon(
 
 #[component]
 pub fn FolderOpenIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {

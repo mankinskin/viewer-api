@@ -43,35 +43,66 @@ pub trait __ClassesConvert {
     fn into_opt_str(&self) -> Option<&str>;
 }
 impl __ClassesConvert for &str {
-    fn into_opt_str(&self) -> Option<&str> { Some(self) }
+    fn into_opt_str(&self) -> Option<&str> {
+        Some(self)
+    }
 }
 impl __ClassesConvert for str {
-    fn into_opt_str(&self) -> Option<&str> { Some(self) }
+    fn into_opt_str(&self) -> Option<&str> {
+        Some(self)
+    }
 }
 impl __ClassesConvert for String {
-    fn into_opt_str(&self) -> Option<&str> { Some(self.as_str()) }
+    fn into_opt_str(&self) -> Option<&str> {
+        Some(self.as_str())
+    }
 }
 impl __ClassesConvert for Option<&str> {
-    fn into_opt_str(&self) -> Option<&str> { *self }
+    fn into_opt_str(&self) -> Option<&str> {
+        *self
+    }
 }
 impl __ClassesConvert for Option<String> {
-    fn into_opt_str(&self) -> Option<&str> { self.as_deref() }
+    fn into_opt_str(&self) -> Option<&str> {
+        self.as_deref()
+    }
 }
 
-pub use graph3d::{
-    can_use_webgpu as can_use_webgpu_graph3d, Camera, CameraCommand, EdgeRef3D, Graph3D, Layout3D,
-    LayoutMode, Node3D, NodeCardProfile, Projection,
-    DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
-};
 pub use components::*;
-pub use effects::WgpuOverlay;
 #[allow(deprecated)]
 pub use effects::set_gpu_canvas_owner;
-pub use effects::set_gpu_overlay_enabled;
+pub use effects::{
+    set_gpu_overlay_enabled,
+    WgpuOverlay,
+};
+pub use graph3d::{
+    can_use_webgpu as can_use_webgpu_graph3d,
+    Camera,
+    CameraCommand,
+    EdgeRef3D,
+    Graph3D,
+    Layout3D,
+    LayoutMode,
+    Node3D,
+    NodeCardProfile,
+    Projection,
+    DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
+};
 pub use store::*;
 // Explicit re-exports so downstream crates can import without glob.
-pub use store::session::{clear_session, get_session_id, with_session};
-pub use store::url_state::{get_hash_param, remove_hash_param, set_hash_param, UrlStateManager};
+pub use store::{
+    session::{
+        clear_session,
+        get_session_id,
+        with_session,
+    },
+    url_state::{
+        get_hash_param,
+        remove_hash_param,
+        set_hash_param,
+        UrlStateManager,
+    },
+};
 
 use dioxus::prelude::*;
 

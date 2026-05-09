@@ -49,7 +49,8 @@ pub fn Overlay(
     // unmounts.  We keep at most one listener alive at a time.
     #[cfg(target_arch = "wasm32")]
     {
-        let mut listener_slot: Signal<Option<EventListener>> = use_signal(|| None);
+        let mut listener_slot: Signal<Option<EventListener>> =
+            use_signal(|| None);
         let on_close_for_effect = on_close;
         use_effect(move || {
             if !open {

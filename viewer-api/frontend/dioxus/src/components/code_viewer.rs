@@ -3,13 +3,20 @@ use dioxus::prelude::*;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
-    html::{styled_line_to_highlighted_html, IncludeBackground},
+    html::{
+        styled_line_to_highlighted_html,
+        IncludeBackground,
+    },
     parsing::SyntaxSet,
     util::LinesWithEndings,
 };
 
 /// Detect a syntect syntax name from a file extension or explicit language hint.
-fn detect_syntax<'a>(ps: &'a SyntaxSet, filename: &str, language: Option<&str>) -> &'a syntect::parsing::SyntaxReference {
+fn detect_syntax<'a>(
+    ps: &'a SyntaxSet,
+    filename: &str,
+    language: Option<&str>,
+) -> &'a syntect::parsing::SyntaxReference {
     // Try explicit language hint first.
     if let Some(lang) = language {
         if let Some(syntax) = ps.find_syntax_by_token(lang) {
@@ -36,7 +43,12 @@ fn detect_syntax<'a>(ps: &'a SyntaxSet, filename: &str, language: Option<&str>) 
 ///
 /// Each line is wrapped in a `<span class="code-line [highlight]">` with an
 /// optional `data-line` attribute so CSS line-number counters work.
-fn highlight_code(source: &str, filename: &str, language: Option<&str>, highlighted_line: Option<usize>) -> String {
+fn highlight_code(
+    source: &str,
+    filename: &str,
+    language: Option<&str>,
+    highlighted_line: Option<usize>,
+) -> String {
     let ps = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
 
@@ -53,8 +65,9 @@ fn highlight_code(source: &str, filename: &str, language: Option<&str>, highligh
         let line_no = idx + 1;
         let is_highlighted = highlighted_line.map_or(false, |hl| hl == line_no);
         let regions = h.highlight_line(line, &ps).unwrap_or_default();
-        let html = styled_line_to_highlighted_html(&regions, IncludeBackground::No)
-            .unwrap_or_else(|_| html_escape(line));
+        let html =
+            styled_line_to_highlighted_html(&regions, IncludeBackground::No)
+                .unwrap_or_else(|_| html_escape(line));
 
         let cls = if is_highlighted {
             "code-line highlight"
@@ -84,17 +97,13 @@ fn html_escape(s: &str) -> String {
 #[component]
 pub fn CodeViewer(
     content: String,
-    #[props(default)]
-    filename: String,
-    #[props(default)]
-    language: Option<String>,
+    #[props(default)] filename: String,
+    #[props(default)] language: Option<String>,
     /// 1-based line number to highlight (scrolled to on mount).
     #[props(default)]
     highlighted_line: Option<usize>,
-    #[props(default = true)]
-    show_line_numbers: bool,
-    #[props(default)]
-    class: String,
+    #[props(default = true)] show_line_numbers: bool,
+    #[props(default)] class: String,
 ) -> Element {
     // Compute lang_label from the originals before they are moved into use_memo.
     let lang_label = language.clone().unwrap_or_else(|| {
@@ -108,7 +117,14 @@ pub fn CodeViewer(
     let html = use_memo({
         let filename = filename.clone();
         let language = language.clone();
-        move || highlight_code(&content, &filename, language.as_deref(), highlighted_line)
+        move || {
+            highlight_code(
+                &content,
+                &filename,
+                language.as_deref(),
+                highlighted_line,
+            )
+        }
     });
 
     let outer_css = if class.is_empty() {

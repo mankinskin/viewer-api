@@ -28,8 +28,8 @@ const SESSION_HEADER: &str = "X-Session-Id";
 pub fn get_session_id() -> String {
     #[cfg(target_arch = "wasm32")]
     {
-        let storage = web_sys::window()
-            .and_then(|w| w.session_storage().ok().flatten());
+        let storage =
+            web_sys::window().and_then(|w| w.session_storage().ok().flatten());
 
         if let Some(storage) = storage {
             if let Ok(Some(id)) = storage.get_item(SESSION_KEY) {
@@ -55,8 +55,8 @@ pub fn get_session_id() -> String {
 pub fn clear_session() {
     #[cfg(target_arch = "wasm32")]
     {
-        if let Some(storage) = web_sys::window()
-            .and_then(|w| w.session_storage().ok().flatten())
+        if let Some(storage) =
+            web_sys::window().and_then(|w| w.session_storage().ok().flatten())
         {
             let _ = storage.remove_item(SESSION_KEY);
         }
@@ -74,7 +74,9 @@ pub fn clear_session() {
 ///     ("Content-Type".to_owned(), "application/json".to_owned()),
 /// ]);
 /// ```
-pub fn with_session(mut headers: Vec<(String, String)>) -> Vec<(String, String)> {
+pub fn with_session(
+    mut headers: Vec<(String, String)>
+) -> Vec<(String, String)> {
     headers.push((SESSION_HEADER.to_owned(), get_session_id()));
     headers
 }

@@ -1,22 +1,46 @@
 //! Server lifecycle: build, install, start, stop.
 
 use std::{
-    env, fs,
+    env,
+    fs,
     io::Write,
     net::TcpStream,
     path::Path,
-    process::{Command, Stdio},
-    time::{Duration, Instant},
+    process::{
+        Command,
+        Stdio,
+    },
+    time::{
+        Duration,
+        Instant,
+    },
 };
 
 use crate::{
-    config::{Config, Server},
-    paths::{crate_manifest_path_str, disp},
-    process::{kill_process, pids_by_image_name, pids_on_port, print_process_info},
-    shell::{run_cmd_args, which},
+    config::{
+        Config,
+        Server,
+    },
+    paths::{
+        crate_manifest_path_str,
+        disp,
+    },
+    process::{
+        kill_process,
+        pids_by_image_name,
+        pids_on_port,
+        print_process_info,
+    },
+    shell::{
+        run_cmd_args,
+        which,
+    },
 };
 
-pub fn build_server(root: &Path, s: &Server) -> Result<(), String> {
+pub fn build_server(
+    root: &Path,
+    s: &Server,
+) -> Result<(), String> {
     let tag = s.name.as_str();
     let crate_path = root.join(&s.source_dir);
     let manifest = crate_manifest_path_str(&crate_path)?;
@@ -29,7 +53,10 @@ pub fn build_server(root: &Path, s: &Server) -> Result<(), String> {
     )
 }
 
-pub fn install_server(root: &Path, s: &Server) -> Result<(), String> {
+pub fn install_server(
+    root: &Path,
+    s: &Server,
+) -> Result<(), String> {
     let tag = s.name.as_str();
 
     // Determine the binary name: on Windows the release binary has an .exe suffix.
@@ -50,7 +77,10 @@ pub fn install_server(root: &Path, s: &Server) -> Result<(), String> {
         let cargo_home = std::env::var_os("CARGO_HOME")
             .map(std::path::PathBuf::from)
             .or_else(|| dirs::home_dir().map(|h| h.join(".cargo")))
-            .ok_or_else(|| "cannot locate cargo home (CARGO_HOME not set and HOME unknown)".to_string())?;
+            .ok_or_else(|| {
+                "cannot locate cargo home (CARGO_HOME not set and HOME unknown)"
+                    .to_string()
+            })?;
         let dest = cargo_home.join("bin").join(&bin_name);
         info!(
             tag,
@@ -74,12 +104,7 @@ pub fn install_server(root: &Path, s: &Server) -> Result<(), String> {
         );
         run_cmd_args(
             "cargo",
-            &[
-                "install",
-                "--manifest-path",
-                manifest.as_str(),
-                "--force",
-            ],
+            &["install", "--manifest-path", manifest.as_str(), "--force"],
             root,
             tag,
         )
@@ -93,9 +118,9 @@ pub fn cmd_start(
     foreground: bool,
     extra: Vec<String>,
 ) -> Result<(), String> {
-    let s = cfg
-        .server(server)
-        .ok_or_else(|| format!("no [[server]] named `{server}` in viewer-ctl.toml"))?;
+    let s = cfg.server(server).ok_or_else(|| {
+        format!("no [[server]] named `{server}` in viewer-ctl.toml")
+    })?;
     let tag = s.name.as_str();
     let port = port_for(s);
 
@@ -126,7 +151,10 @@ pub fn cmd_start(
     let bin_path = match which(&s.package) {
         Ok(p) => p,
         Err(_) => {
-            info!(tag, "{} not found on PATH — installing from source...", s.package);
+            info!(
+                tag,
+                "{} not found on PATH — installing from source...", s.package
+            );
             install_server(root, s)?;
             which(&s.package).map_err(|_| {
                 format!(
@@ -134,7 +162,7 @@ pub fn cmd_start(
                     s.package
                 )
             })?
-        }
+        },
     };
 
     // Step 3: derive STATIC_DIR from linked frontend if installed.
@@ -166,7 +194,10 @@ pub fn cmd_start(
     info!(tag, "starting {} on port {port}", disp(&bin_path));
 
     if foreground {
-        info!(tag, "foreground mode: stdout/stderr inherited; blocking until exit.");
+        info!(
+            tag,
+            "foreground mode: stdout/stderr inherited; blocking until exit."
+        );
         run_server_foreground(&bin_path, &server_args, &env_vars, root, tag)
     } else {
         spawn_server(&bin_path, &server_args, &env_vars, root, tag)?;
@@ -190,7 +221,11 @@ pub fn cmd_start(
 /// Logs a warning on timeout but does not fail — the server may still come
 /// up later, and the caller can decide what to do. We only block start()
 /// long enough to make `serverReadyAction` reliable.
-fn wait_for_port_ready(port: u16, timeout: Duration, tag: &str) {
+fn wait_for_port_ready(
+    port: u16,
+    timeout: Duration,
+    tag: &str,
+) {
     let deadline = Instant::now() + timeout;
     let addr = format!("127.0.0.1:{port}");
     while Instant::now() < deadline {
@@ -211,10 +246,13 @@ fn wait_for_port_ready(port: u16, timeout: Duration, tag: &str) {
     );
 }
 
-pub fn cmd_stop(cfg: &Config, server: &str) -> Result<(), String> {
-    let s = cfg
-        .server(server)
-        .ok_or_else(|| format!("no [[server]] named `{server}` in viewer-ctl.toml"))?;
+pub fn cmd_stop(
+    cfg: &Config,
+    server: &str,
+) -> Result<(), String> {
+    let s = cfg.server(server).ok_or_else(|| {
+        format!("no [[server]] named `{server}` in viewer-ctl.toml")
+    })?;
     let tag = s.name.as_str();
     let port = port_for(s);
 
@@ -299,7 +337,11 @@ fn run_server_foreground(
         .spawn()
         .map_err(|e| format!("failed to launch {}: {e}", disp(bin_path)))?;
 
-    info!(tag, "running in foreground (PID {}). Press Ctrl-C to stop.", child.id());
+    info!(
+        tag,
+        "running in foreground (PID {}). Press Ctrl-C to stop.",
+        child.id()
+    );
 
     let status = child
         .wait()
@@ -309,11 +351,7 @@ fn run_server_foreground(
         info!(tag, "process exited successfully.");
         Ok(())
     } else {
-        Err(format!(
-            "{} exited with status: {}",
-            disp(bin_path),
-            status
-        ))
+        Err(format!("{} exited with status: {}", disp(bin_path), status))
     }
 }
 
@@ -357,14 +395,20 @@ fn spawn_server(
     // right before we spawn, so the child receives no reference to the pipe.
     #[cfg(windows)]
     {
-        use windows_sys::Win32::Foundation::HANDLE_FLAG_INHERIT;
-        use windows_sys::Win32::System::Console::{
-            GetStdHandle, STD_ERROR_HANDLE, STD_OUTPUT_HANDLE,
+        use windows_sys::Win32::{
+            Foundation::HANDLE_FLAG_INHERIT,
+            System::Console::{
+                GetStdHandle,
+                STD_ERROR_HANDLE,
+                STD_OUTPUT_HANDLE,
+            },
         };
         unsafe {
             for handle_id in [STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
                 let h = GetStdHandle(handle_id);
-                if !h.is_null() && h != windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE {
+                if !h.is_null()
+                    && h != windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE
+                {
                     windows_sys::Win32::Foundation::SetHandleInformation(
                         h,
                         HANDLE_FLAG_INHERIT,

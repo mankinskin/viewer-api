@@ -52,22 +52,21 @@ impl Default for ResizeEdge {
 /// A drag-handle that invokes `on_resize` with the delta in pixels.
 #[component]
 pub fn ResizeHandle(
-    #[props(default)]
-    edge: ResizeEdge,
-    #[props(default)]
-    direction: ResizeDirection,
-    #[props(default = 100.0)]
-    min_size: f64,
-    #[props(default = 0.0)]
-    max_size: f64,
+    #[props(default)] edge: ResizeEdge,
+    #[props(default)] direction: ResizeDirection,
+    #[props(default = 100.0)] min_size: f64,
+    #[props(default = 0.0)] max_size: f64,
     on_resize: EventHandler<f64>,
-    #[props(default)]
-    class: String,
+    #[props(default)] class: String,
 ) -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         use self::wasm::{
-            cleanup_drag_states, new_drag_state, start_mouse_drag, start_touch_drag, DragState,
+            cleanup_drag_states,
+            new_drag_state,
+            start_mouse_drag,
+            start_touch_drag,
+            DragState,
         };
 
         let mouse_state: DragState = use_hook(new_drag_state);
@@ -85,7 +84,12 @@ pub fn ResizeHandle(
             let mouse_state = mouse_state.clone();
             let on_resize = on_resize.clone();
             move |evt: Event<MouseData>| {
-                start_mouse_drag(mouse_state.clone(), on_resize.clone(), is_horizontal, evt);
+                start_mouse_drag(
+                    mouse_state.clone(),
+                    on_resize.clone(),
+                    is_horizontal,
+                    evt,
+                );
             }
         };
 
@@ -93,7 +97,12 @@ pub fn ResizeHandle(
             let touch_state = touch_state.clone();
             let on_resize = on_resize.clone();
             move |evt: Event<TouchData>| {
-                start_touch_drag(touch_state.clone(), on_resize.clone(), is_horizontal, evt);
+                start_touch_drag(
+                    touch_state.clone(),
+                    on_resize.clone(),
+                    is_horizontal,
+                    evt,
+                );
             }
         };
 
@@ -102,7 +111,11 @@ pub fn ResizeHandle(
         } else {
             format!("{} {class}", edge.css_class())
         };
-        let cursor_style = if is_horizontal { "col-resize" } else { "row-resize" };
+        let cursor_style = if is_horizontal {
+            "col-resize"
+        } else {
+            "row-resize"
+        };
 
         rsx! {
             div {
@@ -162,7 +175,7 @@ pub fn PanelResizer(
 ) -> Element {
     let edge = match direction {
         ResizeDirection::Horizontal => ResizeEdge::Right,
-        ResizeDirection::Vertical  => ResizeEdge::Bottom,
+        ResizeDirection::Vertical => ResizeEdge::Bottom,
     };
     let extra_class = if class.is_empty() {
         "panel-resizer".to_string()

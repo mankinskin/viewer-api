@@ -4,7 +4,10 @@
 //! `cmd /C` because [`std::process::Command`] cannot launch them directly.
 
 use std::{
-    path::{Path, PathBuf},
+    path::{
+        Path,
+        PathBuf,
+    },
     process::Command,
 };
 
@@ -23,7 +26,11 @@ pub fn run_cmd_args(
 
 /// Run a command described as `[program, arg1, arg2, …]`. On Windows, routes
 /// `.cmd`/`.bat` wrappers (npm, vsce, trunk, …) through `cmd /C`.
-pub fn run_cmd_owned(parts: &[String], cwd: &Path, tag: &str) -> Result<(), String> {
+pub fn run_cmd_owned(
+    parts: &[String],
+    cwd: &Path,
+    tag: &str,
+) -> Result<(), String> {
     if parts.is_empty() {
         return Err(format!("[{tag}] empty command"));
     }

@@ -22,7 +22,11 @@ pub const PALETTE_LEN: usize = 24;
 /// RGBA colour stored as floats in 0..1.  Mirrors WGSL `vec4f`.
 pub type PaletteColor = [f32; 4];
 
-pub use self::palette::{hex_to_rgba, rgba_to_hex, PALETTE_LABELS};
+pub use self::palette::{
+    hex_to_rgba,
+    rgba_to_hex,
+    PALETTE_LABELS,
+};
 
 use self::palette::default_palette;
 
@@ -39,15 +43,15 @@ use self::palette::default_palette;
 #[derive(Clone, PartialEq, Debug)]
 pub struct EffectSettings {
     // ── Master flags ────────────────────────────────────────────────────────
-    pub smoke_enabled:    bool,
+    pub smoke_enabled: bool,
     pub particles_enabled: bool,
-    pub crt_enabled:      bool,
-    pub grain_enabled:    bool,
+    pub crt_enabled: bool,
+    pub grain_enabled: bool,
     pub vignette_enabled: bool,
 
     // ── Smoke ────────────────────────────────────────────────────────────────
-    pub smoke_intensity:  f32,
-    pub smoke_speed:      f32,
+    pub smoke_intensity: f32,
+    pub smoke_speed: f32,
     pub smoke_warm_scale: f32,
     pub smoke_cool_scale: f32,
     pub smoke_moss_scale: f32,
@@ -56,33 +60,33 @@ pub struct EffectSettings {
     pub crt_scanlines_h: f32,
     pub crt_scanlines_v: f32,
     pub crt_edge_shadow: f32,
-    pub crt_flicker:     f32,
-    pub crt_line_width:  f32,
-    pub crt_color:       PaletteColor,
+    pub crt_flicker: f32,
+    pub crt_line_width: f32,
+    pub crt_color: PaletteColor,
 
     // ── Grain / vignette / underglow ─────────────────────────────────────────
-    pub grain_intensity:   f32,
-    pub grain_coarseness:  f32,
-    pub grain_size:        f32,
+    pub grain_intensity: f32,
+    pub grain_coarseness: f32,
+    pub grain_size: f32,
     pub vignette_strength: f32,
     pub underglow_strength: f32,
 
     // ── Particles (per-type tuning) ──────────────────────────────────────────
     pub spark_speed: f32,
-    pub spark_size:  f32,
+    pub spark_size: f32,
     pub spark_count: f32, // 0..1 multiplier on global spark count
     pub ember_speed: f32,
-    pub ember_size:  f32,
+    pub ember_size: f32,
     pub ember_count: f32,
-    pub beam_speed:  f32,
-    pub beam_size:   f32, // size proxy via cinder_size for cinder/beam
-    pub beam_count:  f32,
+    pub beam_speed: f32,
+    pub beam_size: f32, // size proxy via cinder_size for cinder/beam
+    pub beam_count: f32,
     pub beam_height: f32,
-    pub beam_drift:  f32,
+    pub beam_drift: f32,
     pub glitter_speed: f32,
-    pub glitter_size:  f32,
+    pub glitter_size: f32,
     pub glitter_count: f32,
-    pub cinder_size:   f32,
+    pub cinder_size: f32,
 
     // ── Palette (24 RGBA colours) ────────────────────────────────────────────
     pub palette: [PaletteColor; PALETTE_LEN],
@@ -91,14 +95,14 @@ pub struct EffectSettings {
 impl Default for EffectSettings {
     fn default() -> Self {
         Self {
-            smoke_enabled:     true,
+            smoke_enabled: true,
             particles_enabled: true,
-            crt_enabled:       true,
-            grain_enabled:     true,
-            vignette_enabled:  true,
+            crt_enabled: true,
+            grain_enabled: true,
+            vignette_enabled: true,
 
-            smoke_intensity:  0.6,
-            smoke_speed:      1.0,
+            smoke_intensity: 0.6,
+            smoke_speed: 1.0,
             smoke_warm_scale: 1.0,
             smoke_cool_scale: 1.0,
             smoke_moss_scale: 1.0,
@@ -106,21 +110,30 @@ impl Default for EffectSettings {
             crt_scanlines_h: 0.15,
             crt_scanlines_v: 0.0,
             crt_edge_shadow: 0.4,
-            crt_flicker:     0.08,
-            crt_line_width:  0.3,
-            crt_color:       [0.9, 0.7, 0.4, 1.0],
+            crt_flicker: 0.08,
+            crt_line_width: 0.3,
+            crt_color: [0.9, 0.7, 0.4, 1.0],
 
-            grain_intensity:    0.15,
-            grain_coarseness:   0.5,
-            grain_size:         0.3,
-            vignette_strength:  0.5,
+            grain_intensity: 0.15,
+            grain_coarseness: 0.5,
+            grain_size: 0.3,
+            vignette_strength: 0.5,
             underglow_strength: 0.2,
 
-            spark_speed: 1.0, spark_size: 1.0, spark_count: 1.0,
-            ember_speed: 1.0, ember_size: 1.0, ember_count: 1.0,
-            beam_speed:  1.0, beam_size:  1.0, beam_count:  0.0,
-            beam_height: 35.0, beam_drift: 1.0,
-            glitter_speed: 1.0, glitter_size: 1.0, glitter_count: 1.0,
+            spark_speed: 1.0,
+            spark_size: 1.0,
+            spark_count: 1.0,
+            ember_speed: 1.0,
+            ember_size: 1.0,
+            ember_count: 1.0,
+            beam_speed: 1.0,
+            beam_size: 1.0,
+            beam_count: 0.0,
+            beam_height: 35.0,
+            beam_drift: 1.0,
+            glitter_speed: 1.0,
+            glitter_size: 1.0,
+            glitter_count: 1.0,
             cinder_size: 1.0,
 
             palette: default_palette(),
@@ -149,10 +162,11 @@ impl EffectSettings {
     pub fn save(&self) {
         #[cfg(target_arch = "wasm32")]
         {
-            if let Some(storage) = web_sys::window()
-                .and_then(|w| w.local_storage().ok().flatten())
+            if let Some(storage) =
+                web_sys::window().and_then(|w| w.local_storage().ok().flatten())
             {
-                let _ = storage.set_item(STORAGE_KEY, &self.to_storage_string());
+                let _ =
+                    storage.set_item(STORAGE_KEY, &self.to_storage_string());
             }
         }
     }
@@ -162,16 +176,21 @@ impl EffectSettings {
     pub fn to_storage_string(&self) -> String {
         let mut out = String::with_capacity(2048);
         macro_rules! kv {
-            ($k:literal, $v:expr) => {{ out.push_str($k); out.push('='); out.push_str(&$v.to_string()); out.push('\n'); }};
+            ($k:literal, $v:expr) => {{
+                out.push_str($k);
+                out.push('=');
+                out.push_str(&$v.to_string());
+                out.push('\n');
+            }};
         }
-        kv!("smoke_enabled",     self.smoke_enabled);
+        kv!("smoke_enabled", self.smoke_enabled);
         kv!("particles_enabled", self.particles_enabled);
-        kv!("crt_enabled",       self.crt_enabled);
-        kv!("grain_enabled",     self.grain_enabled);
-        kv!("vignette_enabled",  self.vignette_enabled);
+        kv!("crt_enabled", self.crt_enabled);
+        kv!("grain_enabled", self.grain_enabled);
+        kv!("vignette_enabled", self.vignette_enabled);
 
-        kv!("smoke_intensity",  self.smoke_intensity);
-        kv!("smoke_speed",      self.smoke_speed);
+        kv!("smoke_intensity", self.smoke_intensity);
+        kv!("smoke_speed", self.smoke_speed);
         kv!("smoke_warm_scale", self.smoke_warm_scale);
         kv!("smoke_cool_scale", self.smoke_cool_scale);
         kv!("smoke_moss_scale", self.smoke_moss_scale);
@@ -179,37 +198,43 @@ impl EffectSettings {
         kv!("crt_scanlines_h", self.crt_scanlines_h);
         kv!("crt_scanlines_v", self.crt_scanlines_v);
         kv!("crt_edge_shadow", self.crt_edge_shadow);
-        kv!("crt_flicker",     self.crt_flicker);
-        kv!("crt_line_width",  self.crt_line_width);
+        kv!("crt_flicker", self.crt_flicker);
+        kv!("crt_line_width", self.crt_line_width);
         out.push_str(&format!(
             "crt_color={},{},{},{}\n",
-            self.crt_color[0], self.crt_color[1], self.crt_color[2], self.crt_color[3]
+            self.crt_color[0],
+            self.crt_color[1],
+            self.crt_color[2],
+            self.crt_color[3]
         ));
 
-        kv!("grain_intensity",    self.grain_intensity);
-        kv!("grain_coarseness",   self.grain_coarseness);
-        kv!("grain_size",         self.grain_size);
-        kv!("vignette_strength",  self.vignette_strength);
+        kv!("grain_intensity", self.grain_intensity);
+        kv!("grain_coarseness", self.grain_coarseness);
+        kv!("grain_size", self.grain_size);
+        kv!("vignette_strength", self.vignette_strength);
         kv!("underglow_strength", self.underglow_strength);
 
         kv!("spark_speed", self.spark_speed);
-        kv!("spark_size",  self.spark_size);
+        kv!("spark_size", self.spark_size);
         kv!("spark_count", self.spark_count);
         kv!("ember_speed", self.ember_speed);
-        kv!("ember_size",  self.ember_size);
+        kv!("ember_size", self.ember_size);
         kv!("ember_count", self.ember_count);
-        kv!("beam_speed",  self.beam_speed);
-        kv!("beam_size",   self.beam_size);
-        kv!("beam_count",  self.beam_count);
+        kv!("beam_speed", self.beam_speed);
+        kv!("beam_size", self.beam_size);
+        kv!("beam_count", self.beam_count);
         kv!("beam_height", self.beam_height);
-        kv!("beam_drift",  self.beam_drift);
+        kv!("beam_drift", self.beam_drift);
         kv!("glitter_speed", self.glitter_speed);
-        kv!("glitter_size",  self.glitter_size);
+        kv!("glitter_size", self.glitter_size);
         kv!("glitter_count", self.glitter_count);
-        kv!("cinder_size",   self.cinder_size);
+        kv!("cinder_size", self.cinder_size);
 
         for (i, c) in self.palette.iter().enumerate() {
-            out.push_str(&format!("palette_{}={},{},{},{}\n", i, c[0], c[1], c[2], c[3]));
+            out.push_str(&format!(
+                "palette_{}={},{},{},{}\n",
+                i, c[0], c[1], c[2], c[3]
+            ));
         }
         out
     }
@@ -232,11 +257,19 @@ impl EffectSettings {
     }
 }
 
-fn parse_into(v: &str, dst: &mut f32) {
-    if let Ok(f) = v.parse() { *dst = f; }
+fn parse_into(
+    v: &str,
+    dst: &mut f32,
+) {
+    if let Ok(f) = v.parse() {
+        *dst = f;
+    }
 }
 
-fn apply_storage_line(settings: &mut EffectSettings, line: &str) {
+fn apply_storage_line(
+    settings: &mut EffectSettings,
+    line: &str,
+) {
     let Some((key, value)) = line.split_once('=') else {
         return;
     };
@@ -256,7 +289,11 @@ fn apply_storage_line(settings: &mut EffectSettings, line: &str) {
     let _ = apply_palette_setting(settings, key, value);
 }
 
-fn apply_flag_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_flag_setting(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "smoke_enabled" => settings.smoke_enabled = value == "true",
         "particles_enabled" => settings.particles_enabled = value == "true",
@@ -268,7 +305,11 @@ fn apply_flag_setting(settings: &mut EffectSettings, key: &str, value: &str) -> 
     true
 }
 
-fn apply_smoke_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_smoke_setting(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "smoke_intensity" => parse_into(value, &mut settings.smoke_intensity),
         "smoke_speed" => parse_into(value, &mut settings.smoke_speed),
@@ -280,7 +321,11 @@ fn apply_smoke_setting(settings: &mut EffectSettings, key: &str, value: &str) ->
     true
 }
 
-fn apply_crt_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_crt_setting(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "crt_scanlines_h" => parse_into(value, &mut settings.crt_scanlines_h),
         "crt_scanlines_v" => parse_into(value, &mut settings.crt_scanlines_v),
@@ -293,19 +338,29 @@ fn apply_crt_setting(settings: &mut EffectSettings, key: &str, value: &str) -> b
     true
 }
 
-fn apply_post_processing_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_post_processing_setting(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "grain_intensity" => parse_into(value, &mut settings.grain_intensity),
         "grain_coarseness" => parse_into(value, &mut settings.grain_coarseness),
         "grain_size" => parse_into(value, &mut settings.grain_size),
-        "vignette_strength" => parse_into(value, &mut settings.vignette_strength),
-        "underglow_strength" => parse_into(value, &mut settings.underglow_strength),
+        "vignette_strength" =>
+            parse_into(value, &mut settings.vignette_strength),
+        "underglow_strength" =>
+            parse_into(value, &mut settings.underglow_strength),
         _ => return false,
     }
     true
 }
 
-fn apply_particle_setting_group_a(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_particle_setting_group_a(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "spark_speed" => parse_into(value, &mut settings.spark_speed),
         "spark_size" => parse_into(value, &mut settings.spark_size),
@@ -319,7 +374,11 @@ fn apply_particle_setting_group_a(settings: &mut EffectSettings, key: &str, valu
     true
 }
 
-fn apply_particle_setting_group_b(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_particle_setting_group_b(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     match key {
         "beam_size" => parse_into(value, &mut settings.beam_size),
         "beam_count" => parse_into(value, &mut settings.beam_count),
@@ -334,7 +393,11 @@ fn apply_particle_setting_group_b(settings: &mut EffectSettings, key: &str, valu
     true
 }
 
-fn apply_palette_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
+fn apply_palette_setting(
+    settings: &mut EffectSettings,
+    key: &str,
+    value: &str,
+) -> bool {
     let Some(index) = key
         .strip_prefix("palette_")
         .and_then(|suffix| suffix.parse::<usize>().ok())
@@ -349,7 +412,10 @@ fn apply_palette_setting(settings: &mut EffectSettings, key: &str, value: &str) 
     true
 }
 
-fn parse_color(v: &str, dst: &mut PaletteColor) {
+fn parse_color(
+    v: &str,
+    dst: &mut PaletteColor,
+) {
     let parts: Vec<&str> = v.split(',').collect();
     for (i, p) in parts.iter().take(4).enumerate() {
         if let Ok(f) = p.trim().parse::<f32>() {

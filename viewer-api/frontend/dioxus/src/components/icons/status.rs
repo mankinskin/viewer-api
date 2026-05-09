@@ -2,12 +2,9 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn CheckIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -27,12 +24,9 @@ pub fn CheckIcon(
 
 #[component]
 pub fn AlertIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
@@ -54,12 +48,9 @@ pub fn AlertIcon(
 
 #[component]
 pub fn InfoIcon(
-    #[props(default = 16)]
-    size: u32,
-    #[props(default)]
-    class: String,
-    #[props(default = "currentColor".to_string())]
-    color: String,
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
 ) -> Element {
     rsx! {
         svg {
