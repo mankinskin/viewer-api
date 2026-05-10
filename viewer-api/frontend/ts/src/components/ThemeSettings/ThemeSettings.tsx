@@ -33,9 +33,18 @@ import './theme-settings.css';
 
 function ThemeSettingsImpl() {
   const store = useThemeSettingsStore();
+  const stopPropagation = (event: Event) => event.stopPropagation();
 
   return (
-    <div class="theme-settings-layout">
+    <div
+      class="theme-settings-layout"
+      data-graph-passthrough="false"
+      onMouseDown={stopPropagation}
+      onClick={stopPropagation}
+      onWheel={stopPropagation}
+      onTouchStart={stopPropagation}
+      onTouchMove={stopPropagation}
+    >
       <div class="theme-settings">
         <div class="theme-settings-header">
           <h2 class="theme-settings-title">Color Theme Settings</h2>

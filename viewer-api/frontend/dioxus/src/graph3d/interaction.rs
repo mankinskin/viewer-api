@@ -90,11 +90,24 @@ fn target_is_passthrough_blocked(evt: &web_sys::Event) -> bool {
     let Some(target) = evt.target() else {
         return false;
     };
-    let Ok(el) = target.dyn_into::<web_sys::Element>() else {
+
+    // Pointer events can target non-Element nodes (for example text nodes).
+    // Walk to a containing Element so `closest(...)` works reliably.
+    let el = if let Ok(el) = target.clone().dyn_into::<web_sys::Element>() {
+        el
+    } else if let Ok(node) = target.dyn_into::<web_sys::Node>() {
+        let Some(parent) = node.parent_element() else {
+            return false;
+        };
+        parent
+    } else {
         return false;
     };
+
     matches!(
-        el.closest("[data-graph-passthrough=\"false\"]"),
+        el.closest(
+            ".graph-settings-overlay, [data-graph-passthrough=\"false\"]",
+        ),
         Ok(Some(_))
     )
 }

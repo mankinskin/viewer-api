@@ -12,6 +12,33 @@ import type { GraphLayout } from '../layout';
 import type { CameraController } from './useCamera';
 import type { InteractionState } from './useMouseInteraction';
 
+const TOUCH_BLOCK_SELECTOR = [
+    '[data-graph-passthrough="false"]',
+    '.graph-settings-overlay',
+    '.search-state-panel',
+    '.insert-state-panel',
+    '.path-chain-panel',
+    '.qp-panel',
+    '.node-info-panel',
+    '.decomposition-panel',
+    '.hypergraph-info-panel',
+    '.hypergraph-hud',
+    '.theme-settings',
+    '.theme-settings-layout',
+].join(', ');
+
+function touchTargetElement(target: EventTarget | null): HTMLElement | null {
+    if (!target) return null;
+    if (target instanceof HTMLElement) return target;
+    if (target instanceof Node) return target.parentElement;
+    return null;
+}
+
+function isTouchBlocked(target: EventTarget | null): boolean {
+    const el = touchTargetElement(target);
+    return !!el?.closest(TOUCH_BLOCK_SELECTOR);
+}
+
 // ── Constants ──
 
 /** Max movement (px) for a touch to count as a tap */
@@ -106,14 +133,9 @@ export function useTouchInteraction(
             (t1.clientY + t2.clientY) / 2,
         ];
 
-        // Selector for floating UI panels that handle their own interaction
-        const UI_PANEL_SELECTOR = '.search-state-panel, .insert-state-panel, .path-chain-panel, .qp-panel, .node-info-panel, .hypergraph-hud';
-
         // ── Touch Start ──
         const onTouchStart = (e: TouchEvent) => {
-            // Don't intercept touches on floating UI panels
-            const target = e.target as HTMLElement;
-            if (target.closest(UI_PANEL_SELECTOR)) return;
+            if (isTouchBlocked(e.target)) return;
 
             e.preventDefault();
             const touches = e.touches;
@@ -155,9 +177,7 @@ export function useTouchInteraction(
 
         // ── Touch Move ──
         const onTouchMove = (e: TouchEvent) => {
-            // Don't intercept touches on floating UI panels
-            const target = e.target as HTMLElement;
-            if (target.closest(UI_PANEL_SELECTOR)) return;
+            if (isTouchBlocked(e.target)) return;
 
             e.preventDefault();
             const touches = e.touches;

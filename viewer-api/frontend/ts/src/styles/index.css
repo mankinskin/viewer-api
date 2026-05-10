@@ -1,8 +1,0 @@
-/* Import all shared styles */
-@import './variables.css';
-@import './base.css';
-@import './layout.css';
-@import './tree.css';
-@import './file-tree.css';
-@import './tabs.css';
-@import './buttons.css';

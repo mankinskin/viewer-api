@@ -9,6 +9,33 @@ import { raySphere } from '../utils/math';
 import type { GraphLayout, LayoutNode } from '../layout';
 import type { CameraController } from './useCamera';
 
+const INTERACTION_BLOCK_SELECTOR = [
+    '[data-graph-passthrough="false"]',
+    '.graph-settings-overlay',
+    '.search-state-panel',
+    '.insert-state-panel',
+    '.path-chain-panel',
+    '.qp-panel',
+    '.node-info-panel',
+    '.decomposition-panel',
+    '.hypergraph-info-panel',
+    '.hypergraph-hud',
+    '.theme-settings',
+    '.theme-settings-layout',
+].join(', ');
+
+function eventTargetElement(target: EventTarget | null): HTMLElement | null {
+    if (!target) return null;
+    if (target instanceof HTMLElement) return target;
+    if (target instanceof Node) return target.parentElement;
+    return null;
+}
+
+function isInteractionBlocked(target: EventTarget | null): boolean {
+    const el = eventTargetElement(target);
+    return !!el?.closest(INTERACTION_BLOCK_SELECTOR);
+}
+
 export interface InteractionState {
     dragIdx: number;
     dragPlanePoint: Vec3;
@@ -92,6 +119,14 @@ export function useMouseInteraction(
         const DRAG_THRESHOLD = 5;
 
         const onMouseDown = (e: MouseEvent) => {
+            if (isInteractionBlocked(e.target)) {
+                inter.dragIdx = -1;
+                inter.orbiting = false;
+                inter.panning = false;
+                inter.clickedNode = -1;
+                return;
+            }
+
             const rect = container.getBoundingClientRect();
             inter.mouseX = e.clientX - rect.left;
             inter.mouseY = e.clientY - rect.top;
@@ -320,9 +355,7 @@ export function useMouseInteraction(
         };
 
         const onWheel = (e: WheelEvent) => {
-            // Don't intercept scroll for UI panels overlaying the canvas
-            const target = e.target as HTMLElement;
-            if (target.closest('.search-state-panel, .hypergraph-info-panel, .decomposition-panel')) return;
+            if (isInteractionBlocked(e.target)) return;
             const camState = camera.stateRef.current;
             camState.dist = Math.max(2, Math.min(80, camState.dist + e.deltaY * 0.02));
             e.preventDefault();
