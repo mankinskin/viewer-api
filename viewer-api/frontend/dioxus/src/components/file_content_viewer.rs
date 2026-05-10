@@ -4,9 +4,21 @@
 //! - All other files → `CodeViewer` with syntect syntax highlighting.
 //! - Optional `custom_renderer` callback: if provided and returns `Some(Element)`,
 //!   that element is used instead of the default rendering.
+use std::cell::RefCell;
+
 use dioxus::prelude::*;
 
-use crate::components::CodeViewer;
+use crate::{
+    components::CodeViewer,
+    store::Prefetcher,
+};
+
+const MARKDOWN_HTML_CACHE_CAPACITY: usize = 256;
+
+thread_local! {
+    static MARKDOWN_HTML_CACHE: RefCell<Prefetcher<String, String>> =
+        RefCell::new(Prefetcher::with_capacity(MARKDOWN_HTML_CACHE_CAPACITY));
+}
 
 fn markdown_class(class: &str) -> String {
     if class.is_empty() {
@@ -42,12 +54,26 @@ fn render_markdown(content: &str) -> String {
     html_buf
 }
 
+fn render_markdown_cached(content: &str) -> String {
+    let key = content.to_string();
+    MARKDOWN_HTML_CACHE.with(|cache| {
+        let cache = cache.borrow();
+        if let Some(html) = cache.get(&key) {
+            return html;
+        }
+
+        let html = render_markdown(content);
+        cache.insert(key, html.clone());
+        html
+    })
+}
+
 #[component]
 pub fn MarkdownContent(
     content: String,
     #[props(default)] class: String,
 ) -> Element {
-    let html = render_markdown(&content);
+    let html = render_markdown_cached(&content);
     let outer_css = markdown_class(&class);
 
     rsx! {
@@ -102,5 +128,43 @@ pub fn FileContentViewer(
             show_line_numbers,
             class,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn reset_markdown_cache() {
+        MARKDOWN_HTML_CACHE.with(|cache| {
+            *cache.borrow_mut() =
+                Prefetcher::with_capacity(MARKDOWN_HTML_CACHE_CAPACITY);
+        });
+    }
+
+    fn markdown_cache_len() -> usize {
+        MARKDOWN_HTML_CACHE.with(|cache| cache.borrow().len())
+    }
+
+    #[test]
+    fn cached_markdown_reuses_baked_html_for_same_content() {
+        reset_markdown_cache();
+
+        let first = render_markdown_cached("**hello**");
+        let second = render_markdown_cached("**hello**");
+
+        assert_eq!(first, "<p><strong>hello</strong></p>\n");
+        assert_eq!(second, first);
+        assert_eq!(markdown_cache_len(), 1);
+    }
+
+    #[test]
+    fn cached_markdown_tracks_distinct_content_entries() {
+        reset_markdown_cache();
+
+        let _ = render_markdown_cached("first");
+        let _ = render_markdown_cached("second");
+
+        assert_eq!(markdown_cache_len(), 2);
     }
 }
