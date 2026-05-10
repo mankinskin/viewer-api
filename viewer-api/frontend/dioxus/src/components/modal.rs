@@ -18,6 +18,8 @@
 //! CSS lives in `viewer-api/public/css/modal.css`.
 use dioxus::prelude::*;
 
+use super::ScreenSpacePanel;
+
 #[cfg(target_arch = "wasm32")]
 use {
     gloo_events::EventListener,
@@ -96,12 +98,8 @@ pub fn Overlay(
                 on_close.call(());
             },
 
-            div {
-                class: "{panel_combined}",
-                // Stop click propagation so clicks inside the panel
-                // don't bubble up and dismiss the overlay.
-                onclick: move |evt| evt.stop_propagation(),
-
+            ScreenSpacePanel {
+                class: panel_combined,
                 {children}
             }
         }

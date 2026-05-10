@@ -9,6 +9,7 @@ pub mod layout;
 pub mod meta_header;
 pub mod modal;
 pub mod resize_handle;
+pub mod screen_space_panel;
 pub mod spinner;
 pub mod tab_bar;
 pub mod theme_settings;
@@ -84,6 +85,7 @@ pub use resize_handle::{
     ResizeEdge,
     ResizeHandle,
 };
+pub use screen_space_panel::ScreenSpacePanel;
 pub use spinner::{
     Spinner,
     SpinnerSize,

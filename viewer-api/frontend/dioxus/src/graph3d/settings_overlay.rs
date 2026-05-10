@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::{
+    components::ScreenSpacePanel,
     effects::wgpu_overlay::{
         hex_to_rgba,
         rgba_to_hex,
@@ -135,8 +136,7 @@ pub(super) fn GraphSettingsOverlay(
             class: "graph-settings-overlay",
             style: "position: absolute; bottom: 12px; right: 12px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end;",
             if *open.read() {
-                div {
-                    "data-graph-passthrough": "false",
+                ScreenSpacePanel {
                     style: "
                         margin-bottom: 6px;
                         min-width: 280px;
@@ -154,9 +154,6 @@ pub(super) fn GraphSettingsOverlay(
                         backdrop-filter: blur(8px);
                         -webkit-backdrop-filter: blur(8px);
                     ",
-                    onclick: move |event: MouseEvent| event.stop_propagation(),
-                    onmousedown: move |event: MouseEvent| event.stop_propagation(),
-                    onwheel: move |event: WheelEvent| event.stop_propagation(),
                     if on_layout_mode_change.is_some() {
                         {
                             let on_hierarchical = on_layout_mode_change.clone();
