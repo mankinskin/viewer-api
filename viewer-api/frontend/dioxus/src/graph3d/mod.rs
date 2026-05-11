@@ -40,6 +40,7 @@ mod settings_overlay;
 
 pub use camera::{
     Camera,
+    CameraMode,
     CameraCommand,
     LayoutMode,
     Projection,
@@ -56,8 +57,6 @@ use self::{
     settings_overlay::GraphSettingsOverlay,
     theme::GraphThemeSettings,
 };
-#[cfg(target_arch = "wasm32")]
-use data::EdgeVisualState;
 use dioxus::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -136,6 +135,9 @@ pub struct Graph3DProps {
     /// Initial camera state restored on mount.
     #[props(default)]
     pub initial_camera: Option<Camera>,
+    /// Interactive camera behavior. Defaults to orbit controls.
+    #[props(default)]
+    pub camera_mode: CameraMode,
     /// Called when the interactive canvas mutates the camera state.
     #[props(default)]
     pub on_camera_change: Option<EventHandler<Camera>>,
@@ -202,13 +204,16 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let style =
         graph_container_style(&props.container_style, false, &graph_theme);
     let edge_count = props.layout.edges.len();
+    let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
     let edge_arrow_marker_id = format!("{}-edge-arrow", props.container_id);
     let edge_arrow_marker_url = format!("url(#{edge_arrow_marker_id})");
     rsx! {
         div { id: "{props.container_id}", style: "{style}",
             svg {
                 class: "graph-edge-overlay",
+                style: "{edge_overlay_style}",
                 "data-graph-edge-overlay": "true",
+                "preserveAspectRatio": "none",
                 defs {
                     marker {
                         id: "{edge_arrow_marker_id}",
@@ -221,6 +226,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                         orient: "auto",
                         path {
                             class: "graph-edge-overlay__arrow",
+                            "fill": "context-stroke",
                             d: "M 1 1 L 11 6 L 1 11 L 4.2 6 Z",
                         }
                     }
@@ -252,10 +258,12 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let edge_count = layout.edges.len();
     let container_id = props.container_id.clone();
     let initial_camera = props.initial_camera.clone();
+    let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
     let edge_arrow_marker_id = format!("{}-edge-arrow", props.container_id);
     let edge_arrow_marker_url = format!("url(#{edge_arrow_marker_id})");
     let on_layout_change = props.on_layout_change.clone();
     let on_camera_change = props.on_camera_change.clone();
+    let camera_mode = props.camera_mode;
     let selected_node_id = props.selected_node_id.clone();
     let hovered_node_id = props.hovered_node_id.clone();
     let selection_auto_layout = props.selection_auto_layout;
@@ -287,6 +295,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             layout,
             container_id,
             initial_camera,
+            camera_mode,
             selected_node_id,
             hovered_node_id,
             graph_theme,
@@ -308,6 +317,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     sync_render_state(
         &render_rc,
         &props.layout,
+        props.camera_mode,
         props.projection,
         &props.selected_node_id,
         &props.hovered_node_id,
@@ -332,7 +342,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             style: "{style}",
             svg {
                 class: "graph-edge-overlay",
+                style: "{edge_overlay_style}",
                 "data-graph-edge-overlay": "true",
+                "preserveAspectRatio": "none",
                 defs {
                     marker {
                         id: "{edge_arrow_marker_id}",
@@ -345,6 +357,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                         orient: "auto",
                         path {
                             class: "graph-edge-overlay__arrow",
+                            "fill": "context-stroke",
                             d: "M 1 1 L 11 6 L 1 11 L 4.2 6 Z",
                         }
                     }
@@ -428,6 +441,7 @@ fn start_graph_bootstrap(
     layout: Layout3D,
     container_id: String,
     initial_camera: Option<Camera>,
+    camera_mode: CameraMode,
     selected_node_id: Option<String>,
     hovered_node_id: Option<String>,
     graph_theme: GraphThemeSettings,
@@ -497,14 +511,7 @@ fn start_graph_bootstrap(
             selection_auto_layout,
         );
 
-        let (edge_data, edge_count) = target_layout
-            .build_edge_instances_with_visual_state(
-                EdgeVisualState {
-                    selected_node_id: selected_node_id.as_deref(),
-                    hovered_node_id: hovered_node_id.as_deref(),
-                },
-                &graph_theme,
-            );
+        let (edge_data, edge_count) = target_layout.build_gpu_edge_instances();
         let edge_buf = if edge_data.is_empty() {
             create_buf(&gpu.device, 48, USAGE_VERTEX | USAGE_COPY_DST)
         } else {
@@ -535,6 +542,7 @@ fn start_graph_bootstrap(
             target_layout,
             camera,
             camera_goal: None,
+            camera_mode,
             edge_buf,
             edge_count,
             node_quad_buf,
@@ -577,6 +585,7 @@ fn start_graph_bootstrap(
 fn sync_render_state(
     render_rc: &Signal<Option<Rc<RefCell<RenderState>>>>,
     layout: &Layout3D,
+    camera_mode: CameraMode,
     projection: Projection,
     selected_node_id: &Option<String>,
     hovered_node_id: &Option<String>,
@@ -629,6 +638,10 @@ fn sync_render_state(
         state.projection = projection;
     }
 
+    if state.camera_mode != camera_mode {
+        state.camera_mode = camera_mode;
+    }
+
     if state.graph_theme != *graph_theme {
         state.graph_theme = *graph_theme;
         state.dirty_edges = true;
@@ -678,7 +691,7 @@ fn apply_camera_command_update(
 
     let bounds = state.target_layout.bounds();
     let mut goal = state.camera.clone();
-    goal.apply_command(command, bounds);
+    goal.apply_command_for_mode(command, state.camera_mode, bounds);
     state.camera_goal = Some(goal.clone());
     if let Some(handler) = on_camera_change {
         handler.call(goal);

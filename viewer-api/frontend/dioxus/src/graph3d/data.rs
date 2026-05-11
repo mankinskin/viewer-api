@@ -224,6 +224,12 @@ impl Layout3D {
         )
     }
 
+    pub(crate) fn build_gpu_edge_instances(&self) -> (Vec<f32>, u32) {
+        let mut data = Vec::with_capacity(GRID_LINE_COUNT * EDGE_INST_FLOATS);
+        let count = append_grid_edge_instances(&mut data);
+        (data, count)
+    }
+
     pub(crate) fn build_edge_instances_with_visual_state(
         &self,
         visuals: EdgeVisualState<'_>,
@@ -232,38 +238,12 @@ impl Layout3D {
         let mut data = Vec::with_capacity(
             (self.edges.len() + GRID_LINE_COUNT) * EDGE_INST_FLOATS,
         );
-        let mut count = 0u32;
+        let mut count = append_grid_edge_instances(&mut data);
         let graph_edge_type = match self.node_card_profile {
             NodeCardProfile::Compact => 1.0,
             NodeCardProfile::TicketWide => 2.0,
         };
         let active_focus = visuals.active_focus(&self.nodes);
-
-        // ── Coordinate grid (y = 0 plane) ──
-        // Step 1 world-unit, extent ±GRID_HALF on each axis.
-        let half = GRID_HALF;
-        let step = 1.0_f32;
-        let mut z = -half;
-        while z <= half + 0.0001 {
-            // Highlight axis lines (z == 0) with a brighter alpha; major
-            // gridlines every 5 units get a mid alpha; minor lines stay dim.
-            let (r, g, b, a) = grid_line_color(z);
-            data.extend_from_slice(&[
-                -half, 0.0, z, half, 0.0, z, r, g, b, a, 0.0, // flags
-                0.0, // edgeType = 0 (simple thin AA line)
-            ]);
-            count += 1;
-            z += step;
-        }
-        let mut x = -half;
-        while x <= half + 0.0001 {
-            let (r, g, b, a) = grid_line_color(x);
-            data.extend_from_slice(&[
-                x, 0.0, -half, x, 0.0, half, r, g, b, a, 0.0, 0.0,
-            ]);
-            count += 1;
-            x += step;
-        }
 
         // ── Graph edges ──
         for edge in &self.edges {
@@ -317,6 +297,35 @@ pub(crate) fn layout_nodes_match(
         && current.nodes.iter().zip(target.nodes.iter()).all(
             |(current_node, target_node)| current_node.id == target_node.id,
         )
+}
+
+fn append_grid_edge_instances(data: &mut Vec<f32>) -> u32 {
+    let mut count = 0u32;
+
+    // Coordinate grid on the y=0 plane: the DOM/SVG overlay owns graph-edge
+    // styling, while the GPU pass keeps only the shared grid underneath it.
+    let half = GRID_HALF;
+    let step = 1.0_f32;
+    let mut z = -half;
+    while z <= half + 0.0001 {
+        let (r, g, b, a) = grid_line_color(z);
+        data.extend_from_slice(&[
+            -half, 0.0, z, half, 0.0, z, r, g, b, a, 0.0, 0.0,
+        ]);
+        count += 1;
+        z += step;
+    }
+    let mut x = -half;
+    while x <= half + 0.0001 {
+        let (r, g, b, a) = grid_line_color(x);
+        data.extend_from_slice(&[
+            x, 0.0, -half, x, 0.0, half, r, g, b, a, 0.0, 0.0,
+        ]);
+        count += 1;
+        x += step;
+    }
+
+    count
 }
 
 pub(crate) fn animate_layout_nodes(
@@ -1434,6 +1443,15 @@ mod tests {
         assert_eq!(edge_count as usize, GRID_LINE_COUNT + 2);
         assert_eq!(graph_edge_flag(&edge_data, 0), EDGE_FLAG_DEFAULT);
         assert_eq!(graph_edge_flag(&edge_data, 1), EDGE_FLAG_DEFAULT);
+    }
+
+    #[test]
+    fn gpu_edge_instances_keep_only_grid_lines() {
+        let layout = Layout3D::new(sample_nodes(), sample_edges());
+        let (edge_data, edge_count) = layout.build_gpu_edge_instances();
+
+        assert_eq!(edge_count as usize, GRID_LINE_COUNT);
+        assert_eq!(edge_data.len(), GRID_LINE_COUNT * EDGE_INST_FLOATS);
     }
 
     #[test]

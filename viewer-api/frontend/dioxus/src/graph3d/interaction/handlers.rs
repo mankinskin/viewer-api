@@ -18,6 +18,7 @@ use super::{
     super::{
         camera::{
             Camera,
+            CameraMode,
             MouseState,
             CAMERA_FOV,
         },
@@ -161,11 +162,24 @@ pub(super) fn wheel_listener(
             };
 
             let delta = event.delta_y() as f32;
-            let factor = if delta < 0.0 { 0.92 } else { 1.08 };
+            if delta.abs() < 0.001 {
+                return;
+            }
             if let Ok(mut state) = state_rc.try_borrow_mut() {
                 state.camera_goal = None;
-                state.camera.distance =
-                    (state.camera.distance * factor).clamp(3.0, 100.0);
+                match state.camera_mode {
+                    CameraMode::Orbit => {
+                        let factor = if delta < 0.0 { 0.92 } else { 1.08 };
+                        state.camera.zoom_by_factor(factor);
+                    },
+                    CameraMode::Free => {
+                        let magnitude = (delta.abs() / 120.0).clamp(0.5, 4.0);
+                        let step =
+                            (state.camera.distance * 0.16 * magnitude).clamp(0.75, 24.0);
+                        let amount = if delta < 0.0 { step } else { -step };
+                        state.camera.move_forward(amount);
+                    },
+                }
                 if let Some(handler) = on_camera_change.as_ref() {
                     handler.call(state.camera.clone());
                 }
@@ -374,9 +388,10 @@ fn update_camera_motion(
     };
     render_state.camera_goal = None;
     if state.orbiting {
-        render_state.camera.yaw -= dx * 0.005;
-        render_state.camera.pitch =
-            (render_state.camera.pitch + dy * 0.005).clamp(-1.4, 1.4);
+        match render_state.camera_mode {
+            CameraMode::Orbit => render_state.camera.orbit_by(dx, dy),
+            CameraMode::Free => render_state.camera.rotate_in_place(dx, dy),
+        }
     } else if state.panning {
         apply_screen_plane_pan(&mut render_state.camera, dx, dy);
     }
@@ -393,27 +408,7 @@ fn apply_screen_plane_pan(
     dx: f32,
     dy: f32,
 ) {
-    let speed = camera.distance * 0.002;
-    let eye = camera.eye();
-    let forward = normalise([
-        camera.target[0] - eye[0],
-        camera.target[1] - eye[1],
-        camera.target[2] - eye[2],
-    ]);
-    let raw_right = cross(forward, [0.0, 1.0, 0.0]);
-    let right = if raw_right[0].abs() + raw_right[1].abs() + raw_right[2].abs()
-        < 1e-6
-    {
-        [1.0, 0.0, 0.0]
-    } else {
-        normalise(raw_right)
-    };
-    let up = normalise(cross(right, forward));
-
-    for axis in 0..3 {
-        camera.target[axis] -= right[axis] * dx * speed;
-        camera.target[axis] += up[axis] * dy * speed;
-    }
+    camera.pan_screen_plane(dx, dy);
 }
 
 fn clear_interaction_state(

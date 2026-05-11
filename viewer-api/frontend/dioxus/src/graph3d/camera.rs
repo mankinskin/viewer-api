@@ -26,10 +26,53 @@ pub enum Projection {
     Orthographic,
 }
 
+/// Interactive camera behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CameraMode {
+    /// Orbit around a world-space target.
+    #[default]
+    Orbit,
+    /// Rotate in place and translate through the scene.
+    Free,
+}
+
+impl CameraMode {
+    pub const ALL: [CameraMode; 2] = [CameraMode::Orbit, CameraMode::Free];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CameraMode::Orbit => "orbit",
+            CameraMode::Free => "free",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            CameraMode::Orbit => "Orbit",
+            CameraMode::Free => "Free",
+        }
+    }
+
+    pub fn from_str_opt(value: &str) -> Option<Self> {
+        match value {
+            "orbit" => Some(CameraMode::Orbit),
+            "free" => Some(CameraMode::Free),
+            _ => None,
+        }
+    }
+}
+
 /// Vertical FOV (radians) — 45°.
 pub const CAMERA_FOV: f32 = std::f32::consts::FRAC_PI_4;
 pub const CAMERA_NEAR: f32 = 0.1;
-pub const CAMERA_FAR: f32 = 200.0;
+pub const CAMERA_FAR: f32 = 800.0;
+pub const CAMERA_MIN_DISTANCE: f32 = 3.0;
+pub const CAMERA_MAX_DISTANCE: f32 = 320.0;
+pub const CAMERA_MIN_FOCUS_DISTANCE: f32 = 6.0;
+pub const CAMERA_PITCH_LIMIT: f32 = 1.4;
+
+const CAMERA_ROTATE_SENSITIVITY: f32 = 0.005;
+const CAMERA_SCREEN_PAN_SPEED: f32 = 0.002;
 
 /// viewProj(64) + eye(16) + time(16) = 96 bytes = 24 floats.
 pub const CAM_UNIFORM_FLOATS: usize = 24;
@@ -67,6 +110,23 @@ impl Camera {
         ]
     }
 
+    pub fn forward(&self) -> [f32; 3] {
+        forward_from_angles(self.yaw, self.pitch)
+    }
+
+    pub fn right(&self) -> [f32; 3] {
+        let raw_right = cross(self.forward(), [0.0, 1.0, 0.0]);
+        if length(raw_right) < 1e-6 {
+            [1.0, 0.0, 0.0]
+        } else {
+            normalise(raw_right)
+        }
+    }
+
+    pub fn up(&self) -> [f32; 3] {
+        normalise(cross(self.right(), self.forward()))
+    }
+
     /// Frame the camera so a sphere of radius `radius` around `centre` is
     /// fully visible.
     pub fn frame(
@@ -85,7 +145,88 @@ impl Camera {
         distance: f32,
     ) {
         self.target = target;
-        self.distance = distance.clamp(6.0, 120.0);
+        self.distance =
+            distance.clamp(CAMERA_MIN_FOCUS_DISTANCE, CAMERA_MAX_DISTANCE);
+    }
+
+    pub fn zoom_by_factor(
+        &mut self,
+        factor: f32,
+    ) {
+        self.distance =
+            (self.distance * factor).clamp(CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE);
+    }
+
+    pub fn orbit_by(
+        &mut self,
+        dx: f32,
+        dy: f32,
+    ) {
+        self.yaw -= dx * CAMERA_ROTATE_SENSITIVITY;
+        self.pitch = (self.pitch + dy * CAMERA_ROTATE_SENSITIVITY)
+            .clamp(-CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+    }
+
+    pub fn set_orientation_in_place(
+        &mut self,
+        yaw: f32,
+        pitch: f32,
+    ) {
+        let eye = self.eye();
+        self.yaw = yaw;
+        self.pitch = pitch.clamp(-CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
+        let forward = self.forward();
+        self.target = [
+            eye[0] + forward[0] * self.distance,
+            eye[1] + forward[1] * self.distance,
+            eye[2] + forward[2] * self.distance,
+        ];
+    }
+
+    pub fn rotate_in_place(
+        &mut self,
+        dx: f32,
+        dy: f32,
+    ) {
+        let next_yaw = self.yaw - dx * CAMERA_ROTATE_SENSITIVITY;
+        let next_pitch = self.pitch + dy * CAMERA_ROTATE_SENSITIVITY;
+        self.set_orientation_in_place(next_yaw, next_pitch);
+    }
+
+    pub fn translate(
+        &mut self,
+        delta: [f32; 3],
+    ) {
+        for (target_axis, delta_axis) in self.target.iter_mut().zip(delta) {
+            *target_axis += delta_axis;
+        }
+    }
+
+    pub fn pan_screen_plane(
+        &mut self,
+        dx: f32,
+        dy: f32,
+    ) {
+        let speed = self.distance * CAMERA_SCREEN_PAN_SPEED;
+        let right = self.right();
+        let up = self.up();
+        self.translate([
+            -right[0] * dx * speed + up[0] * dy * speed,
+            -right[1] * dx * speed + up[1] * dy * speed,
+            -right[2] * dx * speed + up[2] * dy * speed,
+        ]);
+    }
+
+    pub fn move_forward(
+        &mut self,
+        distance: f32,
+    ) {
+        let forward = self.forward();
+        self.translate([
+            forward[0] * distance,
+            forward[1] * distance,
+            forward[2] * distance,
+        ]);
     }
 
     /// Apply a `CameraCommand` to this camera.
@@ -100,15 +241,32 @@ impl Camera {
         cmd: &CameraCommand,
         _bounds: ([f32; 3], f32),
     ) {
+        self.apply_command_for_mode(cmd, CameraMode::Orbit, _bounds);
+    }
+
+    pub fn apply_command_for_mode(
+        &mut self,
+        cmd: &CameraCommand,
+        mode: CameraMode,
+        _bounds: ([f32; 3], f32),
+    ) {
         match *cmd {
             CameraCommand::ResetToDefault => {
                 let def = Camera::default();
-                self.yaw = def.yaw;
-                self.pitch = def.pitch;
+                if mode == CameraMode::Free {
+                    self.set_orientation_in_place(def.yaw, def.pitch);
+                } else {
+                    self.yaw = def.yaw;
+                    self.pitch = def.pitch;
+                }
             },
             CameraCommand::ResetTo { yaw, pitch } => {
-                self.yaw = yaw;
-                self.pitch = pitch;
+                if mode == CameraMode::Free {
+                    self.set_orientation_in_place(yaw, pitch);
+                } else {
+                    self.yaw = yaw;
+                    self.pitch = pitch;
+                }
             },
             CameraCommand::FocusOn { target, distance } =>
                 self.focus(target, distance),
@@ -137,7 +295,7 @@ pub enum CameraCommand {
 
 pub fn frame_distance(radius: f32) -> f32 {
     let half_fov_tan = (CAMERA_FOV * 0.5).tan();
-    ((radius / half_fov_tan) * 1.3).clamp(12.0, 120.0)
+    ((radius / half_fov_tan) * 1.3).clamp(12.0, CAMERA_MAX_DISTANCE)
 }
 
 pub fn animate_camera(
@@ -191,6 +349,39 @@ fn shortest_angle_delta(
     (target - current + PI).rem_euclid(TAU) - PI
 }
 
+fn forward_from_angles(
+    yaw: f32,
+    pitch: f32,
+) -> [f32; 3] {
+    let cp = pitch.cos();
+    normalise([-cp * yaw.sin(), -pitch.sin(), -cp * yaw.cos()])
+}
+
+fn cross(
+    a: [f32; 3],
+    b: [f32; 3],
+) -> [f32; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+fn length(vector: [f32; 3]) -> f32 {
+    (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2])
+        .sqrt()
+}
+
+fn normalise(vector: [f32; 3]) -> [f32; 3] {
+    let length = length(vector);
+    if length < 1e-6 {
+        [0.0, 0.0, -1.0]
+    } else {
+        [vector[0] / length, vector[1] / length, vector[2] / length]
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct MouseState {
     pub orbiting: bool,
@@ -204,8 +395,19 @@ mod tests {
     use super::{
         animate_camera,
         Camera,
+        CameraMode,
         CameraCommand,
+        frame_distance,
     };
+
+    fn assert_vec3_close(
+        actual: [f32; 3],
+        expected: [f32; 3],
+    ) {
+        for axis in 0..3 {
+            assert!((actual[axis] - expected[axis]).abs() < 1e-4);
+        }
+    }
 
     #[test]
     fn focus_command_recenters_without_resetting_orbit() {
@@ -276,5 +478,74 @@ mod tests {
         assert!((camera.distance - goal.distance).abs() < f32::EPSILON);
         assert!((camera.yaw - goal.yaw).abs() < f32::EPSILON);
         assert!((camera.pitch - goal.pitch).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn free_rotation_preserves_eye_position() {
+        let mut camera = Camera {
+            yaw: 0.8,
+            pitch: -0.35,
+            distance: 32.0,
+            target: [4.0, -1.5, 7.0],
+        };
+        let eye_before = camera.eye();
+
+        camera.rotate_in_place(84.0, -38.0);
+
+        let eye_after = camera.eye();
+        assert_vec3_close(eye_after, eye_before);
+    }
+
+    #[test]
+    fn free_move_forward_translates_eye_and_target_together() {
+        let mut camera = Camera::default();
+        let eye_before = camera.eye();
+        let target_before = camera.target;
+        let forward = camera.forward();
+
+        camera.move_forward(7.5);
+
+        let eye_after = camera.eye();
+        let target_after = camera.target;
+        assert_vec3_close(
+            eye_after,
+            [
+                eye_before[0] + forward[0] * 7.5,
+                eye_before[1] + forward[1] * 7.5,
+                eye_before[2] + forward[2] * 7.5,
+            ],
+        );
+        assert_vec3_close(
+            target_after,
+            [
+                target_before[0] + forward[0] * 7.5,
+                target_before[1] + forward[1] * 7.5,
+                target_before[2] + forward[2] * 7.5,
+            ],
+        );
+    }
+
+    #[test]
+    fn free_reset_camera_reorients_in_place() {
+        let mut camera = Camera {
+            yaw: 1.1,
+            pitch: 0.2,
+            distance: 18.0,
+            target: [3.0, 5.0, -4.0],
+        };
+        let eye_before = camera.eye();
+
+        camera.apply_command_for_mode(
+            &CameraCommand::ResetToDefault,
+            CameraMode::Free,
+            ([0.0, 0.0, 0.0], 1.0),
+        );
+
+        assert_vec3_close(camera.eye(), eye_before);
+    }
+
+    #[test]
+    fn frame_distance_supports_further_zoom_out() {
+        assert!(frame_distance(200.0) > 120.0);
     }
 }

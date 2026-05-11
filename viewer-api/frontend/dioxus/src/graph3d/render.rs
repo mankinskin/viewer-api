@@ -20,6 +20,7 @@ use super::{
     camera::{
         animate_camera,
         Camera,
+        CameraMode,
         Projection,
         CAMERA_FAR,
         CAMERA_FOV,
@@ -53,6 +54,7 @@ pub(crate) struct RenderState {
     pub target_layout: Layout3D,
     pub camera: Camera,
     pub camera_goal: Option<Camera>,
+    pub camera_mode: CameraMode,
     pub edge_buf: web_sys::GpuBuffer,
     pub edge_count: u32,
     pub node_quad_buf: web_sys::GpuBuffer,
@@ -345,6 +347,12 @@ fn position_dom_edges(
     let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
         return;
     };
+    let Some(container) = doc.get_element_by_id(&state.container_id) else {
+        return;
+    };
+    let Ok(container) = container.dyn_into::<HtmlElement>() else {
+        return;
+    };
     let Some(svg) = doc
         .query_selector(&format!(
             "#{} [data-graph-edge-overlay='true']",
@@ -356,14 +364,16 @@ fn position_dom_edges(
         return;
     };
 
+    let container_rect = container.get_bounding_client_rect();
+    let container_w = (container_rect.width() as f32).max(1.0);
+    let container_h = (container_rect.height() as f32).max(1.0);
+
     let _ = svg.set_attribute("display", "block");
+    let _ = svg.set_attribute("width", &format!("{container_w:.1}"));
+    let _ = svg.set_attribute("height", &format!("{container_h:.1}"));
     let _ = svg.set_attribute(
         "viewBox",
-        &format!(
-            "0 0 {:.1} {:.1}",
-            viewport_x + viewport_w,
-            viewport_y + viewport_h
-        ),
+        &format!("0 0 {container_w:.1} {container_h:.1}"),
     );
 
     let eye = state.camera.eye();
@@ -595,11 +605,7 @@ pub(crate) fn render_frame(
     // Re-upload per-instance buffers if a node moved this frame.
     if uses_dynamic_layout || state.dirty_layout || state.dirty_edges {
         let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
-        let (edge_data, edge_count) =
-            render_layout.build_edge_instances_with_visual_state(
-                edge_visual_state(state),
-                &state.graph_theme,
-            );
+        let (edge_data, edge_count) = render_layout.build_gpu_edge_instances();
         if !edge_data.is_empty() {
             write_buffer(&state.gpu.device, &state.edge_buf, &edge_data);
         }
