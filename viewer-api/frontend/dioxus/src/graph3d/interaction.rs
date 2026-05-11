@@ -147,6 +147,7 @@ pub(crate) fn install(
         drag_state.clone(),
         state_rc.clone(),
         suppress_contextmenu.clone(),
+        on_camera_change.clone(),
     );
     let mouse_up = mouse_up_listener(
         &document,

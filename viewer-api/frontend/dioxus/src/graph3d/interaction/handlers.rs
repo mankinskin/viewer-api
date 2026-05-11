@@ -81,6 +81,7 @@ pub(super) fn mouse_move_listener(
     drag_state: Rc<RefCell<DragState>>,
     state_rc: Rc<RefCell<RenderState>>,
     suppress_contextmenu: Rc<Cell<bool>>,
+    on_camera_change: Option<EventHandler<Camera>>,
 ) -> EventListener {
     EventListener::new(document, "mousemove", {
         move |evt| {
@@ -98,7 +99,13 @@ pub(super) fn mouse_move_listener(
                 return;
             }
 
-            update_camera_motion(&mouse_state, &state_rc, cursor_x, cursor_y);
+            update_camera_motion(
+                &mouse_state,
+                &state_rc,
+                cursor_x,
+                cursor_y,
+                on_camera_change.as_ref(),
+            );
         }
     })
 }
@@ -347,6 +354,7 @@ fn update_camera_motion(
     state_rc: &Rc<RefCell<RenderState>>,
     cursor_x: f64,
     cursor_y: f64,
+    on_camera_change: Option<&EventHandler<Camera>>,
 ) {
     let state = mouse_state.borrow().clone();
     if !state.orbiting && !state.panning {
@@ -357,6 +365,9 @@ fn update_camera_motion(
     let dy = (cursor_y - state.last_y) as f32;
     mouse_state.borrow_mut().last_x = cursor_x;
     mouse_state.borrow_mut().last_y = cursor_y;
+    if dx.abs() < 0.001 && dy.abs() < 0.001 {
+        return;
+    }
 
     let Ok(mut render_state) = state_rc.try_borrow_mut() else {
         return;
@@ -368,6 +379,12 @@ fn update_camera_motion(
             (render_state.camera.pitch + dy * 0.005).clamp(-1.4, 1.4);
     } else if state.panning {
         apply_screen_plane_pan(&mut render_state.camera, dx, dy);
+    }
+
+    let camera = render_state.camera.clone();
+    drop(render_state);
+    if let Some(handler) = on_camera_change {
+        handler.call(camera);
     }
 }
 

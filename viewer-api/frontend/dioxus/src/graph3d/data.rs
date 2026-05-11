@@ -77,7 +77,7 @@ impl NodeViewTransform {
     ) -> Self {
         Self {
             mode: NodeViewTransformMode::CameraPlaneViewDirection,
-            screen_fill: screen_fill.clamp(0.55, 0.96),
+            screen_fill: screen_fill.clamp(0.55, 3.0),
             plane_depth_factor: 0.56,
             strength: strength.clamp(0.0, 1.0),
         }
@@ -622,6 +622,7 @@ fn camera_plane_view_direction_basis(
     let mut basis = CameraBasis::from_camera(camera);
     let aspect = viewport_width / viewport_height.max(1.0);
     let tan_half_fov = (CAMERA_FOV * 0.5).tan().max(0.001);
+    let fit_fill = transform.screen_fill.clamp(0.55, 0.96);
     let (center, _) = layout.bounds();
     let mut max_right = 0.0_f32;
     let mut max_up = 0.0_f32;
@@ -635,9 +636,8 @@ fn camera_plane_view_direction_basis(
     }
 
     let plane_depth_x = max_right
-        / (transform.screen_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
-    let plane_depth_y =
-        max_up / (transform.screen_fill * tan_half_fov).max(0.001);
+        / (fit_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
+    let plane_depth_y = max_up / (fit_fill * tan_half_fov).max(0.001);
     let plane_depth = plane_depth_x
         .max(plane_depth_y)
         .clamp(3.5, 72.0)
