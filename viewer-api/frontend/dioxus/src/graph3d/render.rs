@@ -438,19 +438,11 @@ fn position_dom_edges(
         let center_b = rect_b
             .map(|rect| (rect.center_x, rect.center_y))
             .unwrap_or((viewport_x + screen_b.x, viewport_y + screen_b.y));
-        let src_padding = match layout.node_card_profile {
-            NodeCardProfile::Compact => 8.0,
-            NodeCardProfile::TicketWide => 10.0,
-        };
-        let dst_padding = match layout.node_card_profile {
-            NodeCardProfile::Compact => 15.0,
-            NodeCardProfile::TicketWide => 18.0,
-        };
         let (x1, y1) = rect_a
-            .map(|rect| clip_edge_endpoint(rect, center_b, src_padding))
+            .map(|rect| clip_edge_endpoint(rect, center_b, 0.0))
             .unwrap_or(center_a);
         let (x2, y2) = rect_b
-            .map(|rect| clip_edge_endpoint(rect, center_a, dst_padding))
+            .map(|rect| clip_edge_endpoint(rect, center_a, 0.0))
             .unwrap_or(center_b);
         if (x1 - x2).abs() < 3.0 && (y1 - y2).abs() < 3.0 {
             let _ = line.set_attribute("display", "none");
