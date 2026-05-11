@@ -49,6 +49,7 @@ pub use data::{
     Layout3D,
     Node3D,
     NodeCardProfile,
+    NodeViewTransform,
 };
 
 use self::{
@@ -148,6 +149,10 @@ pub struct Graph3DProps {
     /// transform that repositions surrounding nodes around the selection.
     #[props(default)]
     pub selection_auto_layout: bool,
+    /// Optional per-frame camera-relative transform applied inside the shared
+    /// renderer after layout animation but before projection.
+    #[props(default)]
+    pub node_view_transform: NodeViewTransform,
     /// Node cards. Each card must carry a `data-node-idx="N"` attribute
     /// matching its index in `layout.nodes`.
     pub children: Element,
@@ -255,6 +260,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let hovered_node_id = props.hovered_node_id.clone();
     let selection_auto_layout = props.selection_auto_layout;
     let projection = props.projection;
+    let node_view_transform = props.node_view_transform;
     let layout_mode = props.layout_mode;
     let on_layout_mode_change = props.on_layout_mode_change.clone();
     let on_projection_change = props.on_projection_change.clone();
@@ -285,6 +291,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             hovered_node_id,
             graph_theme,
             selection_auto_layout,
+            node_view_transform,
             viewport_insets,
             on_layout_change,
             on_camera_change,
@@ -306,6 +313,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         &props.hovered_node_id,
         &graph_theme,
         props.selection_auto_layout,
+        props.node_view_transform,
         props.viewport_insets,
         props.on_camera_change.as_ref(),
     );
@@ -424,6 +432,7 @@ fn start_graph_bootstrap(
     hovered_node_id: Option<String>,
     graph_theme: GraphThemeSettings,
     selection_auto_layout: bool,
+    node_view_transform: NodeViewTransform,
     viewport_insets: [f32; 4],
     on_layout_change: Option<EventHandler<Layout3D>>,
     on_camera_change: Option<EventHandler<Camera>>,
@@ -537,6 +546,7 @@ fn start_graph_bootstrap(
             graph_theme,
             viewport_insets,
             selection_auto_layout,
+            node_view_transform,
             selected_node_id,
             hovered_node_id,
             last_frame_time: None,
@@ -572,8 +582,9 @@ fn sync_render_state(
     hovered_node_id: &Option<String>,
     graph_theme: &GraphThemeSettings,
     selection_auto_layout: bool,
+    node_view_transform: NodeViewTransform,
     viewport_insets: [f32; 4],
-    on_camera_change: Option<&EventHandler<Camera>>,
+    _on_camera_change: Option<&EventHandler<Camera>>,
 ) {
     let render_state = render_rc.read();
     let Some(render_state) = render_state.as_ref() else {
@@ -625,6 +636,12 @@ fn sync_render_state(
 
     if state.viewport_insets != viewport_insets {
         state.viewport_insets = viewport_insets;
+    }
+
+    if state.node_view_transform != node_view_transform {
+        state.node_view_transform = node_view_transform;
+        state.dirty_layout = true;
+        state.dirty_edges = true;
     }
 
     if state.selected_node_id != *selected_node_id

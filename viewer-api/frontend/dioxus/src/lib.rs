@@ -85,6 +85,7 @@ pub use graph3d::{
     LayoutMode,
     Node3D,
     NodeCardProfile,
+    NodeViewTransform,
     Projection,
     DEFAULT_CONTAINER_ID as GRAPH3D_DEFAULT_CONTAINER_ID,
 };

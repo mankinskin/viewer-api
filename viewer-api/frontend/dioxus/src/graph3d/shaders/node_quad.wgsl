@@ -23,7 +23,7 @@ fn vs_node_quad(
     // Match the DOM card's depth-based pixel_scale
     let d   = cam.eye.xyz - nodePos;
     let dist = max(length(d), 0.1);
-    let pixel_scale = clamp(22.0 / dist, 0.2, 3.5);
+    let pixel_scale = clamp(22.0 / dist, 0.14, 3.5);
 
     // Slightly oversized to fully cover the DOM card (260×~70 px base).
     let card_w = 220.0 * pixel_scale;

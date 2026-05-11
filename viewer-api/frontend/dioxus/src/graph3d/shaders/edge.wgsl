@@ -159,8 +159,8 @@ fn vs_edge(
 
     let dist_a = max(length(cam.eye.xyz - posA), 0.1);
     let dist_b = max(length(cam.eye.xyz - posB), 0.1);
-    let pixel_scale_a = clamp(22.0 / dist_a, 0.2, 3.5);
-    let pixel_scale_b = clamp(22.0 / dist_b, 0.2, 3.5);
+    let pixel_scale_a = clamp(22.0 / dist_a, 0.14, 3.5);
+    let pixel_scale_b = clamp(22.0 / dist_b, 0.14, 3.5);
     let half_w_a = card_w_px * pixel_scale_a * 0.5;
     let half_h_a = card_h_px * pixel_scale_a * 0.5;
     let half_w_b = card_w_px * pixel_scale_b * 0.5;

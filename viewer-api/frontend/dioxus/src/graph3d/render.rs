@@ -27,12 +27,14 @@ use super::{
         CAM_UNIFORM_FLOATS,
     },
     data::{
+        apply_node_view_transform,
         animate_layout_nodes,
         edge_color,
         EdgeRef3D,
         EdgeVisualState,
         Layout3D,
         NodeCardProfile,
+        NodeViewTransform,
         EDGE_FLAG_SELECTED,
     },
     gpu::GpuResources,
@@ -69,6 +71,7 @@ pub(crate) struct RenderState {
     pub graph_theme: GraphThemeSettings,
     pub viewport_insets: [f32; 4],
     pub selection_auto_layout: bool,
+    pub node_view_transform: NodeViewTransform,
     pub selected_node_id: Option<String>,
     pub hovered_node_id: Option<String>,
     pub last_frame_time: Option<f32>,
@@ -140,8 +143,9 @@ fn world_to_screen(
 fn collect_dom_node_rects(
     doc: &web_sys::Document,
     state: &RenderState,
+    layout: &Layout3D,
 ) -> Vec<Option<NodeScreenRect>> {
-    let mut rects = vec![None; state.layout.nodes.len()];
+    let mut rects = vec![None; layout.nodes.len()];
     let Some(container) = doc.get_element_by_id(&state.container_id) else {
         return rects;
     };
@@ -224,6 +228,7 @@ fn clip_edge_endpoint(
 
 fn position_dom_nodes(
     state: &RenderState,
+    layout: &Layout3D,
     viewport_x: f32,
     viewport_y: f32,
     viewport_w: f32,
@@ -269,7 +274,7 @@ fn position_dom_nodes(
         let Ok(idx) = idx_str.parse::<usize>() else {
             continue;
         };
-        let Some(node) = state.layout.nodes.get(idx) else {
+        let Some(node) = layout.nodes.get(idx) else {
             continue;
         };
 
@@ -284,7 +289,7 @@ fn position_dom_nodes(
         let dy = eye[1] - node.y;
         let dz = eye[2] - node.z;
         let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
-        let pixel_scale = (22.0 / dist).clamp(0.2, 3.5);
+        let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
 
         let margin = 300.0;
         if !screen.visible
@@ -331,6 +336,7 @@ fn position_dom_nodes(
 
 fn position_dom_edges(
     state: &RenderState,
+    layout: &Layout3D,
     viewport_x: f32,
     viewport_y: f32,
     viewport_w: f32,
@@ -372,9 +378,8 @@ fn position_dom_edges(
     };
     let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
     let vp = math::mul(proj, view);
-    let node_rects = collect_dom_node_rects(&doc, state);
-    let active_focus =
-        edge_visual_state(state).active_focus(&state.layout.nodes);
+    let node_rects = collect_dom_node_rects(&doc, state, layout);
+    let active_focus = edge_visual_state(state).active_focus(&layout.nodes);
 
     let Ok(edge_nodes) = doc.query_selector_all(&format!(
         "#{} [data-edge-idx]",
@@ -390,15 +395,15 @@ fn position_dom_edges(
         let Ok(line) = line_node.dyn_into::<Element>() else {
             continue;
         };
-        let Some(edge) = state.layout.edges.get(index as usize) else {
+        let Some(edge) = layout.edges.get(index as usize) else {
             let _ = line.set_attribute("display", "none");
             continue;
         };
-        let Some(a) = state.layout.nodes.get(edge.from_idx) else {
+        let Some(a) = layout.nodes.get(edge.from_idx) else {
             let _ = line.set_attribute("display", "none");
             continue;
         };
-        let Some(b) = state.layout.nodes.get(edge.to_idx) else {
+        let Some(b) = layout.nodes.get(edge.to_idx) else {
             let _ = line.set_attribute("display", "none");
             continue;
         };
@@ -423,11 +428,11 @@ fn position_dom_edges(
         let center_b = rect_b
             .map(|rect| (rect.center_x, rect.center_y))
             .unwrap_or((viewport_x + screen_b.x, viewport_y + screen_b.y));
-        let src_padding = match state.layout.node_card_profile {
+        let src_padding = match layout.node_card_profile {
             NodeCardProfile::Compact => 8.0,
             NodeCardProfile::TicketWide => 10.0,
         };
-        let dst_padding = match state.layout.node_card_profile {
+        let dst_padding = match layout.node_card_profile {
             NodeCardProfile::Compact => 15.0,
             NodeCardProfile::TicketWide => 18.0,
         };
@@ -443,7 +448,7 @@ fn position_dom_edges(
         }
 
         let (stroke_width, stroke_opacity) = edge_overlay_style(
-            state,
+            layout,
             active_focus,
             edge,
             a.id.as_str(),
@@ -477,7 +482,7 @@ fn position_dom_edges(
 }
 
 fn edge_overlay_style(
-    state: &RenderState,
+    layout: &Layout3D,
     active_focus: Option<(&str, f32)>,
     edge: &EdgeRef3D,
     from_id: &str,
@@ -494,8 +499,8 @@ fn edge_overlay_style(
     }
 
     let long_edge = if let (Some(a), Some(b)) = (
-        state.layout.nodes.get(edge.from_idx),
-        state.layout.nodes.get(edge.to_idx),
+        layout.nodes.get(edge.from_idx),
+        layout.nodes.get(edge.to_idx),
     ) {
         let dx = a.x - b.x;
         let dy = a.y - b.y;
@@ -505,7 +510,7 @@ fn edge_overlay_style(
         false
     };
     let (long_width, long_opacity, short_width, short_opacity) =
-        match state.layout.node_card_profile {
+        match layout.node_card_profile {
             NodeCardProfile::Compact => (2.4, 0.82, 1.9, 0.64),
             NodeCardProfile::TicketWide => (2.6, 0.78, 2.1, 0.60),
         };
@@ -584,11 +589,14 @@ pub(crate) fn render_frame(
     let vp_y = ((cont_y_css + viewport_y_css) * dpr).round() as u32;
     let vp_w = ((viewport_w_css * dpr).round() as u32).max(1);
     let vp_h = ((viewport_h_css * dpr).round() as u32).max(1);
+    let render_layout = current_render_layout(state, viewport_w_css, viewport_h_css);
+    let uses_dynamic_layout = render_layout.is_some();
 
     // Re-upload per-instance buffers if a node moved this frame.
-    if state.dirty_layout || state.dirty_edges {
+    if uses_dynamic_layout || state.dirty_layout || state.dirty_edges {
+        let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
         let (edge_data, edge_count) =
-            state.layout.build_edge_instances_with_visual_state(
+            render_layout.build_edge_instances_with_visual_state(
                 edge_visual_state(state),
                 &state.graph_theme,
             );
@@ -599,8 +607,9 @@ pub(crate) fn render_frame(
         state.dirty_edges = false;
     }
 
-    if state.dirty_layout {
-        let (node_data, node_count) = state.layout.build_node_quads();
+    if uses_dynamic_layout || state.dirty_layout {
+        let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
+        let (node_data, node_count) = render_layout.build_node_quads();
         if !node_data.is_empty() {
             write_buffer(&state.gpu.device, &state.node_quad_buf, &node_data);
         }
@@ -740,8 +749,11 @@ pub(crate) fn render_frame(
     bufs.push(&cmd_buf);
     js_call(frame.queue, "submit", &[&JsValue::from(bufs)]);
 
+    let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
+
     position_dom_nodes(
         state,
+        render_layout,
         viewport_x_css,
         viewport_y_css,
         viewport_w_css,
@@ -749,11 +761,30 @@ pub(crate) fn render_frame(
     );
     position_dom_edges(
         state,
+        render_layout,
         viewport_x_css,
         viewport_y_css,
         viewport_w_css,
         viewport_h_css,
     );
+}
+
+fn current_render_layout(
+    state: &RenderState,
+    viewport_width: f32,
+    viewport_height: f32,
+) -> Option<Layout3D> {
+    if state.node_view_transform.is_active() {
+        Some(apply_node_view_transform(
+            &state.layout,
+            &state.camera,
+            viewport_width,
+            viewport_height,
+            state.node_view_transform,
+        ))
+    } else {
+        None
+    }
 }
 
 fn edge_visual_state(state: &RenderState) -> EdgeVisualState<'_> {

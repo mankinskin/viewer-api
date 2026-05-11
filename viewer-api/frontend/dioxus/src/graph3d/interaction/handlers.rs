@@ -367,12 +367,35 @@ fn update_camera_motion(
         render_state.camera.pitch =
             (render_state.camera.pitch + dy * 0.005).clamp(-1.4, 1.4);
     } else if state.panning {
-        let speed = render_state.camera.distance * 0.002;
-        let cos_y = render_state.camera.yaw.cos();
-        let sin_y = render_state.camera.yaw.sin();
-        render_state.camera.target[0] -= dx * speed * cos_y;
-        render_state.camera.target[1] += dy * speed;
-        render_state.camera.target[2] += dx * speed * sin_y;
+        apply_screen_plane_pan(&mut render_state.camera, dx, dy);
+    }
+}
+
+fn apply_screen_plane_pan(
+    camera: &mut Camera,
+    dx: f32,
+    dy: f32,
+) {
+    let speed = camera.distance * 0.002;
+    let eye = camera.eye();
+    let forward = normalise([
+        camera.target[0] - eye[0],
+        camera.target[1] - eye[1],
+        camera.target[2] - eye[2],
+    ]);
+    let raw_right = cross(forward, [0.0, 1.0, 0.0]);
+    let right = if raw_right[0].abs() + raw_right[1].abs() + raw_right[2].abs()
+        < 1e-6
+    {
+        [1.0, 0.0, 0.0]
+    } else {
+        normalise(raw_right)
+    };
+    let up = normalise(cross(right, forward));
+
+    for axis in 0..3 {
+        camera.target[axis] -= right[axis] * dx * speed;
+        camera.target[axis] += up[axis] * dy * speed;
     }
 }
 
@@ -448,5 +471,49 @@ fn install_click_suppressor() {
             0,
         );
         let _ = JsValue::from(timer);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply_screen_plane_pan;
+    use crate::graph3d::camera::Camera;
+
+    fn normalised(vector: [f32; 3]) -> [f32; 3] {
+        let length =
+            (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2])
+                .sqrt();
+        [vector[0] / length, vector[1] / length, vector[2] / length]
+    }
+
+    fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+        a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+    }
+
+    #[test]
+    fn screen_plane_pan_has_no_forward_component() {
+        let mut camera = Camera {
+            yaw: 0.8,
+            pitch: 0.55,
+            distance: 18.0,
+            target: [2.0, -1.0, 4.0],
+        };
+        let eye = camera.eye();
+        let forward = normalised([
+            camera.target[0] - eye[0],
+            camera.target[1] - eye[1],
+            camera.target[2] - eye[2],
+        ]);
+        let before = camera.target;
+
+        apply_screen_plane_pan(&mut camera, 120.0, 80.0);
+
+        let delta = [
+            camera.target[0] - before[0],
+            camera.target[1] - before[1],
+            camera.target[2] - before[2],
+        ];
+
+        assert!(dot(delta, forward).abs() < 1e-5, "delta={delta:?} forward={forward:?}");
     }
 }
