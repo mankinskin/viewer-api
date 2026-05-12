@@ -320,9 +320,12 @@
 .sidebar-overlay.visible {
   display: block;
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: min(100vw, var(--sidebar-width));
   z-index: 999;
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent;
 }
 
 /* Hamburger toggle button (hidden on desktop) */

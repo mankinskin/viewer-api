@@ -47,6 +47,7 @@ pub fn Sidebar(
     let mut width = use_signal(|| initial_width);
     let mut drawer_open = use_signal(|| false);
 
+    let mobile_viewport = is_mobile_sidebar_viewport();
     let is_open = mobile_open.unwrap_or_else(|| *drawer_open.read());
 
     let mut open_drawer = move || {
@@ -116,10 +117,12 @@ pub fn Sidebar(
         if collapsed {
             parts.push("sidebar-collapsed");
         }
-        if is_open {
-            parts.push("sidebar-mobile-open");
-        } else {
-            parts.push("sidebar-mobile-closed");
+        if mobile_viewport {
+            if is_open {
+                parts.push("sidebar-mobile-open");
+            } else {
+                parts.push("sidebar-mobile-closed");
+            }
         }
         let base = parts.join(" ");
         if class.is_empty() {
@@ -137,7 +140,7 @@ pub fn Sidebar(
 
     rsx! {
         div {
-            class: if is_open { "sidebar-overlay visible" } else { "sidebar-overlay" },
+            class: if mobile_viewport && is_open { "sidebar-overlay visible" } else { "sidebar-overlay" },
             onclick: move |_| close_drawer(),
         }
 
