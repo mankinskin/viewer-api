@@ -93,19 +93,18 @@ pub fn install_server(
         Ok(())
     } else {
         // No pre-built binary found — fall back to building from source.
-        // Use the manifest path (always valid UTF-8 on supported platforms)
-        // to avoid passing a raw Windows path with backslashes as a CLI arg.
+        // Run from the crate directory and install `--path .` so Cargo sees a
+        // valid package path on every platform.
         let crate_path = root.join(&s.source_dir);
-        let manifest = crate_manifest_path_str(&crate_path)?;
         info!(
             tag,
-            "no pre-built binary found; building via cargo install --manifest-path {}",
+            "no pre-built binary found; building via cargo install --path . from {}",
             disp(&crate_path)
         );
         run_cmd_args(
             "cargo",
-            &["install", "--manifest-path", manifest.as_str(), "--force"],
-            root,
+            &["install", "--path", ".", "--force"],
+            &crate_path,
             tag,
         )
     }
