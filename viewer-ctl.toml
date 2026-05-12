@@ -65,7 +65,7 @@ build_cmd = ["npx", "vite", "build"]
 build_output = "tools/viewer/doc-viewer/static"
 
 [[frontend.prebuild]]
-dir = "tools/viewer/viewer-api/frontend/ts"
+dir = "viewer-api/frontend/ts"
 cmd = ["npm", "install"]
 condition = "missing:node_modules"
 
@@ -82,7 +82,7 @@ build_cmd = ["npx", "vite", "build"]
 build_output = "tools/viewer/log-viewer/static"
 
 [[frontend.prebuild]]
-dir = "tools/viewer/viewer-api/frontend/ts"
+dir = "viewer-api/frontend/ts"
 cmd = ["npm", "install"]
 condition = "missing:node_modules"
 
