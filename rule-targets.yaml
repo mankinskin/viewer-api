@@ -16,3 +16,12 @@ targets:
       - name: tool-use-examples
         title: Tool Use Examples
         section: viewer-api/workspace-summary
+
+  - name: viewer-ctl-readme
+    repo_scope: viewer-api
+    file_kind: README
+    path_scope: viewer-ctl/README.md
+    output_path: viewer-ctl/README.md
+    nodes:
+      - name: onboarding
+        section: tools/viewer-ctl/readme
