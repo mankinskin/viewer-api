@@ -1,0 +1,10 @@
+id = "92161adb-d06a-47b6-a065-4fb652e764ea"
+created_at = "2026-04-08T14:20:28.045209700Z"
+acceptance_criteria = "viewer-api-dioxus crate provides reusable Dioxus components matching viewer-api/frontend parity; ticket-viewer/dioxus-frontend runs as WASM app with full ticket read/write capabilities via ticket-api HTTP endpoints; ticket-http exposes write API for all ticket mutations"
+component = "viewer-api"
+deleted = true
+priority = "critical"
+risk_level = "high"
+state = "new"
+title = "Epic: Dioxus Viewer Platform — viewer-api-dioxus + ticket-viewer Dioxus frontend"
+type = "tracker-improvement"

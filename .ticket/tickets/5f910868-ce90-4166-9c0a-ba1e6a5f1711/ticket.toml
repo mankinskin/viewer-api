@@ -1,0 +1,10 @@
+id = "5f910868-ce90-4166-9c0a-ba1e6a5f1711"
+created_at = "2026-04-08T14:20:30.163990800Z"
+acceptance_criteria = "createUrlStateManager with hash-based routing, back/forward support, loop prevention; getSessionId/clearSession/withSession for API calls; all via web-sys without JS dependencies"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "medium"
+risk_level = "low"
+state = "new"
+title = "Port: URL state management and session utilities"
+type = "tracker-improvement"

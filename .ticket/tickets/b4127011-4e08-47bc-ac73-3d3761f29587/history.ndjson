@@ -1,0 +1,5 @@
+{"rev":1,"ts":"2026-04-30T11:58:52.899888700+00:00","fields":{"state":"new","title":"[viewer-api][P4] FilterPanel shell with JQ presets and results list","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-04-30T12:37:06.449968600+00:00","fields":{"state":"ready","title":"[viewer-api][P4] FilterPanel shell with JQ presets and results list","type":"tracker-improvement"}}
+{"rev":3,"ts":"2026-04-30T12:37:06.555839700+00:00","fields":{"state":"in-implementation","title":"[viewer-api][P4] FilterPanel shell with JQ presets and results list","type":"tracker-improvement"}}
+{"rev":4,"ts":"2026-04-30T12:37:06.755337500+00:00","fields":{"state":"in-review","title":"[viewer-api][P4] FilterPanel shell with JQ presets and results list","type":"tracker-improvement"}}
+{"rev":5,"ts":"2026-04-30T12:37:06.874686300+00:00","fields":{"state":"done","title":"[viewer-api][P4] FilterPanel shell with JQ presets and results list","type":"tracker-improvement"}}

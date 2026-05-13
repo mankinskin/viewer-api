@@ -1,0 +1,10 @@
+id = "b106752e-4112-44dd-8359-5586a18d1292"
+created_at = "2026-04-08T14:20:45.007738600Z"
+acceptance_criteria = "TabBar with tab selection, close button, modified indicator, resize handle; Spinner SVG component; All icon components (Document, File, Folder, Chevron, Search, Filter, etc.) ported as Dioxus SVG components"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "high"
+risk_level = "low"
+state = "new"
+title = "Port: TabBar, Spinner, Icons"
+type = "tracker-improvement"

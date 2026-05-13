@@ -1,0 +1,10 @@
+id = "cf5c7199-2aa2-4a6f-ab3b-5f7aa5bd4e75"
+created_at = "2026-04-08T14:20:44.465989700Z"
+acceptance_criteria = "ResizeHandle component with horizontal+vertical modes; rAF batching via web-sys; document-level listeners with on_cleanup; cursor management during drag; no memory leaks"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "critical"
+risk_level = "medium"
+state = "new"
+title = "Port: ResizeHandle with rAF-batched drag"
+type = "tracker-improvement"

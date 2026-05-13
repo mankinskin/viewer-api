@@ -1,0 +1,5 @@
+id = "3b1345eb-9983-4567-a3ab-c2e00c7cec1e"
+created_at = "2026-05-03T17:12:07.221789400+00:00"
+title = "[LOG-1c] viewer-ctl: add --log-dir and --log-level flags to start/restart"
+state = "new"
+type = "tracker-improvement"

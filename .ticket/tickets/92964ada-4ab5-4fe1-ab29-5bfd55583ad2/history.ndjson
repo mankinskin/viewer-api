@@ -1,0 +1,1 @@
+{"rev":1,"ts":"2026-05-02T21:39:10.725549300+00:00","fields":{"component":"viewer-api-dioxus","priority":"medium","risk_level":"high","state":"new","title":"Refactor: extract viewer-theme and viewer-widgets crates from viewer-api-dioxus","type":"tracker-improvement"}}

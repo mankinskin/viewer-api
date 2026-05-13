@@ -1,0 +1,8 @@
+id = "92964ada-4ab5-4fe1-ab29-5bfd55583ad2"
+created_at = "2026-05-02T21:39:10.506638600+00:00"
+title = "Refactor: extract viewer-theme and viewer-widgets crates from viewer-api-dioxus"
+state = "new"
+component = "viewer-api-dioxus"
+priority = "medium"
+risk_level = "high"
+type = "tracker-improvement"

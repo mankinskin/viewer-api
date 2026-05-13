@@ -1,0 +1,1 @@
+{"rev":1,"ts":"2026-05-02T21:38:48.029324+00:00","fields":{"component":"viewer-api-dioxus","priority":"medium","risk_level":"low","state":"ready","title":"UI: transparent context-adaptive header & sidebar action buttons (IconButton + Chip)","type":"tracker-improvement","workflow_stage":"ready"}}

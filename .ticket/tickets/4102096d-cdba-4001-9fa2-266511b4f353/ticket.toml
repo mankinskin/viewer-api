@@ -1,0 +1,10 @@
+id = "4102096d-cdba-4001-9fa2-266511b4f353"
+created_at = "2026-04-08T14:20:44.731668900Z"
+acceptance_criteria = "TreeView with recursive rendering, expand/collapse signals, selection, tooltips, badges; FileTree wrapping TreeView with sort header (multi-key), filter buttons with counts+colors; loading/empty states"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "critical"
+risk_level = "medium"
+state = "new"
+title = "Port: TreeView and FileTree with sort/filter"
+type = "tracker-improvement"

@@ -1,0 +1,5 @@
+{"rev":1,"ts":"2026-04-30T11:58:52.108178600+00:00","fields":{"state":"new","title":"[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-04-30T12:21:23.178797700+00:00","fields":{"state":"ready","title":"[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid","type":"tracker-improvement"}}
+{"rev":3,"ts":"2026-04-30T12:21:23.449186+00:00","fields":{"state":"in-implementation","title":"[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid","type":"tracker-improvement"}}
+{"rev":4,"ts":"2026-04-30T12:21:24.277135600+00:00","fields":{"state":"in-review","title":"[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid","type":"tracker-improvement"}}
+{"rev":5,"ts":"2026-04-30T12:21:24.523493+00:00","fields":{"state":"done","title":"[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid","type":"tracker-improvement"}}

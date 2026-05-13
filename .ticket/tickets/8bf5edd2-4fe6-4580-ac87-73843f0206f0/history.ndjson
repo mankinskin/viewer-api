@@ -1,0 +1,5 @@
+{"rev":1,"ts":"2026-04-30T11:58:53.227679+00:00","fields":{"state":"new","title":"[viewer-api][P3] Widget extensions: TreeNode rich tooltip, mobile sidebar audit, HeaderActions","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-04-30T12:33:27.466626200+00:00","fields":{"state":"ready","title":"[viewer-api][P3] Widget extensions: TreeNode rich tooltip, mobile sidebar audit, HeaderActions","type":"tracker-improvement"}}
+{"rev":3,"ts":"2026-04-30T12:33:27.760870700+00:00","fields":{"state":"in-implementation","title":"[viewer-api][P3] Widget extensions: TreeNode rich tooltip, mobile sidebar audit, HeaderActions","type":"tracker-improvement"}}
+{"rev":4,"ts":"2026-04-30T12:33:27.989674600+00:00","fields":{"state":"in-review","title":"[viewer-api][P3] Widget extensions: TreeNode rich tooltip, mobile sidebar audit, HeaderActions","type":"tracker-improvement"}}
+{"rev":5,"ts":"2026-04-30T12:33:28.698219200+00:00","fields":{"state":"done","title":"[viewer-api][P3] Widget extensions: TreeNode rich tooltip, mobile sidebar audit, HeaderActions","type":"tracker-improvement"}}

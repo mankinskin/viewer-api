@@ -1,0 +1,10 @@
+id = "88c694f8-fded-46c5-b09e-6bf7f381562f"
+created_at = "2026-04-08T14:20:51.190788500Z"
+acceptance_criteria = "ThemeSettings panel/modal with color pickers for all theme keys; preset selector; save/delete/rename custom themes; export/import JSON; live preview of changes; thumbnail capture for saved themes; undo changes"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "medium"
+risk_level = "low"
+state = "new"
+title = "Feature: Theme settings UI panel with live preview"
+type = "tracker-improvement"

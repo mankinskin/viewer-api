@@ -1,0 +1,1 @@
+{"rev":1,"ts":"2026-05-02T21:39:36.430101900+00:00","fields":{"component":"viewer-api-dioxus","priority":"medium","risk_level":"high","state":"new","title":"Feature: tiling + tabbed panel system replacing flat Sidebar/Panel primitives","type":"tracker-improvement"}}

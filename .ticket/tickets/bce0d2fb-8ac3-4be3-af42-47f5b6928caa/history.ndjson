@@ -1,0 +1,7 @@
+{"rev":1,"ts":"2026-03-27T23:40:16.255454800+00:00","fields":{"state":"open","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-03-27T23:42:19.517729800+00:00","fields":{"state":"open","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":3,"ts":"2026-03-27T23:45:16.444313600+00:00","fields":{"state":"in-progress","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":4,"ts":"2026-03-28T00:26:46.792963200+00:00","fields":{"state":"review","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":5,"ts":"2026-03-28T00:26:46.879461900+00:00","fields":{"state":"validating","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":6,"ts":"2026-03-28T00:26:46.973922200+00:00","fields":{"state":"validated","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}
+{"rev":7,"ts":"2026-03-28T00:26:47.044752500+00:00","fields":{"state":"done","title":"Impl: Extract HypergraphViewCore to viewer-api as primary graph component","type":"tracker-improvement"}}

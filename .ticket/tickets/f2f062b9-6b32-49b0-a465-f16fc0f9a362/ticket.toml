@@ -1,0 +1,10 @@
+id = "f2f062b9-6b32-49b0-a465-f16fc0f9a362"
+created_at = "2026-04-08T14:20:35.313816700Z"
+acceptance_criteria = "WgpuOverlay component ported to Dioxus with wgpu; DOM element scanning for glass effects; particle system (sparks, embers, beams, glitter); CRT/vignette post-processing; effect settings signals; theme palette buffer; register/unregister overlay renderer callbacks"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "low"
+risk_level = "high"
+state = "new"
+title = "Feature: WgpuOverlay effects system port — particles, CRT, vignette"
+type = "tracker-improvement"

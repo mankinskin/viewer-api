@@ -1,0 +1,6 @@
+id = "8f349d96-a307-400b-a90e-3aceb2250166"
+created_at = "2026-04-27T17:36:40.722931600+00:00"
+title = "viewer-api-dioxus: ship WASM tracing logs to a server file sink"
+state = "new"
+priority = "low"
+type = "tracker-improvement"

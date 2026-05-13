@@ -1,0 +1,6 @@
+id = "b480632a-8605-4b5b-a4e8-f2988b2565a0"
+created_at = "2026-04-27T17:35:34.167518900+00:00"
+title = "viewer-api-dioxus: structured tracing for WASM frontend"
+state = "new"
+priority = "medium"
+type = "tracker-improvement"

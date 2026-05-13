@@ -1,0 +1,8 @@
+id = "36ebdecb-0b9e-47be-9f44-fe575aa6ad6f"
+created_at = "2026-04-22T22:52:34.631353500+00:00"
+title = "viewer-api: theme settings (canonical)"
+state = "draft"
+component = "viewer-api"
+scope = "public"
+slug = "viewer-api/theme-settings"
+type = "specification"

@@ -1,0 +1,8 @@
+id = "7f41940d-617a-495d-aad8-5a19111bdab9"
+created_at = "2026-03-28T15:08:48.092303+00:00"
+title = "Epic: Leptos Viewer Platform — port viewer-api + all viewers to Leptos/Rust"
+state = "cancelled"
+acceptance_criteria = "All three viewers (log, doc, ticket) running as Leptos WASM apps reusing a shared viewer-api-leptos foundation; feature parity with the TypeScript originals"
+component = "viewer-api"
+risk_level = "high"
+type = "tracker-improvement"

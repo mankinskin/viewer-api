@@ -1,0 +1,10 @@
+id = "edd5de82-858a-410d-a71c-efdcfc967b64"
+created_at = "2026-04-08T14:20:29.927614400Z"
+acceptance_criteria = "ThemeStore with Dioxus signals; CSS custom property injection to :root; 4 built-in presets (Arcadia, Dark, Paper, Scratchboard); ThemeColors struct with all keys; save/load/export/import to localStorage; color-scheme auto-detection from luminance"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "high"
+risk_level = "medium"
+state = "new"
+title = "Port: Theme system — ThemeStore, CSS variables, presets, save/load"
+type = "tracker-improvement"

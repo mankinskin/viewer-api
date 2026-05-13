@@ -1,0 +1,10 @@
+id = "7a2cc57e-aeed-4302-a483-6eb68955cbd0"
+created_at = "2026-04-08T14:20:28.490561400Z"
+acceptance_criteria = "New crate at tools/viewer/viewer-api-dioxus with Dioxus 0.7 web feature; Cargo.toml configured; builds to wasm32; Trunk.toml dev setup; CI integration; README with usage"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "critical"
+risk_level = "low"
+state = "new"
+title = "Arch: viewer-api-dioxus crate scaffold and build system"
+type = "tracker-improvement"

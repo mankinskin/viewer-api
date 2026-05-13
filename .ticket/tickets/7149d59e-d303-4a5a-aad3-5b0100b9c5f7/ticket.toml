@@ -1,0 +1,10 @@
+id = "7149d59e-d303-4a5a-aad3-5b0100b9c5f7"
+created_at = "2026-04-08T14:20:30.402310200Z"
+acceptance_criteria = "All viewer-api CSS ported: variables.css, base.css, layout.css, buttons.css, tabs.css, tree.css, code-viewer.css, file-tree.css; CSS custom properties preserved; responsive breakpoints working"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "high"
+risk_level = "low"
+state = "new"
+title = "Port: CSS stylesheets — base, layout, buttons, tabs, tree, code-viewer"
+type = "tracker-improvement"

@@ -1,0 +1,10 @@
+id = "f1e31f8a-af8a-4d0b-bd83-9ca8c682cfa6"
+created_at = "2026-04-08T14:20:44.210804300Z"
+acceptance_criteria = "Header, Layout, Sidebar (collapsible+resizable+mobile), Panel (left/right/top/bottom), GlassPanel ported from viewer-api TS; same CSS class names; responsive behavior preserved"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "critical"
+risk_level = "low"
+state = "new"
+title = "Port: Layout components — Header, Layout, Sidebar, Panel, GlassPanel"
+type = "tracker-improvement"

@@ -1,0 +1,5 @@
+id = "b005a8fe-9971-4e59-a3df-171f81b6d3f7"
+created_at = "2026-04-30T11:58:51.730170700+00:00"
+title = "[viewer-api][P1] Visual primitives: Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid"
+state = "done"
+type = "tracker-improvement"

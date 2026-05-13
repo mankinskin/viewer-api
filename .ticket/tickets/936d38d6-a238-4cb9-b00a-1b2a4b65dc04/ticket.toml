@@ -1,0 +1,5 @@
+id = "936d38d6-a238-4cb9-b00a-1b2a4b65dc04"
+created_at = "2026-04-30T11:56:53.748571800+00:00"
+title = "[viewer-api] Port doc-viewer features to shared Dioxus viewer-api"
+state = "new"
+type = "tracker-improvement"

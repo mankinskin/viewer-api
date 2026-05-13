@@ -1,0 +1,5 @@
+{"rev":1,"ts":"2026-04-30T11:58:52.487674900+00:00","fields":{"state":"new","title":"[viewer-api][P2] State containers: TabsStore, PathCodec/url_path, Prefetcher","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-04-30T12:27:30.127482800+00:00","fields":{"state":"ready","title":"[viewer-api][P2] State containers: TabsStore, PathCodec/url_path, Prefetcher","type":"tracker-improvement"}}
+{"rev":3,"ts":"2026-04-30T12:27:30.703015400+00:00","fields":{"state":"in-implementation","title":"[viewer-api][P2] State containers: TabsStore, PathCodec/url_path, Prefetcher","type":"tracker-improvement"}}
+{"rev":4,"ts":"2026-04-30T12:27:31.113696300+00:00","fields":{"state":"in-review","title":"[viewer-api][P2] State containers: TabsStore, PathCodec/url_path, Prefetcher","type":"tracker-improvement"}}
+{"rev":5,"ts":"2026-04-30T12:27:31.840000300+00:00","fields":{"state":"done","title":"[viewer-api][P2] State containers: TabsStore, PathCodec/url_path, Prefetcher","type":"tracker-improvement"}}

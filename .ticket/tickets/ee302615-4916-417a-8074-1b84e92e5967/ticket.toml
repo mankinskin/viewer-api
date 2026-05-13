@@ -1,0 +1,10 @@
+id = "ee302615-4916-417a-8074-1b84e92e5967"
+created_at = "2026-04-08T14:20:29.685181400Z"
+acceptance_criteria = "CodeViewer with language detection, line numbering, line highlighting, auto-scroll; FileContentViewer with custom renderer hook extensibility; syntax highlighting via syntect or pulldown-cmark in WASM"
+component = "viewer-api-dioxus"
+deleted = true
+priority = "high"
+risk_level = "medium"
+state = "new"
+title = "Port: CodeViewer and FileContentViewer"
+type = "tracker-improvement"

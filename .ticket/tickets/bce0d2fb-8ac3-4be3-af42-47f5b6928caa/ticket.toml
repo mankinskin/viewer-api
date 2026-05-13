@@ -1,0 +1,5 @@
+id = "bce0d2fb-8ac3-4be3-af42-47f5b6928caa"
+created_at = "2026-03-27T23:40:16.036060800+00:00"
+title = "Impl: Extract HypergraphViewCore to viewer-api as primary graph component"
+state = "done"
+type = "tracker-improvement"
