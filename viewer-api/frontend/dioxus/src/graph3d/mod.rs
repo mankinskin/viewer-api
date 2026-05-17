@@ -205,8 +205,6 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         graph_container_style(&props.container_style, false, &graph_theme);
     let edge_count = props.layout.edges.len();
     let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
-    let edge_arrow_marker_id = format!("{}-edge-arrow", props.container_id);
-    let edge_arrow_marker_url = format!("url(#{edge_arrow_marker_id})");
     rsx! {
         div { id: "{props.container_id}", style: "{style}",
             svg {
@@ -214,27 +212,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                 style: "{edge_overlay_style}",
                 "data-graph-edge-overlay": "true",
                 "preserveAspectRatio": "none",
-                defs {
-                    marker {
-                        id: "{edge_arrow_marker_id}",
-                        "viewBox": "0 0 12 12",
-                        "refX": "10.5",
-                        "refY": "6",
-                        "markerWidth": "8",
-                        "markerHeight": "8",
-                        "markerUnits": "userSpaceOnUse",
-                        orient: "auto",
-                        path {
-                            class: "graph-edge-overlay__arrow",
-                            "fill": "context-stroke",
-                            d: "M 1 1 L 11 6 L 1 11 L 4.2 6 Z",
-                        }
-                    }
-                }
                 for index in 0..edge_count {
-                    line {
+                    path {
                         "data-edge-idx": "{index}",
-                        "marker-end": "{edge_arrow_marker_url}",
                     }
                 }
             }
@@ -259,8 +239,6 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let container_id = props.container_id.clone();
     let initial_camera = props.initial_camera.clone();
     let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
-    let edge_arrow_marker_id = format!("{}-edge-arrow", props.container_id);
-    let edge_arrow_marker_url = format!("url(#{edge_arrow_marker_id})");
     let on_layout_change = props.on_layout_change.clone();
     let on_camera_change = props.on_camera_change.clone();
     let camera_mode = props.camera_mode;
@@ -345,27 +323,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                 style: "{edge_overlay_style}",
                 "data-graph-edge-overlay": "true",
                 "preserveAspectRatio": "none",
-                defs {
-                    marker {
-                        id: "{edge_arrow_marker_id}",
-                        "viewBox": "0 0 12 12",
-                        "refX": "10.5",
-                        "refY": "6",
-                        "markerWidth": "8",
-                        "markerHeight": "8",
-                        "markerUnits": "userSpaceOnUse",
-                        orient: "auto",
-                        path {
-                            class: "graph-edge-overlay__arrow",
-                            "fill": "context-stroke",
-                            d: "M 1 1 L 11 6 L 1 11 L 4.2 6 Z",
-                        }
-                    }
-                }
                 for index in 0..edge_count {
-                    line {
+                    path {
                         "data-edge-idx": "{index}",
-                        "marker-end": "{edge_arrow_marker_url}",
                     }
                 }
             }

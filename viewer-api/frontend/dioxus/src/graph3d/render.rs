@@ -444,10 +444,6 @@ fn position_dom_edges(
         let (x2, y2) = rect_b
             .map(|rect| clip_edge_endpoint(rect, center_a, 0.0))
             .unwrap_or(center_b);
-        if (x1 - x2).abs() < 3.0 && (y1 - y2).abs() < 3.0 {
-            let _ = line.set_attribute("display", "none");
-            continue;
-        }
 
         let (stroke_width, stroke_opacity) = edge_overlay_style(
             layout,
@@ -456,17 +452,19 @@ fn position_dom_edges(
             a.id.as_str(),
             b.id.as_str(),
         );
+        let Some(path_d) = edge_overlay_path(x1, y1, x2, y2, stroke_width)
+        else {
+            let _ = line.set_attribute("display", "none");
+            continue;
+        };
         let (r, g, blue, _alpha) = edge_color(&edge.kind, &state.graph_theme);
         let stroke_alpha = (stroke_opacity
             * state.graph_theme.edge_overlay_opacity)
             .clamp(0.0, 1.0);
         let _ = line.set_attribute("display", "block");
-        let _ = line.set_attribute("x1", &format!("{x1:.1}"));
-        let _ = line.set_attribute("y1", &format!("{y1:.1}"));
-        let _ = line.set_attribute("x2", &format!("{x2:.1}"));
-        let _ = line.set_attribute("y2", &format!("{y2:.1}"));
+        let _ = line.set_attribute("d", &path_d);
         let _ = line.set_attribute(
-            "stroke",
+            "fill",
             &format!(
                 "rgb({:.0} {:.0} {:.0} / {:.3})",
                 r * 255.0,
@@ -475,12 +473,74 @@ fn position_dom_edges(
                 stroke_alpha,
             ),
         );
+        let _ = line.set_attribute("stroke", "none");
         let _ = line.remove_attribute("stroke-opacity");
         let _ = line.remove_attribute("opacity");
-        let _ =
-            line.set_attribute("stroke-width", &format!("{stroke_width:.2}"));
-        let _ = line.set_attribute("vector-effect", "non-scaling-stroke");
+        let _ = line.remove_attribute("stroke-width");
+        let _ = line.remove_attribute("vector-effect");
+        let _ = line.remove_attribute("marker-end");
     }
+}
+
+fn edge_overlay_path(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    stroke_width: f32,
+) -> Option<String> {
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    let length = (dx * dx + dy * dy).sqrt();
+    if length < 3.0 {
+        return None;
+    }
+
+    let shaft_half = stroke_width * 0.5;
+    let arrow_len = (stroke_width * 5.4).clamp(14.0, 20.0).min(length * 0.45);
+    let arrow_half = (stroke_width * 2.35).clamp(6.0, 9.5).min(length * 0.35);
+    let shaft_len = length - arrow_len;
+    if shaft_len <= 1.0 {
+        return None;
+    }
+
+    let ux = dx / length;
+    let uy = dy / length;
+    let nx = -uy;
+    let ny = ux;
+    let shaft_end_x = x2 - ux * arrow_len;
+    let shaft_end_y = y2 - uy * arrow_len;
+
+    let start_upper_x = x1 + nx * shaft_half;
+    let start_upper_y = y1 + ny * shaft_half;
+    let shaft_upper_x = shaft_end_x + nx * shaft_half;
+    let shaft_upper_y = shaft_end_y + ny * shaft_half;
+    let base_upper_x = shaft_end_x + nx * arrow_half;
+    let base_upper_y = shaft_end_y + ny * arrow_half;
+    let base_lower_x = shaft_end_x - nx * arrow_half;
+    let base_lower_y = shaft_end_y - ny * arrow_half;
+    let shaft_lower_x = shaft_end_x - nx * shaft_half;
+    let shaft_lower_y = shaft_end_y - ny * shaft_half;
+    let start_lower_x = x1 - nx * shaft_half;
+    let start_lower_y = y1 - ny * shaft_half;
+
+    Some(format!(
+        "M {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2} Z",
+        start_upper_x,
+        start_upper_y,
+        shaft_upper_x,
+        shaft_upper_y,
+        base_upper_x,
+        base_upper_y,
+        x2,
+        y2,
+        base_lower_x,
+        base_lower_y,
+        shaft_lower_x,
+        shaft_lower_y,
+        start_lower_x,
+        start_lower_y,
+    ))
 }
 
 fn edge_overlay_style(

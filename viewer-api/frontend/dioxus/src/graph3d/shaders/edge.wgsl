@@ -214,9 +214,9 @@ fn fs_edge(in: EdgeVsOut) -> @location(0) vec4<f32> {
     //   [t_src_exit .. arrow_start_t]  = shaft (constant width)
     //   [arrow_start_t .. t_dst_exit]  = arrowhead (triangle, widens then tapers to point)
     //
-    const ARROW_LEN_F : f32 = 0.45;   // world-space arrowhead length
+    const ARROW_LEN_F : f32 = 1.40;   // world-space arrowhead length
     const SHAFT_HALF  : f32 = 0.30;   // shaft half-width in quad-UV space (y in -1..1)
-    const ARROW_HALF  : f32 = 0.90;   // arrowhead max half-width at base (quad-UV)
+    const ARROW_HALF  : f32 = 2.35;   // arrowhead max half-width at base (quad-UV)
     const AA          : f32 = 0.04;   // anti-alias softness
     let visible_start = min(in.srcExitT, in.dstExitT);
     let visible_end = max(in.srcExitT, in.dstExitT);

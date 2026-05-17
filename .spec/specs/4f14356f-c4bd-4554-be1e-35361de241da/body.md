@@ -13,6 +13,9 @@ ticket-viewer and spec-viewer.
 - `hovered_node_id` is the transient focus anchor used when there is no active
   selection. Incident edges brighten with a cooler focus tint while unrelated
   edges dim.
+- Directed edges render as single filled SVG path shapes so the shaft and tip
+  share one color/opacity profile across viewer-api graph consumers such as
+  ticket-viewer and spec-viewer.
 - `graph3d::can_use_webgpu() -> bool` — runtime probe.
 - `interaction::install(container_id, state)` — mouse handlers (orbit /
   pan / zoom / right-button-drag with contextmenu suppression).
@@ -50,6 +53,9 @@ graph fetched from `/api/demo/graph`:
 - Plain right-click leaves `defaultPrevented === false`.
 - In spec-viewer `/specs/graph`, clicking a visible graph card opens the preview
   panel and marks that card with `node-card-selected`.
+- In ticket-viewer, rendered graph edges expose filled SVG `<path>` elements
+  without `marker-end`, so the shaft and arrow tip do not stack as separate
+  translucent shapes.
 - Without WebGPU (no flags), the SVG fallback renders ≥1 `<line>`
   representing an edge.
 
@@ -64,5 +70,7 @@ graph fetched from `/api/demo/graph`:
 ## Code references
 
 - `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/`
+- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/render.rs`
 - `tools/viewer/e2e/tests/dioxus/graph3d-right-drag.spec.ts`
 - `tools/viewer/e2e/tests/spec-viewer/graph-selection.spec.ts`
+- `memory-viewers/ticket-viewer/frontend/dioxus/e2e-release/graph-edge-overlay-shape.spec.ts`
