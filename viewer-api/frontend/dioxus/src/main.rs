@@ -13,7 +13,7 @@ use demo::Demo;
 fn main() {
     #[cfg(target_arch = "wasm32")]
     viewer_api_dioxus::tracing_setup::install();
-    dioxus::launch(App);
+    dioxus_web::launch::launch_cfg(App, dioxus_web::Config::default());
 }
 
 #[component]

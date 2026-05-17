@@ -72,7 +72,7 @@ pub(super) fn start_touch_drag(
     is_horizontal: bool,
     evt: Event<TouchData>,
 ) {
-    use dioxus::web::WebEventExt as _;
+    use dioxus_web::WebEventExt as _;
 
     evt.prevent_default();
     let Some(document) = current_document() else {

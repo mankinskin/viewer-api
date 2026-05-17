@@ -77,7 +77,7 @@ pub fn Sidebar(
     let on_touch_start = move |evt: Event<TouchData>| {
         #[cfg(target_arch = "wasm32")]
         {
-            use dioxus::web::WebEventExt as _;
+            use dioxus_web::WebEventExt as _;
             let x = evt
                 .data()
                 .try_as_web_event()
@@ -95,7 +95,7 @@ pub fn Sidebar(
     let on_touch_end = move |evt: Event<TouchData>| {
         #[cfg(target_arch = "wasm32")]
         {
-            use dioxus::web::WebEventExt as _;
+            use dioxus_web::WebEventExt as _;
             let x_end = evt
                 .data()
                 .try_as_web_event()
