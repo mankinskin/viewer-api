@@ -60,17 +60,13 @@ source_dir = "tools/viewer/spec-viewer"
 [[frontend]]
 name = "doc-viewer"
 serves = "doc-viewer"
-source_dir = "tools/viewer/doc-viewer/frontend"
-build_cmd = ["npx", "vite", "build"]
-build_output = "tools/viewer/doc-viewer/static"
+source_dir = "tools/viewer/doc-viewer/frontend/dioxus"
+build_cmd = ["trunk", "build", "--release"]
+build_output = "tools/viewer/doc-viewer/frontend/dioxus/dist"
+extra_assets = ["tools/viewer/doc-viewer/frontend/dioxus/public"]
 
 [[frontend.prebuild]]
 dir = "viewer-api/frontend/ts"
-cmd = ["npm", "install"]
-condition = "missing:node_modules"
-
-[[frontend.prebuild]]
-dir = "tools/viewer/doc-viewer/frontend"
 cmd = ["npm", "install"]
 condition = "missing:node_modules"
 
