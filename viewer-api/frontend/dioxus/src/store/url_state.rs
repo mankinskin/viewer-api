@@ -10,7 +10,8 @@
 //!
 //! ## Loop prevention
 //!
-//! [`set_hash_param`] / [`remove_hash_param`] use `location.hash` assignment,
+//! [`set_hash_param`] / [`remove_hash_param`] / [`update_hash_params`] use
+//! `location.hash` assignment,
 //! which triggers a `hashchange` event but **not** a `popstate` event.
 //! [`UrlStateManager::new`] registers a `popstate` listener, so the
 //! `on_change` callback fires only on genuine browser back/forward navigation —
@@ -49,8 +50,9 @@ impl Drop for PopstateGuard {
 /// whenever the browser navigates with the back or forward buttons.  Drop this
 /// value to unregister the listener automatically.
 ///
-/// Use the free functions [`get_hash_param`], [`set_hash_param`], and
-/// [`remove_hash_param`] to read and write individual parameters.
+/// Use the free functions [`get_hash_param`], [`set_hash_param`],
+/// [`remove_hash_param`], and [`update_hash_params`] to read and write hash
+/// parameters.
 pub struct UrlStateManager {
     #[cfg(target_arch = "wasm32")]
     _guard: Option<PopstateGuard>,
@@ -195,5 +197,36 @@ pub fn remove_hash_param(key: &str) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let _ = key;
+    }
+}
+
+/// Applies a batch of hash-fragment updates with a single `location.hash`
+/// write.
+///
+/// `set_pairs` are inserted or replaced, then each entry in `remove_keys` is
+/// removed from the same in-memory hash map before the browser hash is
+/// updated. This avoids intermediate partial hashes that can confuse
+/// `hashchange` listeners.
+pub fn update_hash_params(
+    set_pairs: &[(&str, &str)],
+    remove_keys: &[&str],
+) {
+    #[cfg(target_arch = "wasm32")]
+    {
+        if let Some(window) = web_sys::window() {
+            let mut map = parse_hash();
+            for key in remove_keys {
+                map.remove(*key);
+            }
+            for (key, value) in set_pairs {
+                map.insert((*key).to_owned(), (*value).to_owned());
+            }
+            let hash = format_hash(&map);
+            let _ = window.location().set_hash(&hash);
+        }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = (set_pairs, remove_keys);
     }
 }

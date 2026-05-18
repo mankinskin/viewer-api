@@ -101,6 +101,7 @@ pub use store::{
         get_hash_param,
         remove_hash_param,
         set_hash_param,
+        update_hash_params,
         UrlStateManager,
     },
 };
