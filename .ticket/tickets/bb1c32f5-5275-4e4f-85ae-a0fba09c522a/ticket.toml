@@ -1,7 +1,7 @@
 id = "bb1c32f5-5275-4e4f-85ae-a0fba09c522a"
 created_at = "2026-05-19T11:58:26.124495800+00:00"
 title = "[viewer-api] Extract a reusable Dioxus page header shell"
-state = "in-review"
+state = "in-implementation"
 component = "viewer-api"
 priority = "high"
 risk_level = "medium"

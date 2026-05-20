@@ -1,7 +1,7 @@
 id = "735502cd-3aec-4772-b2a8-2184aaaf3c21"
 created_at = "2026-05-20T09:38:42.960962400+00:00"
 title = "[viewer-api] Extract a reusable interactive chip button for Dioxus explorer filters"
-state = "in-review"
+state = "done"
 component = "viewer-api"
 priority = "high"
 risk_level = "medium"

@@ -23,3 +23,16 @@ The goal is to share the explorer chrome, not to force every viewer into the sam
 - spec-viewer and doc-viewer Dioxus can adopt the shared search/tree chrome directly.
 - ticket-viewer can reuse the shared explorer chrome while keeping ticket-specific row rendering behind its own component boundary.
 - The demo-viewer tree-view showcase ticket can demonstrate the shared explorer contract rather than a one-off page implementation.
+
+Implementation update:
+- Added shared `ExplorerShell` and `SidebarSearch` primitives in `viewer-api-dioxus` so viewers can compose shared search, controls, status, and body chrome around either `FileTree` or raw `TreeView` content.
+- Adopted the shared shell in `spec-viewer` `SpecTree` so the spec sidebar now shares the search and status layout around `FileTree` instead of keeping bespoke wrapper markup.
+- Adopted the shared shell in `ticket-viewer` `TicketTree` while preserving ticket-specific row rendering, state chips, selection controls, and keyboard navigation.
+- Kept the shell body generic so existing TreeView-based consumers, including the current Dioxus `doc-viewer` structure, can adopt the same shared chrome directly without changing row rendering.
+
+Validation status:
+- Passed: `cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus`
+- Passed: `cargo check --target wasm32-unknown-unknown -p spec-viewer-dioxus`
+- Passed: `cargo check --target wasm32-unknown-unknown -p ticket-viewer-dioxus`
+- Passed: focused Chromium probe against managed `spec-viewer` at `1440x900`, validating the browse route and shared sidebar search shell after `viewer-ctl prepare spec-viewer`.
+- Passed: `npm run test:e2e:release -- e2e-release/sidebar-query-state-filter.spec.ts e2e-release/keyboard-navigation.spec.ts -g "sidebar explorer keeps active state filter when filter text is non-empty|sidebar filter keeps focus while arrows move the active ticket and Enter selects it"` in `memory-viewers/ticket-viewer/frontend/dioxus`.
