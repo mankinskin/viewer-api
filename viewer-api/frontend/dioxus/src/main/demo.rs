@@ -5,6 +5,7 @@ use viewer_api_dioxus::{
     GlassPanel,
     Header,
     Layout,
+    NodeIcon,
     Panel,
     PanelPlacement,
     Sidebar,
@@ -19,6 +20,68 @@ use crate::{
     url_state_demo::UrlStateDemo,
 };
 
+fn demo_leaf(
+    id: &str,
+    label: &str,
+    kind: &str,
+    summary: &str,
+) -> TreeNode {
+    let mut node = TreeNode::leaf(id, label);
+    let tooltip_label = label.to_string();
+    let tooltip_kind = kind.to_string();
+    let tooltip_summary = summary.to_string();
+
+    node.icon = NodeIcon::SourceFile;
+    node.tooltip = Some(summary.to_string());
+    node.with_tooltip_render(move || {
+        rsx! {
+            div {
+                style: "display: flex; flex-direction: column; gap: 4px; max-width: 280px;",
+                div {
+                    style: "font-weight: 600; color: var(--text-primary);",
+                    "{tooltip_label}"
+                }
+                div { "kind: {tooltip_kind}" }
+                div {
+                    style: "color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere;",
+                    "{tooltip_summary}"
+                }
+            }
+        }
+    })
+}
+
+fn demo_dir(
+    id: &str,
+    label: &str,
+    summary: &str,
+    children: Vec<TreeNode>,
+) -> TreeNode {
+    let child_count = children.len();
+    let mut node = TreeNode::dir(id, label, children);
+    let tooltip_label = label.to_string();
+    let tooltip_summary = summary.to_string();
+
+    node.icon = NodeIcon::Module;
+    node.tooltip = Some(summary.to_string());
+    node.with_tooltip_render(move || {
+        rsx! {
+            div {
+                style: "display: flex; flex-direction: column; gap: 4px; max-width: 280px;",
+                div {
+                    style: "font-weight: 600; color: var(--text-primary);",
+                    "{tooltip_label}"
+                }
+                div { "children: {child_count}" }
+                div {
+                    style: "color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere;",
+                    "{tooltip_summary}"
+                }
+            }
+        }
+    })
+}
+
 #[component]
 pub(super) fn Demo() -> Element {
     let mut sidebar_collapsed = use_signal(|| false);
@@ -27,33 +90,77 @@ pub(super) fn Demo() -> Element {
     let mut active_filters: Signal<Vec<String>> = use_signal(Vec::new);
 
     let nodes = vec![
-        TreeNode::dir(
+        demo_dir(
             "src",
             "src",
+            "Source tree for shared viewer primitives.",
             vec![
-                TreeNode::dir(
+                demo_dir(
                     "components",
                     "components",
+                    "Reusable shell, tree, and theme components shared across viewers.",
                     vec![
-                        TreeNode::leaf("layout", "layout.rs"),
-                        TreeNode::leaf("tree_view", "tree_view.rs"),
-                        TreeNode::leaf("theme_settings", "theme_settings.rs"),
-                        TreeNode::leaf("resize_handle", "resize_handle.rs"),
+                        demo_leaf(
+                            "layout",
+                            "layout.rs",
+                            "component",
+                            "Hosts the shared page shell with header, sidebar, and content regions.",
+                        ),
+                        demo_leaf(
+                            "tree_view",
+                            "tree_view.rs",
+                            "component",
+                            "Renders the hierarchical tree rows used by explorer sidebars.",
+                        ),
+                        demo_leaf(
+                            "theme_settings",
+                            "theme_settings.rs",
+                            "component",
+                            "Controls theme tokens, palettes, and appearance settings.",
+                        ),
+                        demo_leaf(
+                            "resize_handle",
+                            "resize_handle.rs",
+                            "component",
+                            "Provides draggable panel resizing for shared layouts.",
+                        ),
                     ],
                 ),
-                TreeNode::dir(
+                demo_dir(
                     "store",
                     "store",
-                    vec![TreeNode::leaf("theme_rs", "theme.rs")],
+                    "Shared client-side stores and URL/session state helpers.",
+                    vec![demo_leaf(
+                        "theme_rs",
+                        "theme.rs",
+                        "store",
+                        "Persists theme selection and exposes tokens to Dioxus components.",
+                    )],
                 ),
-                TreeNode::leaf("main_rs", "main.rs"),
-                TreeNode::leaf("lib_rs", "lib.rs"),
+                demo_leaf(
+                    "main_rs",
+                    "main.rs",
+                    "entrypoint",
+                    "Starts the demo app and wires shared examples into the shell.",
+                ),
+                demo_leaf(
+                    "lib_rs",
+                    "lib.rs",
+                    "library",
+                    "Exports the shared viewer-api Dioxus component surface.",
+                ),
             ],
         ),
-        TreeNode::dir(
+        demo_dir(
             "public",
             "public",
-            vec![TreeNode::leaf("css", "viewer-api.css")],
+            "Static assets and CSS used by the shared demo viewer.",
+            vec![demo_leaf(
+                "css",
+                "viewer-api.css",
+                "asset",
+                "Defines the shared theme tokens and core viewer presentation styles.",
+            )],
         ),
     ];
 

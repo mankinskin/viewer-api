@@ -35,7 +35,10 @@ pub use filter_panel::{
     FilterResult,
     FilterState,
 };
-pub use header::HeaderActions;
+pub use header::{
+    HeaderActions,
+    PageHeader,
+};
 pub use icons::{
     AlertIcon,
     CheckIcon,
@@ -100,9 +103,12 @@ pub use theme_settings::{
     ThemeSnapshot,
 };
 pub use tree_view::{
+    ExplorerShell,
     FileTree,
+    FilterToggleButton,
     FilterDef,
     NodeIcon,
+    SidebarSearch,
     SortKey,
     TreeNode,
     TreeView,

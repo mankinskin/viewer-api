@@ -1,52 +1,50 @@
-Bring the Preact doc-viewer's UX patterns (breadcrumbs, modal overlay, document tabs store, category landing pages, filter panel, rich tooltips, prefetch cache, human-readable URL routing) into the shared `viewer-api-dioxus` crate so spec-viewer (and future Dioxus viewers) can reuse them.
+Track the remaining Dioxus adoption work needed after the shared doc-viewer-inspired primitives landed in `viewer-api-dioxus`, so current viewers reuse the shared shells and stores instead of carrying bespoke implementations.
 
 ## Motivation
 
-doc-viewer (Preact/TS) has matured a number of cross-cutting UX widgets and stores that the Dioxus viewers (currently only spec-viewer) lack. Each Dioxus viewer reinvents these inline with ad-hoc styles. Porting them to the shared crate eliminates drift and unblocks richer Dioxus viewers.
+The original phase plan under this tracker succeeded in landing most of the shared foundations, but the tracker description is now stale: several items it still marks as missing already exist in `viewer-api-dioxus`, while the remaining work is mostly consumer adoption. Refreshing the tracker keeps follow-up tickets aligned with the real gaps instead of reopening completed primitives.
 
 ## Scope
 
-Shared crate: `tools/viewer/viewer-api/frontend/dioxus/`
-Initial consumer: `tools/viewer/spec-viewer/frontend/dioxus/`
-Out of scope: rewriting doc-viewer itself. Doc-viewer may later opt into the shared crate via TS bindings, tracked separately.
+Shared crate: `memory-viewers/viewer-api/viewer-api/frontend/dioxus/`
+Current Dioxus consumers in scope: `memory-viewers/spec-viewer/frontend/dioxus/`, `memory-viewers/ticket-viewer/frontend/dioxus/`, and `tools/viewer/doc-viewer/frontend/dioxus/`
+Out of scope: the legacy Preact doc-viewer frontend, unrelated viewer layout rewrites, and speculative phases that are not backed by a confirmed current consumer gap.
 
-## Gap matrix (summary)
+## Current status
 
-| # | Feature | Dioxus status |
+| Area | Current status | Evidence |
 |---|---|---|
-| 1 | Multi-document tab store (TabsStore<T>) | Missing |
-| 2 | Breadcrumbs widget | Missing |
-| 3 | CategoryPage / Card / CardGrid | Missing |
-| 4 | Filter panel + JQ query shell | Missing |
-| 5 | Modal/overlay shell | Missing |
-| 6 | Document meta header + Chip | Missing |
-| 7 | Rich tree-node tooltip (Element-based) | TreeNode.tooltip is String only |
-| 8 | Prefetch / LRU cache | Missing |
-| 9 | Split content area | Use TabsStore |
-| 10 | HeaderActions helper | Missing |
-| 11 | PathCodec + tree expansion sync | UrlStateManager exists, no codec helper |
-| 12 | Mobile sidebar plumbing | Audit needed |
+| Shared page header shell | Implemented; adoption tracked | `bb1c32f5-5275-4e4f-85ae-a0fba09c522a` |
+| Shared explorer shell | Implemented; adoption tracked | `763f8c13-a4bd-47af-8894-3e95a63fde8d` |
+| Rich tree tooltips | Implemented; adoption tracked | `21a2e8f4-4bd8-4436-be52-c2c4a07bb692` |
+| TabsStore / PathCodec / Prefetcher | Implemented in shared crate | `da16dada-e245-4fdd-868a-c3691e6c351a` |
+| Breadcrumbs / Overlay / MetaHeader / CardGrid | Implemented in shared crate | earlier phase tickets already landed |
+| FilterPanel shell | Implemented in shared crate | `b4127011-4e08-47bc-ac73-3d3761f29587` |
+| HeaderActions / mobile-sidebar audit / `tooltip_render` | Implemented in shared crate | `8bf5edd2-4fe6-4580-ac87-73843f0206f0` |
 
-## Phases
+## Remaining confirmed gaps
 
-Subtickets implement the plan in dependency order:
+1. `tools/viewer/doc-viewer/frontend/dioxus/src/app.rs` still hand-rolls tab state with `Signal<Vec<OpenArtifactTab>>` plus `Signal<Option<String>>` instead of consuming the shared `TabsStore<OpenArtifactTab>`.
+2. Demo-viewer showcase tickets for shared tab/store primitives should stay linked to the next adoption slice so the generic contract remains demonstrable as consumers converge.
 
-- **Phase 1 — primitives** (Breadcrumbs, Overlay/Modal, MetaHeader+Chip, Card/CardGrid)
-- **Phase 2 — state containers** (TabsStore, PathCodec/url_path, Prefetcher)
-- **Phase 3 — extend existing widgets** (TreeNode.tooltip_render, layout audit, HeaderActions)
-- **Phase 4 — filter panel** (UI shell + per-viewer query backend)
-- **Phase 5 — adopt in spec-viewer**
-- **Phase 6 — adopt in doc-viewer (optional, deferred)**
+## Linked work
+
+- Current child/adoption tickets:
+	- `bb1c32f5-5275-4e4f-85ae-a0fba09c522a` — shared page header shell
+	- `763f8c13-a4bd-47af-8894-3e95a63fde8d` — shared explorer shell
+	- `21a2e8f4-4bd8-4436-be52-c2c4a07bb692` — rich tree tooltip adoption
+	- `4d9293ab-b7a8-4113-b80a-bfe39297bad2` — shared TabsStore adoption in Dioxus doc-viewer
+- Demo-viewer showcase links for the next tab-state slice:
+	- `0eef1873-0626-4a87-93bc-51d182808e16` — feature page: tab bar
+	- `1efec195-f8b4-4571-b073-806cac0b66ce` — feature page: store primitives
 
 ## Acceptance criteria
 
-- Each phase ticket completes its scope with passing `cargo check -p viewer-api-dioxus --target wasm32-unknown-unknown` and `cargo check -p spec-viewer-dioxus --target wasm32-unknown-unknown`.
-- spec-viewer visually exercises every new widget (browser verification per AGENTS.md).
-- No regressions in existing Dioxus viewers.
+- The tracker only stays open for confirmed remaining adoption work, not for primitives that already landed.
+- Each linked child ticket completes its scope with the relevant focused validation for the affected consumer and shared crate.
+- Shared demo-viewer tickets remain linked to adoption slices when they are the intended generic showcase for the same shared contract.
 
 ## Risks
 
-- TabsStore generic over `T` — Dioxus `Signal` quirks; may need `Rc<dyn Any>` or split inner/outer.
-- Overlay + WGPU canvas pointer-event interaction.
-- Filter-panel JQ backend: spec-viewer has no jq endpoint; needs server-side support or deferred scope.
-- `tooltip_render: Element` lifetime — likely `Rc<dyn Fn() -> Element>`.
+- Doc-viewer tab-state migration must preserve existing auto-open, close-neighbour, and JSON fetch flows while switching to the shared store contract.
+- URL/path-sync and prefetch follow-ups should not be opened until the tab-state adoption clarifies the real consumer surface; otherwise the tracker will drift back into speculative work.

@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use dioxus::prelude::*;
 
 use super::{
+    filter_toggle_button::FilterToggleButton,
     types::{
         FilterDef,
         SortKey,
@@ -46,15 +47,19 @@ pub fn FileTree(
                     for sort_key in &sort_keys {
                         {
                             let key = sort_key.key.clone();
-                            let button_class = if sort_key.ascending {
-                                "file-tree__sort-btn file-tree__sort-btn--active"
+                            let direction_label = if sort_key.ascending {
+                                "ascending"
                             } else {
-                                "file-tree__sort-btn"
+                                "descending"
                             };
                             rsx! {
-                                button {
+                                FilterToggleButton {
                                     key: "{sort_key.key}",
-                                    class: "{button_class}",
+                                    class: "file-tree__sort-btn".to_string(),
+                                    active_class: "file-tree__sort-btn--active".to_string(),
+                                    active: sort_key.ascending,
+                                    aria_label: format!("Sort by {} ({direction_label})", sort_key.label),
+                                    title: format!("Sort by {} ({direction_label})", sort_key.label),
                                     onclick: move |_| on_sort.call(key.clone()),
                                     "{sort_key.label}"
                                     if sort_key.ascending { " ↑" } else { " ↓" }
@@ -72,20 +77,18 @@ pub fn FileTree(
                         {
                             let filter_key = filter.key.clone();
                             let is_active = active_filters.contains(&filter.key);
-                            let button_class = if is_active {
-                                "file-tree__filter-btn file-tree__filter-btn--active"
-                            } else {
-                                "file-tree__filter-btn"
-                            };
                             let badge_style = filter
                                 .color
                                 .as_deref()
                                 .map(|color| format!("color: {color}"))
                                 .unwrap_or_default();
                             rsx! {
-                                button {
+                                FilterToggleButton {
                                     key: "{filter.key}",
-                                    class: "{button_class}",
+                                    class: "file-tree__filter-btn".to_string(),
+                                    active_class: "file-tree__filter-btn--active".to_string(),
+                                    active: is_active,
+                                    aria_label: format!("Toggle {} filter", filter.label),
                                     onclick: move |_| on_filter.call(filter_key.clone()),
                                     span {
                                         class: "file-tree__filter-icon",

@@ -1,0 +1,1 @@
+{"rev":1,"ts":"2026-05-19T11:58:34.473757200+00:00","fields":{"component":"viewer-api","priority":"high","risk_level":"medium","state":"new","tags":"viewer-api,dioxus,frontend,shared-components,shells","title":"[viewer-api] Converge shared Dioxus viewer shells across frontends","type":"tracker-improvement","workflow_stage":"plan"}}

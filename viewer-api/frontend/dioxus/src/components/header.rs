@@ -11,7 +11,88 @@ use crate::components::{
     FilterIcon,
     HomeIcon,
     RefreshIcon,
+    layout::Header,
 };
+
+/// Shared page-level header shell for Dioxus viewers.
+///
+/// Builds on top of [`Header`] and [`HeaderActions`] so routes can keep
+/// their own left/right extras without re-implementing the shared action row.
+#[component]
+pub fn PageHeader(
+    #[props(default)] lead: Option<Element>,
+    #[props(default)] icon: Option<Element>,
+    #[props(default)] title: Option<String>,
+    #[props(default)] subtitle: Option<String>,
+    #[props(default)] left_extra: Option<Element>,
+    #[props(default)] middle: Option<Element>,
+    #[props(default)] right_prefix: Option<Element>,
+    #[props(default)] right_suffix: Option<Element>,
+    #[props(default)] on_home: Option<EventHandler<()>>,
+    #[props(default)] on_refresh: Option<EventHandler<()>>,
+    #[props(default)] on_filter_toggle: Option<EventHandler<()>>,
+    #[props(default)] on_clear: Option<EventHandler<()>>,
+    #[props(default)] on_theme_toggle: Option<EventHandler<()>>,
+    #[props(default = false)] filter_active: bool,
+    #[props(default = false)] has_active_filters: bool,
+    #[props(default)] class: String,
+    #[props(default)] actions_class: String,
+) -> Element {
+    let has_shared_actions = on_home.is_some()
+        || on_refresh.is_some()
+        || on_filter_toggle.is_some()
+        || (has_active_filters && on_clear.is_some())
+        || on_theme_toggle.is_some();
+
+    let left = rsx! {
+        if let Some(lead) = lead { {lead} }
+        if let Some(icon) = icon {
+            span {
+                class: "header-icon",
+                {icon}
+            }
+        }
+        if let Some(title) = title.as_deref() {
+            span {
+                class: "header-title",
+                "{title}"
+            }
+        }
+        if let Some(subtitle) = subtitle.as_deref() {
+            span {
+                class: "header-subtitle",
+                "{subtitle}"
+            }
+        }
+        if let Some(left_extra) = left_extra { {left_extra} }
+    };
+
+    let right = rsx! {
+        if let Some(right_prefix) = right_prefix { {right_prefix} }
+        if has_shared_actions {
+            HeaderActions {
+                on_home,
+                on_refresh,
+                on_filter_toggle,
+                on_clear,
+                on_theme_toggle,
+                filter_active,
+                has_active_filters,
+                class: actions_class,
+            }
+        }
+        if let Some(right_suffix) = right_suffix { {right_suffix} }
+    };
+
+    rsx! {
+        Header {
+            class,
+            left,
+            middle,
+            right,
+        }
+    }
+}
 
 /// Button row for the viewer header.
 ///
