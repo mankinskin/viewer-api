@@ -4,6 +4,7 @@ title = "Feature: Extract WgpuOverlay/effects to viewer-api and GPU dependency g
 state = "done"
 acceptance_criteria = "1) WgpuOverlay component, overlay-api, gpu-init, gpu-buffers, gpu-render-loop, element-scanner, element-types, WGSL shaders, thumbnail-capture moved to viewer-api/frontend. 2) effects/palette.ts+WGSL moved to viewer-api/frontend. 3) log-viewer imports from viewer-api instead of local copies. 4) ticket-viewer imports WgpuOverlay and renders dependency graph with GPU pipeline replacing SVG GraphView. 5) @webgpu/types added to viewer-api devDependencies."
 component = "viewer-api"
+depends_on = ["6f71ca0b-b922-4f6b-9b09-bf0cbd9b228c", "9d7d97bb-fc65-4374-8de8-f22bd2a05c18", "b3d250d5-dd28-44e6-aaf4-47bee9dea56e", "c826869a-d40c-425d-ba5c-4003c222cfde", "dbd048a0-08b4-458d-b860-29b8ce5119e3"]
 risk_level = "high"
 tags = "gpu,webgpu,wgsl,viewer-api,3d-rendering,extraction"
 type = "tracker-improvement"

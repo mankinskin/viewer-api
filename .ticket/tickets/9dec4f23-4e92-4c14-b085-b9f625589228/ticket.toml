@@ -4,6 +4,7 @@ title = "Port: ResizeHandle with rAF-batched drag"
 state = "done"
 acceptance_criteria = "ResizeHandle component with horizontal+vertical resize modes; rAF batching via web-sys requestAnimationFrame; document-level event listeners registered with on_cleanup removal hooks; cursor management during drag; touch event support (touch start/move/end) for mobile resize gestures; no memory leaks (Closure::into_js_value not forget); min/max size constraints; no clipping from overflow:hidden ancestors"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "high"
 risk_level = "medium"
 type = "tracker-improvement"

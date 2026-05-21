@@ -4,6 +4,7 @@ title = "demo-viewer: manual validation epic (signs off `verified` on the umbrel
 state = "ready"
 acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
+depends_on = ["02025547-027b-43f7-bcd7-6a212108085f", "0eef1873-0626-4a87-93bc-51d182808e16", "1efec195-f8b4-4571-b073-806cac0b66ce", "258ed497-b5ca-4622-96a3-6f1ea210e7bb", "3df77f25-0f1c-4c1c-a2a8-e9c885f275db", "42bd0dc8-cc28-46b3-9535-2d1207b18ae6", "48530193-0637-4709-8239-e8f3e1cc0eba", "5d9e331b-dc18-444b-af45-90a14d096847", "6006ec27-babd-4656-9eca-78bdd5eb5b47", "6f924445-ea9c-46e9-b051-b5aab6b798fa", "76378ed1-f50d-43d9-9414-04cfc3232a00", "8d0e9879-5e42-449f-90a6-0060dbde112f", "8de2f8e2-43b6-4de1-a9f7-54fc64c2bdab", "9d7d97bb-fc65-4374-8de8-f22bd2a05c18", "b543e4ad-7ac4-4fd0-abb7-59a725affa64", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b", "ba0fd25e-c23b-48a4-934c-a30542f6fca9", "db1cccef-6712-4702-ae58-fe23dacc029f", "e737092d-6083-4bf8-ba0e-1ac22d7c521b", "ed8252fc-371d-4134-a981-5af988c4241a", "fc0282b5-844c-4101-9391-c926ffdaf1d7"]
 risk_level = "medium"
 spec_refs = "4c3b62b4-1198-4ce2-9ef6-df530f38297e"
 tags = "demo-viewer,viewer-api"

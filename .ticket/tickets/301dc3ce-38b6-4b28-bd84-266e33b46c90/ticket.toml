@@ -4,6 +4,7 @@ title = "Plan: DOM 3D integration for graph viewer"
 state = "new"
 acceptance_criteria = "3D DOM integration implemented; viewer renders 3D graph view"
 component = "viewer-api"
+depends_on = ["608bb106-f22d-4bb4-bbde-d87ec33fd6e6", "a39f7805-c6bd-47d3-9b1b-fa29215bdf9e", "c826869a-d40c-425d-ba5c-4003c222cfde", "ee7aa0cd-04ae-423e-83be-6edf58eeaf41"]
 doc_category = "plan"
 risk_level = "low"
 source_agent_files = "plans/20260223_PLAN_DOM_3D_INTEGRATION.md"

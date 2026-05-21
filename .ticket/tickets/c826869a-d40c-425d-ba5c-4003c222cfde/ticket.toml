@@ -4,6 +4,7 @@ title = "Impl: Extract generic Graph3DView component to viewer-api"
 state = "done"
 acceptance_criteria = "1) Graph3DView component in viewer-api/frontend/ with generic Graph3DNode/Graph3DEdge props. 2) Force-directed layout engine generalized from HypergraphView buildLayout(). 3) Camera hook (orbit, focus) extracted. 4) Mouse interaction hook (select, drag, orbit) extracted without hypergraph-specific logic. 5) Node animation + DOM positioning extracted. 6) Generic overlay renderer hook for edge/grid rendering. 7) NodeLayer DOM component extracted. 8) HypergraphView in log-viewer refactored to wrap Graph3DView and add hypergraph-specific features (search paths, nesting, decomposition, visualization state). 9) Both viewers typecheck."
 component = "viewer-api"
+depends_on = ["b3d250d5-dd28-44e6-aaf4-47bee9dea56e"]
 risk_level = "high"
 tags = "gpu,3d-rendering,graph,viewer-api,extraction"
 type = "tracker-improvement"

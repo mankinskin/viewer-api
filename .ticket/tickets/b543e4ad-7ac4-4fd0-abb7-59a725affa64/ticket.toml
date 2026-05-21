@@ -4,6 +4,7 @@ title = "demo-viewer: feature page — dev proxy"
 state = "ready"
 acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
+depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
 risk_level = "medium"
 spec_refs = "b748e117-a847-474d-92ee-b58723cee612"
 tags = "demo-viewer,viewer-api"

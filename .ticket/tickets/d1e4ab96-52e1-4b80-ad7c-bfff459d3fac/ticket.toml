@@ -3,6 +3,7 @@ created_at = "2026-05-19T11:58:34.374914700+00:00"
 title = "[viewer-api] Converge shared Dioxus viewer shells across frontends"
 state = "new"
 component = "viewer-api"
+depends_on = ["3df77f25-0f1c-4c1c-a2a8-e9c885f275db", "6f924445-ea9c-46e9-b051-b5aab6b798fa", "735502cd-3aec-4772-b2a8-2184aaaf3c21", "763f8c13-a4bd-47af-8894-3e95a63fde8d", "936d38d6-a238-4cb9-b00a-1b2a4b65dc04", "9a81d3e5-82ca-4fd0-84bf-c0a54f6716e5", "bb1c32f5-5275-4e4f-85ae-a0fba09c522a", "fc0282b5-844c-4101-9391-c926ffdaf1d7"]
 priority = "high"
 risk_level = "medium"
 tags = "viewer-api,dioxus,frontend,shared-components,shells"

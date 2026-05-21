@@ -4,6 +4,7 @@ title = "Port: CSS stylesheets — base, layout, buttons, tabs, tree, code-viewe
 state = "done"
 acceptance_criteria = "All viewer-api CSS ported: variables.css, base.css, layout.css, buttons.css, tabs.css, tree.css, code-viewer.css, file-tree.css; CSS custom properties preserved; responsive breakpoints working"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "high"
 risk_level = "low"
 type = "tracker-improvement"

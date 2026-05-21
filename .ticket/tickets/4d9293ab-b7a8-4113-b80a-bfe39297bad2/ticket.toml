@@ -3,6 +3,7 @@ created_at = "2026-05-20T11:30:04.030212300+00:00"
 title = "[viewer-api] Adopt shared TabsStore in Dioxus doc-viewer"
 state = "done"
 component = "viewer-api"
+depends_on = ["da16dada-e245-4fdd-868a-c3691e6c351a"]
 priority = "high"
 risk_level = "medium"
 spec_refs = "a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6"

@@ -4,5 +4,6 @@ title = "Epic: Leptos Viewer Platform — port viewer-api + all viewers to Lepto
 state = "cancelled"
 acceptance_criteria = "All three viewers (log, doc, ticket) running as Leptos WASM apps reusing a shared viewer-api-leptos foundation; feature parity with the TypeScript originals"
 component = "viewer-api"
+depends_on = ["06a194e8-d883-45a4-9693-6a4b9123ec5a", "17358907-1f1c-4c3f-b250-3d8220b6c363", "29897f92-59bf-45f9-b963-caa7bfad71c8", "868a3690-2269-4733-877f-9c53e196a819", "92d5223b-05a4-4b80-ae6a-f5f5d45db2fc", "92eac6aa-d560-4436-beab-0de86b806c9f", "ca0f6ccc-545d-45df-bbbb-74a3daf0d18c", "d83f8e52-090e-42d7-9fcf-f389afdbb90c", "ee6e2d37-60b0-434f-8b8e-d2ccbb2f7624"]
 risk_level = "high"
 type = "tracker-improvement"

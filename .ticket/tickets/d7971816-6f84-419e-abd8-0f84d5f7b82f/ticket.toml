@@ -4,6 +4,7 @@ title = "Feature: Sortable FileTree with generic sorting header"
 state = "done"
 acceptance_criteria = "1) FileTree component accepts sortOptions and onSortChange props. 2) A sorting header row renders above the tree with clickable sort keys. 3) Sort direction toggles asc/desc on click. 4) TicketTree in ticket-viewer uses sorting with last-modified (updated_at), created (created_at from API), and title keys. 5) CSS styles for sort header added to viewer-api. 6) Sort state persisted per-workspace in localStorage."
 component = "viewer-api"
+depends_on = ["d3a8b66a-8efc-493e-9993-3b5a68b0a7f7"]
 risk_level = "low"
 tags = "sorting,file-tree,viewer-api,ticket-viewer"
 type = "tracker-improvement"

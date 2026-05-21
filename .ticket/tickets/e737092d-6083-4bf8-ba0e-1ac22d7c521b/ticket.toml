@@ -4,6 +4,7 @@ title = "demo-viewer: feature page — code viewer"
 state = "ready"
 acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
+depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
 risk_level = "medium"
 spec_refs = "df67eee9-08a0-4a6e-b1ff-b483599d232d"
 tags = "demo-viewer,viewer-api"

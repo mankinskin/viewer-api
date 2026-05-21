@@ -4,6 +4,7 @@ title = "Port: URL state management and session utilities"
 state = "done"
 acceptance_criteria = "createUrlStateManager with hash-based routing, back/forward support, loop prevention; getSessionId/clearSession/withSession for API calls; all via web-sys without JS dependencies"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "medium"
 risk_level = "low"
 type = "tracker-improvement"

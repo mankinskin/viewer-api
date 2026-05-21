@@ -3,6 +3,7 @@ created_at = "2026-05-20T10:58:46.299368100+00:00"
 title = "[viewer-api] Adopt rich tree tooltips in Dioxus spec-viewer and doc-viewer"
 state = "done"
 component = "viewer-api"
+depends_on = ["8bf5edd2-4fe6-4580-ac87-73843f0206f0"]
 priority = "high"
 risk_level = "medium"
 spec_refs = "a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6"

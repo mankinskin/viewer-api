@@ -4,6 +4,7 @@ title = "Impl: viewer-api extraction for shared tree/file/graph server primitive
 state = "done"
 acceptance_criteria = "Shared abstractions moved to viewer-api and consumed by doc-viewer, log-viewer, and ticket-viewer paths without regressions"
 component = "viewer-api"
+depends_on = ["21a1b9ca-c053-4709-8785-e41fb0661c31", "91e22471-4895-4fcf-bab2-63efd7d9262d"]
 doc_category = "implementation"
 execution_wave = "1"
 impl_status = "complete"

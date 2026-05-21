@@ -4,6 +4,7 @@ title = "Port: Layout components — Header, Layout, Sidebar, Panel, GlassPanel"
 state = "done"
 acceptance_criteria = "Header, Layout, Sidebar (collapsible+resizable+mobile-drawer), Panel (left/right/top/bottom), GlassPanel ported from viewer-api TS; same CSS class names preserved; mobile responsive improvements over existing viewer-api implementation: collapsible sidebar becomes full-screen drawer at breakpoints <=768px; stacked panel layout on mobile; touch-friendly tap targets (>=44px); swipe gesture for sidebar toggle"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1", "9dec4f23-4e92-4c14-b085-b9f625589228"]
 priority = "critical"
 risk_level = "low"
 type = "tracker-improvement"

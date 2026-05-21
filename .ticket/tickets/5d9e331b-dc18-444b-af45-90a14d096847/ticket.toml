@@ -4,6 +4,7 @@ title = "demo-viewer: viewer-ctl integration + nav generator"
 state = "ready"
 acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
+depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910"]
 risk_level = "medium"
 spec_refs = "4c3b62b4-1198-4ce2-9ef6-df530f38297e"
 tags = "demo-viewer,viewer-api"

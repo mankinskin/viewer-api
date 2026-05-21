@@ -4,6 +4,7 @@ title = "Port: TabBar, Spinner, Icons"
 state = "done"
 acceptance_criteria = "TabBar with tab selection, close button, modified indicator, resize handle; Spinner SVG component; All icon components (Document, File, Folder, Chevron, Search, Filter, etc.) ported as Dioxus SVG components"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "high"
 risk_level = "low"
 type = "tracker-improvement"

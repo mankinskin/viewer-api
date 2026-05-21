@@ -4,6 +4,7 @@ title = "Port: CodeViewer and FileContentViewer"
 state = "done"
 acceptance_criteria = "CodeViewer with language detection, line numbering, line highlighting, auto-scroll; FileContentViewer with extensible renderer prop; syntax highlighting via pulldown-cmark (Markdown) + syntect (code blocks) — pure Rust, no JS fallback; language detection from filename extension mapped to syntect LanguageSet; basic language coverage is acceptable per project decision"
 component = "viewer-api-dioxus"
+depends_on = ["7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "high"
 risk_level = "medium"
 type = "tracker-improvement"

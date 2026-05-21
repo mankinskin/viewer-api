@@ -2,4 +2,5 @@ id = "936d38d6-a238-4cb9-b00a-1b2a4b65dc04"
 created_at = "2026-04-30T11:56:53.748571800+00:00"
 title = "[viewer-api] Port doc-viewer features to shared Dioxus viewer-api"
 state = "new"
+depends_on = ["0feb20f3-205a-4e71-9902-31c8c5bb13eb", "21a2e8f4-4bd8-4436-be52-c2c4a07bb692", "4d9293ab-b7a8-4113-b80a-bfe39297bad2", "763f8c13-a4bd-47af-8894-3e95a63fde8d", "8bf5edd2-4fe6-4580-ac87-73843f0206f0", "a6fd15f6-f9c3-407a-af99-3febee5b2557", "b005a8fe-9971-4e59-a3df-171f81b6d3f7", "b4127011-4e08-47bc-ac73-3d3761f29587", "bb1c32f5-5275-4e4f-85ae-a0fba09c522a", "da16dada-e245-4fdd-868a-c3691e6c351a"]
 type = "tracker-improvement"

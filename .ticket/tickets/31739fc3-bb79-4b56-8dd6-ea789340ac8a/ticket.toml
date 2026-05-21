@@ -4,6 +4,7 @@ title = "Port: TreeView and FileTree with sort/filter"
 state = "done"
 acceptance_criteria = "TreeView with recursive rendering, expand/collapse signals, selection, tooltips, badges; FileTree wrapping TreeView with sort header (multi-key), filter buttons with counts+colors; loading/empty states"
 component = "viewer-api-dioxus"
+depends_on = ["11f77899-6def-4140-b6bf-e84035a9264e", "7346feae-045f-4da9-bf1c-47535132ffa1"]
 priority = "critical"
 risk_level = "medium"
 type = "tracker-improvement"

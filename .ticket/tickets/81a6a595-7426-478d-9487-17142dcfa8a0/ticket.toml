@@ -4,6 +4,7 @@ title = "Plan: Context API phase 4.1 — viewer-api + log-viewer as thin fronten
 state = "new"
 acceptance_criteria = "viewer-api and log-viewer depend on context-http for all backend APIs; old direct paths removed"
 component = "viewer-api"
+depends_on = ["7f41940d-617a-495d-aad8-5a19111bdab9", "a6fd15f6-f9c3-407a-af99-3febee5b2557", "ca0f6ccc-545d-45df-bbbb-74a3daf0d18c"]
 doc_category = "plan"
 risk_level = "medium"
 source_agent_files = "plans/20260314_PLAN_CONTEXT_API_PHASE4_1.md"

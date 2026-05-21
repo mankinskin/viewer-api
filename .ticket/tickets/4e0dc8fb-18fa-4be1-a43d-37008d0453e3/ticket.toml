@@ -6,6 +6,7 @@ acceptance_criteria = "Approved shortcut map, focus/precedence rules, phased rol
 component = "viewer-api"
 design_status = "draft"
 doc_category = "design"
+linked = ["f121b24b-61b0-41b4-9567-8ffc2417d7cb"]
 priority = "medium"
 risk_level = "high"
 spec_refs = "2e56d63e-c53a-45a0-a984-088b3f9da19a, a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6, 348e17f7-23a8-4e11-bbb3-224cf0bbe9d6, 4f14356f-c4bd-4554-be1e-35361de241da"

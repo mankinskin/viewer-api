@@ -4,6 +4,7 @@ title = "Arch: Extract viewer-api-leptos shared crate for all Leptos viewers"
 state = "cancelled"
 acceptance_criteria = "New Rust/Leptos crate providing: Layout (header/sidebar/main/panel), TreeView/FileTree, TabBar, CodeViewer, ResizeHandle, WgpuOverlay (full-page GPU canvas), ThemeSettings, ThemeColors/EffectSettings reactive system; all three viewer apps depend on this crate; GPU shaders reused from TS frontend via include_str"
 component = "viewer-api"
+depends_on = ["29897f92-59bf-45f9-b963-caa7bfad71c8", "868a3690-2269-4733-877f-9c53e196a819", "92d5223b-05a4-4b80-ae6a-f5f5d45db2fc"]
 interview_answers = "Q1: Location tools/viewer/viewer-api/frontend-leptos/ confirmed — mirrors TS structure. Q2: Frontend-only crate. Each viewer backend depends on the existing viewer-api Rust crate directly for backend utilities. Q3: Yes, use Cargo feature flags — gpu feature for WgpuOverlay, syntect feature for CodeViewer highlighting, so viewers can opt out of heavy modules."
 risk_level = "high"
 type = "tracker-improvement"

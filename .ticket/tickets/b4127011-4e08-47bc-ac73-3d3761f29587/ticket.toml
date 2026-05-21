@@ -2,4 +2,5 @@ id = "b4127011-4e08-47bc-ac73-3d3761f29587"
 created_at = "2026-04-30T11:58:52.519513400+00:00"
 title = "[viewer-api][P4] FilterPanel shell with JQ presets and results list"
 state = "done"
+depends_on = ["b005a8fe-9971-4e59-a3df-171f81b6d3f7"]
 type = "tracker-improvement"
