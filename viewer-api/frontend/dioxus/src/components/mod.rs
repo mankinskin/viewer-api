@@ -64,6 +64,7 @@ pub use icons::{
     SearchIcon,
     SourceFileIcon,
     StatsIcon,
+    ThemeIcon,
 };
 pub use layout::{
     is_mobile_sidebar_viewport,

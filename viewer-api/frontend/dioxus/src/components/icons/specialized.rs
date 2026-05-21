@@ -219,3 +219,29 @@ pub fn HamburgerIcon(
         }
     }
 }
+
+#[component]
+pub fn ThemeIcon(
+    #[props(default = 16)] size: u32,
+    #[props(default)] class: String,
+    #[props(default = "currentColor".to_string())] color: String,
+) -> Element {
+    rsx! {
+        svg {
+            width: "{size}",
+            height: "{size}",
+            view_box: "0 0 24 24",
+            fill: "none",
+            stroke: "{color}",
+            stroke_width: "2",
+            stroke_linecap: "round",
+            stroke_linejoin: "round",
+            class: "{class}",
+            path { d: "M12 3a2 2 0 0 1 2 2c0 .74-.4 1.39-.99 1.73A7 7 0 1 1 9 7.18" }
+            path { d: "M12 7h.01" }
+            path { d: "M17 12h.01" }
+            path { d: "M7 12h.01" }
+            path { d: "M12 17h.01" }
+        }
+    }
+}

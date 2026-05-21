@@ -37,6 +37,7 @@ pub use self::{
         ModuleIcon,
         SourceFileIcon,
         StatsIcon,
+        ThemeIcon,
     },
     status::{
         AlertIcon,

@@ -6,7 +6,7 @@
 use dioxus::prelude::*;
 
 use crate::components::{
-    icons::InfoIcon,
+    icons::ThemeIcon,
     layout::Header,
     AlertIcon,
     FilterIcon,
@@ -123,8 +123,8 @@ pub fn HeaderActions(
     /// `has_active_filters` is `true`).
     #[props(default)]
     on_clear: Option<EventHandler<()>>,
-    /// Open the theme settings popover/sidebar (caller-owned).  Renders an
-    /// info-icon button.  Pair with the [`crate::components::ThemeSettings`]
+    /// Open the theme settings popover/sidebar (caller-owned).  Renders a
+    /// theme-icon button.  Pair with the [`crate::components::ThemeSettings`]
     /// component to actually display the panel.
     #[props(default)]
     on_theme_toggle: Option<EventHandler<()>>,
@@ -211,7 +211,7 @@ pub fn HeaderActions(
                     title: "Theme settings",
                     aria_label: "Theme settings",
                     onclick: move |_| handler.call(()),
-                    InfoIcon { size: 16 }
+                    ThemeIcon { size: 16 }
                 }
             }
         }
