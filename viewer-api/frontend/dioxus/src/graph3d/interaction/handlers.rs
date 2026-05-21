@@ -174,8 +174,8 @@ pub(super) fn wheel_listener(
                     },
                     CameraMode::Free => {
                         let magnitude = (delta.abs() / 120.0).clamp(0.5, 4.0);
-                        let step =
-                            (state.camera.distance * 0.16 * magnitude).clamp(0.75, 24.0);
+                        let step = (state.camera.distance * 0.16 * magnitude)
+                            .clamp(0.75, 24.0);
                         let amount = if delta < 0.0 { step } else { -step };
                         state.camera.move_forward(amount);
                     },
@@ -492,13 +492,17 @@ mod tests {
     use crate::graph3d::camera::Camera;
 
     fn normalised(vector: [f32; 3]) -> [f32; 3] {
-        let length =
-            (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2])
-                .sqrt();
+        let length = (vector[0] * vector[0]
+            + vector[1] * vector[1]
+            + vector[2] * vector[2])
+            .sqrt();
         [vector[0] / length, vector[1] / length, vector[2] / length]
     }
 
-    fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+    fn dot(
+        a: [f32; 3],
+        b: [f32; 3],
+    ) -> f32 {
         a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
     }
 
@@ -526,6 +530,9 @@ mod tests {
             camera.target[2] - before[2],
         ];
 
-        assert!(dot(delta, forward).abs() < 1e-5, "delta={delta:?} forward={forward:?}");
+        assert!(
+            dot(delta, forward).abs() < 1e-5,
+            "delta={delta:?} forward={forward:?}"
+        );
     }
 }

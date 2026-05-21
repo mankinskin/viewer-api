@@ -40,8 +40,8 @@ mod settings_overlay;
 
 pub use camera::{
     Camera,
-    CameraMode,
     CameraCommand,
+    CameraMode,
     LayoutMode,
     Projection,
 };

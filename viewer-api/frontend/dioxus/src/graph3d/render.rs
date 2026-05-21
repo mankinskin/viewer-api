@@ -28,8 +28,8 @@ use super::{
         CAM_UNIFORM_FLOATS,
     },
     data::{
-        apply_node_view_transform,
         animate_layout_nodes,
+        apply_node_view_transform,
         edge_color,
         EdgeRef3D,
         EdgeVisualState,
@@ -651,7 +651,8 @@ pub(crate) fn render_frame(
     let vp_y = ((cont_y_css + viewport_y_css) * dpr).round() as u32;
     let vp_w = ((viewport_w_css * dpr).round() as u32).max(1);
     let vp_h = ((viewport_h_css * dpr).round() as u32).max(1);
-    let render_layout = current_render_layout(state, viewport_w_css, viewport_h_css);
+    let render_layout =
+        current_render_layout(state, viewport_w_css, viewport_h_css);
     let uses_dynamic_layout = render_layout.is_some();
 
     // Re-upload per-instance buffers if a node moved this frame.

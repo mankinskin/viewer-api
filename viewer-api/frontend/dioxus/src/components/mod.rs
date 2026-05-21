@@ -105,8 +105,8 @@ pub use theme_settings::{
 pub use tree_view::{
     ExplorerShell,
     FileTree,
-    FilterToggleButton,
     FilterDef,
+    FilterToggleButton,
     NodeIcon,
     SidebarSearch,
     SortKey,

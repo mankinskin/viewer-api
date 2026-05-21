@@ -7,11 +7,11 @@ use dioxus::prelude::*;
 
 use crate::components::{
     icons::InfoIcon,
+    layout::Header,
     AlertIcon,
     FilterIcon,
     HomeIcon,
     RefreshIcon,
-    layout::Header,
 };
 
 /// Shared page-level header shell for Dioxus viewers.

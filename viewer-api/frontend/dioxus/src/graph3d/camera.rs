@@ -153,8 +153,8 @@ impl Camera {
         &mut self,
         factor: f32,
     ) {
-        self.distance =
-            (self.distance * factor).clamp(CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE);
+        self.distance = (self.distance * factor)
+            .clamp(CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE);
     }
 
     pub fn orbit_by(
@@ -394,10 +394,10 @@ pub struct MouseState {
 mod tests {
     use super::{
         animate_camera,
-        Camera,
-        CameraMode,
-        CameraCommand,
         frame_distance,
+        Camera,
+        CameraCommand,
+        CameraMode,
     };
 
     fn assert_vec3_close(

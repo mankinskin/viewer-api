@@ -17,11 +17,7 @@ pub fn FilterToggleButton(
         class_names.push(class);
     }
 
-    let state_class = if active {
-        active_class
-    } else {
-        inactive_class
-    };
+    let state_class = if active { active_class } else { inactive_class };
     if !state_class.is_empty() {
         class_names.push(state_class);
     }

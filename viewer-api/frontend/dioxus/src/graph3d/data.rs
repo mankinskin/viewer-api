@@ -460,7 +460,8 @@ pub(crate) fn apply_node_view_transform(
             let mut max_y = f32::NEG_INFINITY;
 
             for node in &layout.nodes {
-                let position = world_to_camera_space([node.x, node.y, node.z], &basis);
+                let position =
+                    world_to_camera_space([node.x, node.y, node.z], &basis);
                 min_x = min_x.min(position[0]);
                 max_x = max_x.max(position[0]);
                 min_y = min_y.min(position[1]);
@@ -547,7 +548,10 @@ pub(crate) fn apply_node_view_transform(
             let mut max_y = f32::NEG_INFINITY;
 
             for node in &layout.nodes {
-                let position = world_to_camera_space([node.x, node.y, node.z], &basis.camera);
+                let position = world_to_camera_space(
+                    [node.x, node.y, node.z],
+                    &basis.camera,
+                );
                 min_x = min_x.min(position[0]);
                 max_x = max_x.max(position[0]);
                 min_y = min_y.min(position[1]);
@@ -638,14 +642,15 @@ fn camera_plane_view_direction_basis(
     let mut min_forward = f32::INFINITY;
 
     for node in &layout.nodes {
-        let delta = [node.x - center[0], node.y - center[1], node.z - center[2]];
+        let delta =
+            [node.x - center[0], node.y - center[1], node.z - center[2]];
         max_right = max_right.max(dot(delta, basis.right).abs());
         max_up = max_up.max(dot(delta, basis.up).abs());
         min_forward = min_forward.min(dot(delta, basis.forward));
     }
 
-    let plane_depth_x = max_right
-        / (fit_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
+    let plane_depth_x =
+        max_right / (fit_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
     let plane_depth_y = max_up / (fit_fill * tan_half_fov).max(0.001);
     let plane_depth = plane_depth_x
         .max(plane_depth_y)
@@ -688,7 +693,8 @@ fn relax_camera_plane_clearance(
         let mut had_overlap = false;
 
         for i in 0..plane_positions.len() {
-            let camera_i = [plane_positions[i][0], plane_positions[i][1], depth];
+            let camera_i =
+                [plane_positions[i][0], plane_positions[i][1], depth];
             let screen_i = camera_plane_to_screen_px(
                 plane_positions[i],
                 depth,
@@ -697,13 +703,18 @@ fn relax_camera_plane_clearance(
                 tan_half_fov,
                 aspect,
             );
-            let weight_i =
-                camera_plane_view_center_weight(screen_i, viewport_width, viewport_height);
-            let required_i =
-                required_camera_plane_half_extents_px(camera_i, profile, weight_i);
+            let weight_i = camera_plane_view_center_weight(
+                screen_i,
+                viewport_width,
+                viewport_height,
+            );
+            let required_i = required_camera_plane_half_extents_px(
+                camera_i, profile, weight_i,
+            );
 
             for j in (i + 1)..plane_positions.len() {
-                let camera_j = [plane_positions[j][0], plane_positions[j][1], depth];
+                let camera_j =
+                    [plane_positions[j][0], plane_positions[j][1], depth];
                 let screen_j = camera_plane_to_screen_px(
                     plane_positions[j],
                     depth,
@@ -717,8 +728,9 @@ fn relax_camera_plane_clearance(
                     viewport_width,
                     viewport_height,
                 );
-                let required_j =
-                    required_camera_plane_half_extents_px(camera_j, profile, weight_j);
+                let required_j = required_camera_plane_half_extents_px(
+                    camera_j, profile, weight_j,
+                );
                 let dx = screen_j[0] - screen_i[0];
                 let dy = screen_j[1] - screen_i[1];
                 let overlap_x = required_i[0] + required_j[0] - dx.abs();
@@ -767,23 +779,24 @@ fn relax_camera_plane_clearance(
             plane_positions.iter_mut().zip(pixel_offsets.iter())
         {
             let delta_x = screen_px_to_camera_plane_x(
-                pixel_offset[0].clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
+                pixel_offset[0]
+                    .clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
                 depth,
                 viewport_width,
                 tan_half_fov,
                 aspect,
             );
             let delta_y = screen_px_to_camera_plane_y(
-                pixel_offset[1].clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
+                pixel_offset[1]
+                    .clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
                 depth,
                 viewport_height,
                 tan_half_fov,
             );
             plane_position[0] += delta_x;
             plane_position[1] += delta_y;
-            max_adjustment = max_adjustment
-                .max(delta_x.abs())
-                .max(delta_y.abs());
+            max_adjustment =
+                max_adjustment.max(delta_x.abs()).max(delta_y.abs());
         }
         recenter_camera_plane_positions(plane_positions);
 
@@ -864,7 +877,10 @@ fn stabilize_camera_plane_center_cells(
     }
 
     center_cells.sort_by(|left, right| {
-        right.3.partial_cmp(&left.3).unwrap_or(std::cmp::Ordering::Equal)
+        right
+            .3
+            .partial_cmp(&left.3)
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
 
     let mut settled: Vec<([f32; 2], [f32; 2])> = Vec::new();
@@ -895,11 +911,20 @@ fn stabilize_camera_plane_center_cells(
 
                 had_overlap = true;
                 let mut direction = normalize_2d([
-                    if dx.abs() > 0.5 { dx } else { screen_position[0] },
-                    if dy.abs() > 0.5 { dy } else { screen_position[1] },
+                    if dx.abs() > 0.5 {
+                        dx
+                    } else {
+                        screen_position[0]
+                    },
+                    if dy.abs() > 0.5 {
+                        dy
+                    } else {
+                        screen_position[1]
+                    },
                 ]);
                 if direction[0].abs() < 0.001 && direction[1].abs() < 0.001 {
-                    let angle = attempt as f32 * 1.618_034 + index as f32 * 0.73;
+                    let angle =
+                        attempt as f32 * 1.618_034 + index as f32 * 0.73;
                     direction = [angle.cos(), angle.sin()];
                 }
 
@@ -927,9 +952,9 @@ fn stabilize_camera_plane_center_cells(
                 let radius = base_radius + radius_step as f32 * 34.0;
                 for angle_step in 0..16 {
                     let angle = index as f32 * 0.11
-                        + angle_step as f32
-                            * (std::f32::consts::TAU / 16.0);
-                    let candidate = [radius * angle.cos(), radius * angle.sin()];
+                        + angle_step as f32 * (std::f32::consts::TAU / 16.0);
+                    let candidate =
+                        [radius * angle.cos(), radius * angle.sin()];
                     if !screen_overlaps_settled(
                         candidate,
                         required_half_extents,
@@ -1015,7 +1040,8 @@ fn camera_plane_view_center_weight(
     viewport_width: f32,
     viewport_height: f32,
 ) -> f32 {
-    let radius = ((screen_position[0] / (viewport_width * 0.5).max(1.0)).powi(2)
+    let radius = ((screen_position[0] / (viewport_width * 0.5).max(1.0))
+        .powi(2)
         + (screen_position[1] / (viewport_height * 0.5).max(1.0)).powi(2))
     .sqrt();
     let weight = (1.0 - radius / CAMERA_PLANE_CENTER_RADIUS).clamp(0.0, 1.0);
@@ -1031,7 +1057,8 @@ fn camera_plane_to_screen_px(
     aspect: f32,
 ) -> [f32; 2] {
     [
-        plane_position[0] * viewport_width * 0.5 / (depth * tan_half_fov * aspect),
+        plane_position[0] * viewport_width * 0.5
+            / (depth * tan_half_fov * aspect),
         plane_position[1] * viewport_height * 0.5 / (depth * tan_half_fov),
     ]
 }
@@ -1062,7 +1089,10 @@ fn projected_card_half_extents_px(
     let distance = length(camera_position).max(0.1);
     let pixel_scale = pixel_scale_for_distance(distance);
     let card_size = node_card_base_size_px(profile);
-    [card_size[0] * pixel_scale * 0.5, card_size[1] * pixel_scale * 0.5]
+    [
+        card_size[0] * pixel_scale * 0.5,
+        card_size[1] * pixel_scale * 0.5,
+    ]
 }
 
 fn node_card_base_size_px(profile: NodeCardProfile) -> [f32; 2] {
@@ -1121,12 +1151,15 @@ fn screen_overlaps_settled(
     required_half_extents: [f32; 2],
     settled: &[([f32; 2], [f32; 2])],
 ) -> bool {
-    settled.iter().any(|(other_screen, other_required_half_extents)| {
-        let dx = (screen_position[0] - other_screen[0]).abs();
-        let dy = (screen_position[1] - other_screen[1]).abs();
-        dx < required_half_extents[0] + other_required_half_extents[0]
-            && dy < required_half_extents[1] + other_required_half_extents[1]
-    })
+    settled
+        .iter()
+        .any(|(other_screen, other_required_half_extents)| {
+            let dx = (screen_position[0] - other_screen[0]).abs();
+            let dy = (screen_position[1] - other_screen[1]).abs();
+            dx < required_half_extents[0] + other_required_half_extents[0]
+                && dy
+                    < required_half_extents[1] + other_required_half_extents[1]
+        })
 }
 
 pub(crate) fn edge_color(
@@ -1269,9 +1302,9 @@ mod tests {
         EdgeVisualState,
         GraphThemeSettings,
         Layout3D,
-        NodeViewTransform,
         Node3D,
         NodeCardProfile,
+        NodeViewTransform,
         CAMERA_PLANE_MIN_CENTER_PIXEL_SCALE,
         EDGE_FLAG_DEFAULT,
         EDGE_FLAG_DIMMED,
@@ -1529,13 +1562,13 @@ mod tests {
         let depths: Vec<f32> = transformed
             .nodes
             .iter()
-            .map(|node| world_to_camera_space([node.x, node.y, node.z], &basis)[2])
+            .map(|node| {
+                world_to_camera_space([node.x, node.y, node.z], &basis)[2]
+            })
             .collect();
         let min_depth = depths.iter().copied().fold(f32::INFINITY, f32::min);
-        let max_depth = depths
-            .iter()
-            .copied()
-            .fold(f32::NEG_INFINITY, f32::max);
+        let max_depth =
+            depths.iter().copied().fold(f32::NEG_INFINITY, f32::max);
 
         assert!((max_depth - min_depth) < 0.001);
     }
@@ -1743,11 +1776,7 @@ mod tests {
             .iter()
             .zip(weak.nodes.iter())
             .map(|(base, moved)| {
-                length([
-                    moved.x - base.x,
-                    moved.y - base.y,
-                    moved.z - base.z,
-                ])
+                length([moved.x - base.x, moved.y - base.y, moved.z - base.z])
             })
             .sum::<f32>();
         let strong_shift = layout
@@ -1755,11 +1784,7 @@ mod tests {
             .iter()
             .zip(strong.nodes.iter())
             .map(|(base, moved)| {
-                length([
-                    moved.x - base.x,
-                    moved.y - base.y,
-                    moved.z - base.z,
-                ])
+                length([moved.x - base.x, moved.y - base.y, moved.z - base.z])
             })
             .sum::<f32>();
 
@@ -1770,7 +1795,8 @@ mod tests {
     #[test]
     fn camera_plane_view_direction_transform_ignores_zoom_and_pan() {
         let layout = Layout3D::new(sample_nodes(), sample_edges());
-        let transform = NodeViewTransform::camera_plane_view_direction(0.82, 1.0);
+        let transform =
+            NodeViewTransform::camera_plane_view_direction(0.82, 1.0);
         let first = apply_node_view_transform(
             &layout,
             &Camera {
@@ -1797,9 +1823,18 @@ mod tests {
         );
 
         for (left, right) in first.nodes.iter().zip(second.nodes.iter()) {
-            assert!((left.x - right.x).abs() < 0.001, "x mismatch: {left:?} vs {right:?}");
-            assert!((left.y - right.y).abs() < 0.001, "y mismatch: {left:?} vs {right:?}");
-            assert!((left.z - right.z).abs() < 0.001, "z mismatch: {left:?} vs {right:?}");
+            assert!(
+                (left.x - right.x).abs() < 0.001,
+                "x mismatch: {left:?} vs {right:?}"
+            );
+            assert!(
+                (left.y - right.y).abs() < 0.001,
+                "y mismatch: {left:?} vs {right:?}"
+            );
+            assert!(
+                (left.z - right.z).abs() < 0.001,
+                "z mismatch: {left:?} vs {right:?}"
+            );
         }
     }
 }

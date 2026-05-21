@@ -15,8 +15,8 @@ pub use self::{
         ExplorerShell,
         SidebarSearch,
     },
-    filter_toggle_button::FilterToggleButton,
     file_tree::FileTree,
+    filter_toggle_button::FilterToggleButton,
     types::{
         FilterDef,
         NodeIcon,
