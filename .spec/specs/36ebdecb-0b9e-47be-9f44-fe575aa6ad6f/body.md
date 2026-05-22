@@ -9,6 +9,8 @@ All viewers MUST present the same panel, the same controls, in the same order, w
 - The **preset list** (each viewer ships its own named ColorTheme presets).
 - The **GPU effect default** (this is a deliberate cross-viewer constant: every viewer defaults the master GPU toggle to **ON**. The viewer is intended to be fully GPU-accelerated by default — 3D graph rendering, glass panels, particle effects, smoke. Users can opt out via the master toggle in ThemeSettings).
 
+For the Dioxus viewers, the shared panel MUST open inside a visible modal overlay: `.modal-backdrop[role="dialog"][aria-label="Theme settings"]` wraps `.modal-panel.theme-settings-modal`, the backdrop uses a non-transparent tint, and the overlay is fixed above the underlying page content. The viewer HTML shell MUST load `public/css/modal.css` alongside `glass-panel.css` and `theme-settings.css`; omitting that stylesheet is a conformance bug.
+
 ---
 
 ## 1. Layout
@@ -210,3 +212,4 @@ A viewer is considered conformant when:
 5. Save/Apply/Update/Rename/Delete operations on the saved-themes panel work and survive page reload.
 6. Export downloads a `.json` containing `{ name, colors, effects }`; Import validates and applies the same shape.
 7. CSS classes match: `.theme-settings`, `.theme-section`, `.theme-color-row`, `.theme-color-picker`, `.theme-color-hex`, `.theme-color-reset`, `.theme-toggle-row`, `.toggle-switch`, `.theme-slider-row`, `.theme-range-slider`, `.theme-slider-value`, `.theme-presets-grid`, `.theme-preset-card`, `.saved-themes-panel`, `.saved-theme-card`. Viewers MAY add additional BEM-style aliases (`.theme-settings__*`) but must keep the canonical names available.
+8. Dioxus viewers render the panel in a visually distinct modal overlay with fixed positioning, a non-transparent backdrop, and a centered `.modal-panel.theme-settings-modal` container.
