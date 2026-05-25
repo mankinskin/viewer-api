@@ -58,6 +58,7 @@ use self::{
     theme::GraphThemeSettings,
 };
 use dioxus::prelude::*;
+use std::collections::HashMap;
 
 #[cfg(target_arch = "wasm32")]
 use std::{
@@ -258,6 +259,12 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let style =
         graph_container_style(&props.container_style, true, &graph_theme);
     let viewport_insets = props.viewport_insets;
+    let mut last_layout_mode: Signal<LayoutMode> =
+        use_hook(|| Signal::new(props.layout_mode));
+    let layout_mode_changed = *last_layout_mode.peek() != props.layout_mode;
+    if layout_mode_changed {
+        last_layout_mode.set(props.layout_mode);
+    }
 
     let status: Signal<String> =
         use_signal(|| "Initialising WebGPU\u{2026}".to_string());
@@ -306,6 +313,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         &props.hovered_node_id,
         &graph_theme,
         props.selection_auto_layout,
+        layout_mode_changed,
         props.selection_auto_focus,
         props.node_view_transform,
         props.viewport_insets,
@@ -557,6 +565,7 @@ fn sync_render_state(
     hovered_node_id: &Option<String>,
     graph_theme: &GraphThemeSettings,
     selection_auto_layout: bool,
+    layout_mode_changed: bool,
     selection_auto_focus: bool,
     node_view_transform: NodeViewTransform,
     viewport_insets: [f32; 4],
@@ -580,9 +589,22 @@ fn sync_render_state(
         || state.selection_auto_layout != selection_auto_layout
         || state.target_layout != target_layout
     {
-        state.base_layout = layout.clone();
         state.selection_auto_layout = selection_auto_layout;
-        if data::layout_nodes_match(&state.layout, &target_layout) {
+        if let Some((preserved_base_layout, preserved_target_layout)) =
+            preserve_same_topology_layout(
+                &state.base_layout,
+                &state.layout,
+                layout,
+                &target_layout,
+                selection_auto_layout,
+                layout_mode_changed,
+            )
+        {
+            state.base_layout = preserved_base_layout;
+            state.layout = preserved_target_layout.clone();
+            state.target_layout = preserved_target_layout;
+        } else if data::layout_nodes_match(&state.layout, &target_layout) {
+            state.base_layout = layout.clone();
             let mut animated_layout = target_layout.clone();
             for (animated_node, current_node) in animated_layout
                 .nodes
@@ -594,10 +616,12 @@ fn sync_render_state(
                 animated_node.z = current_node.z;
             }
             state.layout = animated_layout;
+            state.target_layout = target_layout.clone();
         } else {
+            state.base_layout = layout.clone();
             state.layout = target_layout.clone();
+            state.target_layout = target_layout.clone();
         }
-        state.target_layout = target_layout.clone();
         state.dirty_layout = true;
     }
 
@@ -638,22 +662,9 @@ fn sync_render_state(
                     .iter()
                     .find(|node| node.id == selected_id)
                 {
-                    let focus_radius = state
-                        .target_layout
-                        .nodes
-                        .iter()
-                        .map(|other| {
-                            let dx = other.x - node.x;
-                            let dy = other.y - node.y;
-                            let dz = other.z - node.z;
-                            (dx * dx + dy * dy + dz * dz).sqrt()
-                        })
-                        .fold(0.0_f32, f32::max)
-                        .max(1.0);
-                    let mut goal = state.camera.clone();
-                    goal.focus(
+                    let goal = selection_focus_goal(
+                        &state.camera,
                         [node.x, node.y, node.z],
-                        camera::frame_distance(focus_radius),
                     );
                     state.camera_goal = Some(goal.clone());
                     if let Some(handler) = on_camera_change {
@@ -694,5 +705,199 @@ fn apply_camera_command_update(
     state.camera_goal = Some(goal.clone());
     if let Some(handler) = on_camera_change {
         handler.call(goal);
+    }
+}
+
+fn selection_focus_goal(
+    current_camera: &Camera,
+    target: [f32; 3],
+) -> Camera {
+    let mut goal = current_camera.clone();
+    goal.target = target;
+    goal
+}
+
+fn preserve_same_topology_layout(
+    current_base_layout: &Layout3D,
+    current_visible_layout: &Layout3D,
+    incoming_base_layout: &Layout3D,
+    incoming_target_layout: &Layout3D,
+    selection_auto_layout: bool,
+    layout_mode_changed: bool,
+) -> Option<(Layout3D, Layout3D)> {
+    if selection_auto_layout || layout_mode_changed {
+        return None;
+    }
+    if !layout_topology_matches(current_base_layout, incoming_base_layout)
+        || !layout_topology_matches(current_base_layout, incoming_target_layout)
+    {
+        return None;
+    }
+
+    let mut preserved_base_layout = incoming_base_layout.clone();
+    let mut preserved_target_layout = incoming_target_layout.clone();
+    copy_node_positions(current_visible_layout, &mut preserved_base_layout);
+    copy_node_positions(current_visible_layout, &mut preserved_target_layout);
+    Some((preserved_base_layout, preserved_target_layout))
+}
+
+fn copy_node_positions(
+    source_layout: &Layout3D,
+    target_layout: &mut Layout3D,
+) {
+    let positions = source_layout
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), [node.x, node.y, node.z]))
+        .collect::<HashMap<_, _>>();
+
+    for node in &mut target_layout.nodes {
+        if let Some(position) = positions.get(node.id.as_str()) {
+            node.x = position[0];
+            node.y = position[1];
+            node.z = position[2];
+        }
+    }
+}
+
+fn layout_topology_matches(
+    left: &Layout3D,
+    right: &Layout3D,
+) -> bool {
+    left.node_card_profile == right.node_card_profile
+        && left.nodes.len() == right.nodes.len()
+        && left.edges.len() == right.edges.len()
+        && sorted_node_ids(left) == sorted_node_ids(right)
+        && edge_signatures(left) == edge_signatures(right)
+}
+
+fn sorted_node_ids(layout: &Layout3D) -> Vec<String> {
+    let mut node_ids =
+        layout.nodes.iter().map(|node| node.id.clone()).collect::<Vec<_>>();
+    node_ids.sort();
+    node_ids
+}
+
+fn edge_signatures(layout: &Layout3D) -> Option<Vec<(String, String, String)>> {
+    let mut signatures = Vec::with_capacity(layout.edges.len());
+    for edge in &layout.edges {
+        let from_id = layout.nodes.get(edge.from_idx)?.id.clone();
+        let to_id = layout.nodes.get(edge.to_idx)?.id.clone();
+        signatures.push((from_id, to_id, edge.kind.clone()));
+    }
+    signatures.sort();
+    Some(signatures)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        preserve_same_topology_layout,
+        selection_focus_goal,
+    };
+    use crate::graph3d::{
+        Camera,
+        EdgeRef3D,
+        Layout3D,
+        Node3D,
+        NodeCardProfile,
+    };
+
+    fn sample_layout() -> Layout3D {
+        Layout3D {
+            nodes: vec![
+                Node3D {
+                    id: "root".into(),
+                    label: Some("Root".into()),
+                    state: Some("ready".into()),
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                Node3D {
+                    id: "child".into(),
+                    label: Some("Child".into()),
+                    state: Some("new".into()),
+                    x: 12.0,
+                    y: -10.0,
+                    z: 0.0,
+                },
+            ],
+            edges: vec![EdgeRef3D {
+                from_idx: 0,
+                to_idx: 1,
+                kind: "depends_on".into(),
+            }],
+            node_card_profile: NodeCardProfile::TicketWide,
+        }
+    }
+
+    #[test]
+    fn preserve_same_topology_layout_keeps_dragged_positions() {
+        let current_base_layout = sample_layout();
+        let mut current_visible_layout = current_base_layout.clone();
+        current_visible_layout.nodes[0].x = 18.0;
+        current_visible_layout.nodes[0].y = -6.0;
+        current_visible_layout.nodes[1].x = 28.0;
+        current_visible_layout.nodes[1].y = -18.0;
+
+        let mut incoming_base_layout = sample_layout();
+        incoming_base_layout.nodes[0].label = Some("Updated Root".into());
+        let incoming_target_layout = incoming_base_layout.clone();
+
+        let Some((preserved_base_layout, preserved_target_layout)) =
+            preserve_same_topology_layout(
+                &current_base_layout,
+                &current_visible_layout,
+                &incoming_base_layout,
+                &incoming_target_layout,
+                false,
+                false,
+            )
+        else {
+            panic!("expected same-topology layout refresh to preserve positions");
+        };
+
+        assert_eq!(preserved_base_layout.nodes[0].x, 18.0);
+        assert_eq!(preserved_base_layout.nodes[0].y, -6.0);
+        assert_eq!(preserved_target_layout.nodes[1].x, 28.0);
+        assert_eq!(preserved_target_layout.nodes[1].y, -18.0);
+        assert_eq!(
+            preserved_base_layout.nodes[0].label.as_deref(),
+            Some("Updated Root")
+        );
+    }
+
+    #[test]
+    fn preserve_same_topology_layout_skips_layout_mode_changes() {
+        let layout = sample_layout();
+        assert!(
+            preserve_same_topology_layout(
+                &layout,
+                &layout,
+                &layout,
+                &layout,
+                false,
+                true,
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn selection_focus_goal_preserves_distance() {
+        let camera = Camera {
+            yaw: 0.7,
+            pitch: 0.45,
+            distance: 41.5,
+            target: [1.0, 2.0, 3.0],
+        };
+
+        let goal = selection_focus_goal(&camera, [8.0, -4.0, 12.0]);
+
+        assert_eq!(goal.distance, camera.distance);
+        assert_eq!(goal.target, [8.0, -4.0, 12.0]);
+        assert_eq!(goal.yaw, camera.yaw);
+        assert_eq!(goal.pitch, camera.pitch);
     }
 }

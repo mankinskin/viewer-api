@@ -683,6 +683,19 @@ pub(crate) fn render_frame(
         .and_then(|w| w.document())
         .and_then(|d| d.get_element_by_id(&state.container_id))
         .map(|el| {
+            let _ = el.set_attribute(
+                "data-camera-distance",
+                &format!("{:.4}", state.camera.distance),
+            );
+            let _ = el.set_attribute(
+                "data-camera-target",
+                &format!(
+                    "{:.4},{:.4},{:.4}",
+                    state.camera.target[0],
+                    state.camera.target[1],
+                    state.camera.target[2],
+                ),
+            );
             let r = el.get_bounding_client_rect();
             (
                 r.left() as f32,
