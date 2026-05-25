@@ -109,12 +109,12 @@ impl NodeViewTransform {
 const CAMERA_PLANE_CLEARANCE_PASSES: usize = 14;
 const CAMERA_PLANE_COMPACT_CARD_BASE_WIDTH_PX: f32 = 245.0;
 const CAMERA_PLANE_COMPACT_CARD_BASE_HEIGHT_PX: f32 = 196.0;
-const CAMERA_PLANE_TICKET_CARD_BASE_WIDTH_PX: f32 = 260.0;
-const CAMERA_PLANE_TICKET_CARD_BASE_HEIGHT_PX: f32 = 56.0;
-const MINIMAL_NODE_WIDTH_PX: f32 = 46.0;
-const MINIMAL_NODE_HEIGHT_PX: f32 = 46.0;
-const COMPACT_TICKET_NODE_WIDTH_PX: f32 = 164.0;
-const COMPACT_TICKET_NODE_HEIGHT_PX: f32 = 40.0;
+const CAMERA_PLANE_TICKET_CARD_BASE_WIDTH_PX: f32 = 212.0;
+const CAMERA_PLANE_TICKET_CARD_BASE_HEIGHT_PX: f32 = 132.0;
+const MINIMAL_NODE_WIDTH_PX: f32 = 52.0;
+const MINIMAL_NODE_HEIGHT_PX: f32 = 52.0;
+const COMPACT_TICKET_NODE_WIDTH_PX: f32 = 176.0;
+const COMPACT_TICKET_NODE_HEIGHT_PX: f32 = 72.0;
 const COMPACT_SHARED_NODE_WIDTH_PX: f32 = 172.0;
 const COMPACT_SHARED_NODE_HEIGHT_PX: f32 = 92.0;
 const CAMERA_PLANE_CENTER_RADIUS: f32 = 0.30;
@@ -1561,14 +1561,14 @@ mod tests {
                 NodeDetailTier::Minimal,
                 NodeCardProfile::TicketWide,
             ),
-            [46.0, 46.0],
+            [52.0, 52.0],
         );
         assert_eq!(
             node_detail_dimensions_px(
                 NodeDetailTier::Compact,
                 NodeCardProfile::TicketWide,
             ),
-            [164.0, 40.0],
+            [176.0, 72.0],
         );
         assert_eq!(
             node_detail_dimensions_px(
@@ -1582,7 +1582,7 @@ mod tests {
                 NodeDetailTier::Rich,
                 NodeCardProfile::TicketWide,
             ),
-            [260.0, 56.0],
+            [212.0, 132.0],
         );
     }
 
