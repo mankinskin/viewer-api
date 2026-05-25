@@ -151,6 +151,10 @@ pub struct Graph3DProps {
     /// transform that repositions surrounding nodes around the selection.
     #[props(default)]
     pub selection_auto_layout: bool,
+    /// When enabled, a selected node also animates the camera target so the
+    /// active node recenters without remounting the graph.
+    #[props(default)]
+    pub selection_auto_focus: bool,
     /// Optional per-frame camera-relative transform applied inside the shared
     /// renderer after layout animation but before projection.
     #[props(default)]
@@ -245,6 +249,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let selected_node_id = props.selected_node_id.clone();
     let hovered_node_id = props.hovered_node_id.clone();
     let selection_auto_layout = props.selection_auto_layout;
+    let selection_auto_focus = props.selection_auto_focus;
     let projection = props.projection;
     let node_view_transform = props.node_view_transform;
     let layout_mode = props.layout_mode;
@@ -301,6 +306,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         &props.hovered_node_id,
         &graph_theme,
         props.selection_auto_layout,
+        props.selection_auto_focus,
         props.node_view_transform,
         props.viewport_insets,
         props.on_camera_change.as_ref(),
@@ -551,9 +557,10 @@ fn sync_render_state(
     hovered_node_id: &Option<String>,
     graph_theme: &GraphThemeSettings,
     selection_auto_layout: bool,
+    selection_auto_focus: bool,
     node_view_transform: NodeViewTransform,
     viewport_insets: [f32; 4],
-    _on_camera_change: Option<&EventHandler<Camera>>,
+    on_camera_change: Option<&EventHandler<Camera>>,
 ) {
     let render_state = render_rc.read();
     let Some(render_state) = render_state.as_ref() else {
@@ -617,12 +624,44 @@ fn sync_render_state(
         state.dirty_edges = true;
     }
 
-    if state.selected_node_id != *selected_node_id
-        || state.hovered_node_id != *hovered_node_id
-    {
+    let selected_changed = state.selected_node_id != *selected_node_id;
+    let hovered_changed = state.hovered_node_id != *hovered_node_id;
+    if selected_changed || hovered_changed {
         state.selected_node_id = selected_node_id.clone();
         state.hovered_node_id = hovered_node_id.clone();
         state.dirty_edges = true;
+        if selection_auto_focus && selected_changed {
+            if let Some(selected_id) = selected_node_id.as_deref() {
+                if let Some(node) = state
+                    .target_layout
+                    .nodes
+                    .iter()
+                    .find(|node| node.id == selected_id)
+                {
+                    let focus_radius = state
+                        .target_layout
+                        .nodes
+                        .iter()
+                        .map(|other| {
+                            let dx = other.x - node.x;
+                            let dy = other.y - node.y;
+                            let dz = other.z - node.z;
+                            (dx * dx + dy * dy + dz * dz).sqrt()
+                        })
+                        .fold(0.0_f32, f32::max)
+                        .max(1.0);
+                    let mut goal = state.camera.clone();
+                    goal.focus(
+                        [node.x, node.y, node.z],
+                        camera::frame_distance(focus_radius),
+                    );
+                    state.camera_goal = Some(goal.clone());
+                    if let Some(handler) = on_camera_change {
+                        handler.call(goal);
+                    }
+                }
+            }
+        }
     }
 }
 

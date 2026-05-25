@@ -42,6 +42,23 @@ pub enum NodeCardProfile {
     TicketWide,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NodeDetailTier {
+    Minimal,
+    Compact,
+    Rich,
+}
+
+impl NodeDetailTier {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Minimal => "minimal",
+            Self::Compact => "compact",
+            Self::Rich => "rich",
+        }
+    }
+}
+
 /// Optional per-frame node transform applied in the renderer after layout.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct NodeViewTransform {
@@ -94,6 +111,12 @@ const CAMERA_PLANE_COMPACT_CARD_BASE_WIDTH_PX: f32 = 245.0;
 const CAMERA_PLANE_COMPACT_CARD_BASE_HEIGHT_PX: f32 = 196.0;
 const CAMERA_PLANE_TICKET_CARD_BASE_WIDTH_PX: f32 = 260.0;
 const CAMERA_PLANE_TICKET_CARD_BASE_HEIGHT_PX: f32 = 56.0;
+const MINIMAL_NODE_WIDTH_PX: f32 = 46.0;
+const MINIMAL_NODE_HEIGHT_PX: f32 = 46.0;
+const COMPACT_TICKET_NODE_WIDTH_PX: f32 = 164.0;
+const COMPACT_TICKET_NODE_HEIGHT_PX: f32 = 40.0;
+const COMPACT_SHARED_NODE_WIDTH_PX: f32 = 172.0;
+const COMPACT_SHARED_NODE_HEIGHT_PX: f32 = 92.0;
 const CAMERA_PLANE_CENTER_RADIUS: f32 = 0.30;
 const CAMERA_PLANE_EDGE_FOOTPRINT_SCALE: f32 = 0.74;
 const CAMERA_PLANE_CENTER_FOOTPRINT_SCALE: f32 = 1.08;
@@ -1108,6 +1131,39 @@ fn node_card_base_size_px(profile: NodeCardProfile) -> [f32; 2] {
     }
 }
 
+pub(crate) fn node_detail_tier(
+    pixel_scale: f32,
+    is_focus: bool,
+) -> NodeDetailTier {
+    if is_focus || pixel_scale >= 0.72 {
+        NodeDetailTier::Rich
+    } else if pixel_scale >= 0.34 {
+        NodeDetailTier::Compact
+    } else {
+        NodeDetailTier::Minimal
+    }
+}
+
+pub(crate) fn node_detail_dimensions_px(
+    tier: NodeDetailTier,
+    profile: NodeCardProfile,
+) -> [f32; 2] {
+    match tier {
+        NodeDetailTier::Minimal => [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
+        NodeDetailTier::Compact => match profile {
+            NodeCardProfile::Compact => [
+                COMPACT_SHARED_NODE_WIDTH_PX,
+                COMPACT_SHARED_NODE_HEIGHT_PX,
+            ],
+            NodeCardProfile::TicketWide => [
+                COMPACT_TICKET_NODE_WIDTH_PX,
+                COMPACT_TICKET_NODE_HEIGHT_PX,
+            ],
+        },
+        NodeDetailTier::Rich => node_card_base_size_px(profile),
+    }
+}
+
 fn pixel_scale_for_distance(distance: f32) -> f32 {
     (22.0 / distance).clamp(0.14, 3.5)
 }
@@ -1294,6 +1350,8 @@ mod tests {
         camera_plane_to_screen_px,
         camera_plane_view_center_weight,
         length,
+        node_detail_dimensions_px,
+        node_detail_tier,
         pixel_scale_for_distance,
         required_camera_plane_half_extents_px,
         world_to_camera_space,
@@ -1304,6 +1362,7 @@ mod tests {
         Layout3D,
         Node3D,
         NodeCardProfile,
+        NodeDetailTier,
         NodeViewTransform,
         CAMERA_PLANE_MIN_CENTER_PIXEL_SCALE,
         EDGE_FLAG_DEFAULT,
@@ -1485,6 +1544,46 @@ mod tests {
 
         assert_eq!(edge_count as usize, GRID_LINE_COUNT);
         assert_eq!(edge_data.len(), GRID_LINE_COUNT * EDGE_INST_FLOATS);
+    }
+
+    #[test]
+    fn node_detail_tier_thresholds_preserve_selected_rich_detail() {
+        assert_eq!(node_detail_tier(0.20, true), NodeDetailTier::Rich);
+        assert_eq!(node_detail_tier(0.20, false), NodeDetailTier::Minimal);
+        assert_eq!(node_detail_tier(0.34, false), NodeDetailTier::Compact);
+        assert_eq!(node_detail_tier(0.72, false), NodeDetailTier::Rich);
+    }
+
+    #[test]
+    fn node_detail_dimensions_follow_profile_and_tier() {
+        assert_eq!(
+            node_detail_dimensions_px(
+                NodeDetailTier::Minimal,
+                NodeCardProfile::TicketWide,
+            ),
+            [46.0, 46.0],
+        );
+        assert_eq!(
+            node_detail_dimensions_px(
+                NodeDetailTier::Compact,
+                NodeCardProfile::TicketWide,
+            ),
+            [164.0, 40.0],
+        );
+        assert_eq!(
+            node_detail_dimensions_px(
+                NodeDetailTier::Compact,
+                NodeCardProfile::Compact,
+            ),
+            [172.0, 92.0],
+        );
+        assert_eq!(
+            node_detail_dimensions_px(
+                NodeDetailTier::Rich,
+                NodeCardProfile::TicketWide,
+            ),
+            [260.0, 56.0],
+        );
     }
 
     #[test]

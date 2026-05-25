@@ -34,7 +34,10 @@ use super::{
         EdgeRef3D,
         EdgeVisualState,
         Layout3D,
+        node_detail_dimensions_px,
+        node_detail_tier,
         NodeCardProfile,
+        NodeDetailTier,
         NodeViewTransform,
         EDGE_FLAG_SELECTED,
     },
@@ -292,6 +295,11 @@ fn position_dom_nodes(
         let dz = eye[2] - node.z;
         let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
         let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
+        let is_focus = state.selected_node_id.as_deref() == Some(node.id.as_str())
+            || state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let detail_tier = node_detail_tier(pixel_scale, is_focus);
+        let [card_w, card_h] =
+            node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 
         let margin = 300.0;
         if !screen.visible
@@ -327,12 +335,52 @@ fn position_dom_nodes(
             ((1.0 - screen.z) * 10000.0) as i32
         };
         let _ = html_el.style().set_property("z-index", &z_idx.to_string());
+        let _ = html_el
+            .style()
+            .set_property("width", &format!("{card_w:.1}px"));
+        let _ = html_el
+            .style()
+            .set_property("height", &format!("{card_h:.1}px"));
+        sync_node_detail_tier(&html_el, detail_tier);
 
         let transform = format!(
             "translate(-50%, -50%) translate({:.1}px, {:.1}px) scale({:.3})",
             local_x, local_y, pixel_scale,
         );
         let _ = html_el.style().set_property("transform", &transform);
+    }
+}
+
+fn sync_node_detail_tier(
+    html_el: &HtmlElement,
+    tier: NodeDetailTier,
+) {
+    let tier_name = tier.as_str();
+    let _ = html_el.set_attribute("data-node-lod", tier_name);
+    let Ok(detail_nodes) = html_el.query_selector_all("[data-node-detail-tier]")
+    else {
+        return;
+    };
+
+    for index in 0..detail_nodes.length() {
+        let Some(node) = detail_nodes.item(index) else {
+            continue;
+        };
+        let Ok(detail_el) = node.dyn_into::<HtmlElement>() else {
+            continue;
+        };
+        let matches_tier = detail_el
+            .get_attribute("data-node-detail-tier")
+            .as_deref()
+            == Some(tier_name);
+        let display = if matches_tier {
+            detail_el
+                .get_attribute("data-node-detail-display")
+                .unwrap_or_else(|| "block".to_string())
+        } else {
+            "none".to_string()
+        };
+        let _ = detail_el.style().set_property("display", &display);
     }
 }
 
