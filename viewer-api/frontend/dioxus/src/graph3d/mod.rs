@@ -243,6 +243,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let edge_count = layout.edges.len();
     let container_id = props.container_id.clone();
     let initial_camera = props.initial_camera.clone();
+    let initial_camera_for_bootstrap = initial_camera.clone();
     let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
     let on_layout_change = props.on_layout_change.clone();
     let on_camera_change = props.on_camera_change.clone();
@@ -277,7 +278,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     use_effect(move || {
         let layout = layout.clone();
         let container_id = container_id.clone();
-        let initial_camera = initial_camera.clone();
+        let initial_camera = initial_camera_for_bootstrap.clone();
         let selected_node_id = selected_node_id.clone();
         let hovered_node_id = hovered_node_id.clone();
         let graph_theme = graph_theme;
@@ -314,6 +315,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
         &graph_theme,
         props.selection_auto_layout,
         layout_mode_changed,
+        initial_camera.as_ref(),
         props.selection_auto_focus,
         props.node_view_transform,
         props.viewport_insets,
@@ -566,6 +568,7 @@ fn sync_render_state(
     graph_theme: &GraphThemeSettings,
     selection_auto_layout: bool,
     layout_mode_changed: bool,
+    initial_camera: Option<&Camera>,
     selection_auto_focus: bool,
     node_view_transform: NodeViewTransform,
     viewport_insets: [f32; 4],
@@ -623,6 +626,19 @@ fn sync_render_state(
             state.target_layout = target_layout.clone();
         }
         state.dirty_layout = true;
+    }
+
+    if layout_mode_changed {
+        let goal = initial_camera.cloned().unwrap_or_else(|| {
+            let mut camera = Camera::default();
+            let bounds = state.target_layout.bounds();
+            camera.frame(bounds.0, bounds.1);
+            camera
+        });
+        state.camera_goal = Some(goal.clone());
+        if let Some(handler) = on_camera_change {
+            handler.call(goal);
+        }
     }
 
     if state.projection != projection {

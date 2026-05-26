@@ -7,6 +7,8 @@ ticket-viewer and spec-viewer.
 ## Public surface
 
 - `Graph3D { layout, children, container_id?, container_style?, on_layout_change?, initial_camera?, on_camera_change?, selected_node_id?, hovered_node_id?, camera_command?, camera_command_seq?, projection?, layout_mode?, on_layout_mode_change?, on_projection_change? }`.
+- `layout_mode` currently supports `Hierarchical3D`, `Flat2D`, and `KanbanTable`; the built-in settings overlay must surface those variants through `on_layout_mode_change` without requiring each viewer to fork the control UI.
+- Callers may add world-anchored DOM overlays using `data-layout-anchor-x/y/z`, `data-layout-anchor-origin`, `data-layout-line-x1/y1/z1`, and `data-layout-line-x2/y2/z2`; the shared renderer positions those anchors every frame alongside node cards and edge overlays.
 - `selected_node_id` is the committed focus anchor. Incident edges widen slightly,
   switch to the selected focus palette, and render directional packet motion;
   unrelated edges dim.
@@ -56,6 +58,13 @@ graph fetched from `/api/demo/graph`:
 - In ticket-viewer, rendered graph edges expose filled SVG `<path>` elements
   without `marker-end`, so the shaft and arrow tip do not stack as separate
   translucent shapes.
+- In ticket-viewer, the shared settings overlay can switch the mounted graph into
+  the `KanbanTable` layout mode, and the callback path preserves the mounted
+  graph while the caller reapplies its own node layout algorithm.
+- In ticket-viewer, world-anchored Kanban guides stay readable during `KanbanTable`
+  mode: shared positioning logic projects the lane separators, reframes the camera
+  on layout-mode changes, and keeps column headers and row labels pinned back into
+  the viewport when their world anchors drift slightly offscreen.
 - Without WebGPU (no flags), the SVG fallback renders ≥1 `<line>`
   representing an edge.
 
@@ -71,6 +80,7 @@ graph fetched from `/api/demo/graph`:
 
 - `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/`
 - `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/render.rs`
+- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/mod.rs`
 - `tools/viewer/e2e/tests/dioxus/graph3d-right-drag.spec.ts`
 - `tools/viewer/e2e/tests/spec-viewer/graph-selection.spec.ts`
 - `memory-viewers/ticket-viewer/frontend/dioxus/e2e-release/graph-edge-overlay-shape.spec.ts`

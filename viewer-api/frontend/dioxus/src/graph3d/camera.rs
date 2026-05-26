@@ -15,6 +15,9 @@ pub enum LayoutMode {
     Hierarchical3D,
     /// Same hierarchical rows but Z coordinates zeroed — flat top-down view.
     Flat2D,
+    /// State-column kanban table with dependency-group rows and soft
+    /// clustering inside each cell.
+    KanbanTable,
 }
 
 /// Camera projection mode.

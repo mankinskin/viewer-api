@@ -97,6 +97,78 @@ struct NodeScreenRect {
     half_h: f32,
 }
 
+impl NodeScreenRect {
+    fn left(self) -> f32 {
+        self.center_x - self.half_w
+    }
+}
+
+fn rects_overlap(
+    a: NodeScreenRect,
+    b: NodeScreenRect,
+    pad_x: f32,
+    pad_y: f32,
+) -> bool {
+    (a.center_x - b.center_x).abs() < (a.half_w + b.half_w + pad_x)
+        && (a.center_y - b.center_y).abs()
+            < (a.half_h + b.half_h + pad_y)
+}
+
+fn right_center_anchor_rect(
+    right_x: f32,
+    center_y: f32,
+    width: f32,
+    height: f32,
+) -> NodeScreenRect {
+    NodeScreenRect {
+        center_x: right_x - width * 0.5,
+        center_y,
+        half_w: width * 0.5,
+        half_h: height * 0.5,
+    }
+}
+
+fn resolve_right_center_anchor_position(
+    html_el: &HtmlElement,
+    screen_x: f32,
+    screen_y: f32,
+    scale: f32,
+    viewport_w: f32,
+    viewport_h: f32,
+    node_rects: &[Option<NodeScreenRect>],
+) -> (f32, f32) {
+    let width = (html_el.offset_width().max(1) as f32) * scale;
+    let height = (html_el.offset_height().max(1) as f32) * scale;
+    let min_visible_right = (24.0 + (width * 0.16).min(28.0)).max(42.0);
+    let max_right = (viewport_w - 16.0).max(min_visible_right);
+    let center_y = screen_y.clamp(
+        18.0 + height * 0.5,
+        (viewport_h - 18.0 - height * 0.5).max(18.0 + height * 0.5),
+    );
+    let gap_x = 18.0 + width * 0.05;
+    let gap_y = 10.0 + height * 0.05;
+    let mut right_x = screen_x.min(max_right);
+
+    for _ in 0..2 {
+        let mut shifted = false;
+        let probe = right_center_anchor_rect(right_x, center_y, width, height);
+        for node_rect in node_rects.iter().flatten() {
+            if rects_overlap(probe, *node_rect, gap_x, gap_y) {
+                let candidate = right_x.min(node_rect.left() - gap_x);
+                if candidate < right_x - 0.1 {
+                    right_x = candidate;
+                    shifted = true;
+                }
+            }
+        }
+        if !shifted {
+            break;
+        }
+    }
+
+    (right_x.max(min_visible_right), center_y)
+}
+
 fn resolve_viewport_rect(
     container_w: f32,
     container_h: f32,
@@ -229,6 +301,270 @@ fn clip_edge_endpoint(
     let t = tx.min(ty).max(0.0);
 
     (rect.center_x + dx * t, rect.center_y + dy * t)
+}
+
+fn parse_attr_f32(
+    html_el: &HtmlElement,
+    name: &str,
+) -> Option<f32> {
+    let raw = html_el.get_attribute(name)?;
+    raw.parse::<f32>().ok()
+}
+
+fn anchor_transform(
+    local_x: f32,
+    local_y: f32,
+    origin: &str,
+    scale: f32,
+) -> String {
+    let translate = match origin {
+        "center-bottom" => format!(
+            "translate(-50%, -100%) translate({:.1}px, {:.1}px)",
+            local_x, local_y,
+        ),
+        "right-center" => format!(
+            "translate(-100%, -50%) translate({:.1}px, {:.1}px)",
+            local_x, local_y,
+        ),
+        "left-center" => format!(
+            "translate(0%, -50%) translate({:.1}px, {:.1}px)",
+            local_x, local_y,
+        ),
+        _ => format!(
+            "translate(-50%, -50%) translate({:.1}px, {:.1}px)",
+            local_x, local_y,
+        ),
+    };
+
+    if (scale - 1.0).abs() < 0.001 {
+        translate
+    } else {
+        format!("{translate} scale({scale:.3})")
+    }
+}
+
+fn anchor_zoom_scale(
+    state: &RenderState,
+    origin: &str,
+    anchor: [f32; 3],
+) -> f32 {
+    let distance = match state.projection {
+        // Orthographic overlay size should follow camera zoom, not shrink
+        // just because an anchor sits farther from the target in world space.
+        Projection::Orthographic => state.camera.distance.max(0.1),
+        Projection::Perspective => {
+            let eye = state.camera.eye();
+            let forward = state.camera.forward();
+            let to_anchor = [
+                anchor[0] - eye[0],
+                anchor[1] - eye[1],
+                anchor[2] - eye[2],
+            ];
+            (to_anchor[0] * forward[0]
+                + to_anchor[1] * forward[1]
+                + to_anchor[2] * forward[2])
+                .max(0.1)
+        },
+    };
+
+    let close_boost = ((36.0 - distance) / 20.0).clamp(0.0, 0.45);
+    let row_label_boost = ((295.0 - distance) / 30.0).clamp(0.0, 1.0) * 0.22;
+
+    match origin {
+        "center-bottom" => ((26.0 / distance).clamp(0.42, 1.0)
+            + close_boost * 0.18)
+            .clamp(0.42, 1.08),
+        // Row labels need a broader zoom ramp than headers in orthographic
+        // mode, but they still need to shrink back out when the camera pulls
+        // away. Keep node-size awareness in collision avoidance rather than a
+        // hard scale floor so zoom-out remains compact.
+        "right-center" => ((20.0 / distance).clamp(0.10, 1.0)
+            + row_label_boost)
+            .clamp(0.10, 0.62),
+        _ => 1.0,
+    }
+}
+
+fn position_dom_layout_anchors(
+    state: &RenderState,
+    layout: &Layout3D,
+    viewport_x: f32,
+    viewport_y: f32,
+    viewport_w: f32,
+    viewport_h: f32,
+) {
+    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
+        return;
+    };
+
+    let eye = state.camera.eye();
+    let aspect = viewport_w / viewport_h.max(1.0);
+    let proj = match state.projection {
+        Projection::Perspective =>
+            math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
+        Projection::Orthographic => {
+            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
+            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
+        },
+    };
+    let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
+    let vp = math::mul(proj, view);
+    let margin = 320.0;
+    let node_rects = collect_dom_node_rects(&doc, state, layout);
+
+    if let Ok(anchor_nodes) = doc.query_selector_all(&format!(
+        "#{} [data-layout-anchor-x]",
+        state.container_id
+    )) {
+        for index in 0..anchor_nodes.length() {
+            let Some(node) = anchor_nodes.item(index) else {
+                continue;
+            };
+            let Ok(html_el) = node.dyn_into::<HtmlElement>() else {
+                continue;
+            };
+            let (Some(x), Some(y), Some(z)) = (
+                parse_attr_f32(&html_el, "data-layout-anchor-x"),
+                parse_attr_f32(&html_el, "data-layout-anchor-y"),
+                parse_attr_f32(&html_el, "data-layout-anchor-z"),
+            ) else {
+                continue;
+            };
+
+            let screen = world_to_screen([x, y, z], &vp, viewport_w, viewport_h);
+            let origin = html_el
+                .get_attribute("data-layout-anchor-origin")
+                .unwrap_or_else(|| "center".to_string());
+            let behind_camera = !screen.visible && screen.x == 0.0 && screen.y == 0.0;
+
+            let (screen_x, screen_y, hide) = match origin.as_str() {
+                // Keep column headers visible at the top edge even when the
+                // projected world anchor drifts slightly above the viewport.
+                "center-bottom" => {
+                    let hide = behind_camera
+                        || screen.x < -(margin * 2.0)
+                        || screen.x > viewport_w + (margin * 2.0);
+                    (
+                        screen.x.clamp(28.0, (viewport_w - 28.0).max(28.0)),
+                        screen.y.clamp(56.0, (viewport_h - 20.0).max(56.0)),
+                        hide,
+                    )
+                },
+                // Keep row labels readable near the left edge while still
+                // allowing extra clearance from enlarged visible node cards.
+                "right-center" => {
+                    let hide = behind_camera
+                        || screen.y < -margin
+                        || screen.y > viewport_h + margin;
+                    (
+                        screen.x,
+                        screen.y.clamp(18.0, (viewport_h - 18.0).max(18.0)),
+                        hide,
+                    )
+                },
+                _ => (
+                    screen.x,
+                    screen.y,
+                    behind_camera
+                        || screen.x < -margin
+                        || screen.x > viewport_w + margin
+                        || screen.y < -margin
+                        || screen.y > viewport_h + margin,
+                ),
+            };
+            if hide {
+                let _ = html_el.style().set_property("display", "none");
+                continue;
+            }
+
+            let _ = html_el.style().set_property("display", "block");
+            let scale = anchor_zoom_scale(state, &origin, [x, y, z]);
+            let (screen_x, screen_y) = match origin.as_str() {
+                "right-center" => resolve_right_center_anchor_position(
+                    &html_el,
+                    screen_x,
+                    screen_y,
+                    scale,
+                    viewport_w,
+                    viewport_h,
+                    &node_rects,
+                ),
+                _ => (screen_x, screen_y),
+            };
+            let local_x = viewport_x + screen_x;
+            let local_y = viewport_y + screen_y;
+            let transform = anchor_transform(local_x, local_y, &origin, scale);
+
+            let _ = html_el.style().set_property(
+                "z-index",
+                &html_el
+                    .get_attribute("data-layout-z-index")
+                    .unwrap_or_else(|| "10".to_string()),
+            );
+            let _ = html_el.style().set_property("transform", &transform);
+        }
+    }
+
+    if let Ok(line_nodes) = doc.query_selector_all(&format!(
+        "#{} [data-layout-line-x1]",
+        state.container_id
+    )) {
+        for index in 0..line_nodes.length() {
+            let Some(node) = line_nodes.item(index) else {
+                continue;
+            };
+            let Ok(html_el) = node.dyn_into::<HtmlElement>() else {
+                continue;
+            };
+            let (Some(x1), Some(y1), Some(z1), Some(x2), Some(y2), Some(z2)) = (
+                parse_attr_f32(&html_el, "data-layout-line-x1"),
+                parse_attr_f32(&html_el, "data-layout-line-y1"),
+                parse_attr_f32(&html_el, "data-layout-line-z1"),
+                parse_attr_f32(&html_el, "data-layout-line-x2"),
+                parse_attr_f32(&html_el, "data-layout-line-y2"),
+                parse_attr_f32(&html_el, "data-layout-line-z2"),
+            ) else {
+                continue;
+            };
+
+            let start = world_to_screen([x1, y1, z1], &vp, viewport_w, viewport_h);
+            let end = world_to_screen([x2, y2, z2], &vp, viewport_w, viewport_h);
+            if (!start.visible && !end.visible)
+                || ((start.x - end.x).abs() < 1.0
+                    && (start.y - end.y).abs() < 1.0)
+            {
+                let _ = html_el.style().set_property("display", "none");
+                continue;
+            }
+
+            let local_x1 = viewport_x + start.x;
+            let local_y1 = viewport_y + start.y;
+            let local_x2 = viewport_x + end.x;
+            let local_y2 = viewport_y + end.y;
+            let dx = local_x2 - local_x1;
+            let dy = local_y2 - local_y1;
+            let length = (dx * dx + dy * dy).sqrt().max(1.0);
+            let angle_deg = dy.atan2(dx).to_degrees();
+
+            let _ = html_el.style().set_property("display", "block");
+            let _ = html_el.style().set_property(
+                "z-index",
+                &html_el
+                    .get_attribute("data-layout-z-index")
+                    .unwrap_or_else(|| "8".to_string()),
+            );
+            let _ = html_el
+                .style()
+                .set_property("width", &format!("{length:.1}px"));
+            let _ = html_el.style().set_property(
+                "transform",
+                &format!(
+                    "translate({:.1}px, {:.1}px) rotate({:.3}deg)",
+                    local_x1, local_y1, angle_deg,
+                ),
+            );
+        }
+    }
 }
 
 fn position_dom_nodes(
@@ -872,6 +1208,14 @@ pub(crate) fn render_frame(
     let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
 
     position_dom_nodes(
+        state,
+        render_layout,
+        viewport_x_css,
+        viewport_y_css,
+        viewport_w_css,
+        viewport_h_css,
+    );
+    position_dom_layout_anchors(
         state,
         render_layout,
         viewport_x_css,

@@ -158,12 +158,13 @@ pub(super) fn GraphSettingsOverlay(
                         {
                             let on_hierarchical = on_layout_mode_change.clone();
                             let on_flat = on_layout_mode_change.clone();
+                            let on_kanban = on_layout_mode_change.clone();
                             rsx! {
                                 div {
                                     style: "font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#666; margin-bottom:7px;",
                                     "Layout"
                                 }
-                                div { style: "display:flex; gap:6px; margin-bottom:10px;",
+                                div { style: "display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:6px; margin-bottom:10px;",
                                     button {
                                         style: "{opt_btn_style(cur_layout == LayoutMode::Hierarchical3D)}",
                                         onclick: move |_| {
@@ -181,6 +182,15 @@ pub(super) fn GraphSettingsOverlay(
                                             }
                                         },
                                         "Flat 2D"
+                                    }
+                                    button {
+                                        style: "{opt_btn_style(cur_layout == LayoutMode::KanbanTable)}",
+                                        onclick: move |_| {
+                                            if let Some(ref callback) = on_kanban {
+                                                callback.call(LayoutMode::KanbanTable);
+                                            }
+                                        },
+                                        "Kanban"
                                     }
                                 }
                             }
