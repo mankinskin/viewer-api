@@ -1,0 +1,11 @@
+[body]
+config = "rule-targets.yaml"
+target = "viewer-api-recurring-principles-body"
+
+[sections.public-surface-contracts]
+config = "rule-targets.yaml"
+target = "viewer-api-recurring-principles-public-surface-contracts"
+
+[sections.viewer-ctl-lifecycle-boundary]
+config = "rule-targets.yaml"
+target = "viewer-api-recurring-principles-viewer-ctl-lifecycle-boundary"
