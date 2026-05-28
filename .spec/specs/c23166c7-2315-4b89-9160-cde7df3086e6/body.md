@@ -15,8 +15,14 @@ that must contain `index.html` after a successful build.
    - Evaluate `condition`. The only currently-supported predicate is
      `missing:<relpath>` — the step runs **only** when `<dir>/<relpath>`
      does not exist on disk. Unknown conditions fail open (step runs).
-   - Run `cmd` from `dir`.
+    - Run `cmd` from `dir`.
+    - If the command fails, `viewer-ctl` aborts with an error that includes the
+       full command, working directory, exit status, and the captured child
+       stderr/stdout tail so callers still receive actionable diagnostics.
 3. **Build.** Run `build_cmd` from `source_dir`.
+    - If the build command fails, the surfaced `viewer-ctl` error must include
+       the full command, working directory, exit status, and the captured child
+       stderr/stdout tail rather than only a bare exit code.
 4. **Verify.** `build_output/index.html` must exist after the build.
    Absence is a hard error.
 5. **Merge extra assets.** For each `extra_assets` entry, recursively
@@ -72,6 +78,9 @@ typically *not* what you want during iteration.
 
 - A frontend with no `prebuild` array installs cleanly on a fresh checkout
   provided its build dependencies are present (npm/trunk).
+- A failing prebuild or build step preserves enough child output in
+   `viewer-ctl`'s own error text for non-interactive callers to diagnose missing
+   prerequisites such as the `wasm32-unknown-unknown` target.
 - `install_frontend` is atomic from the user's perspective: the install
   dir either contains a complete bundle from the most recent build or is
   empty (during the wipe step). It never contains a half-merged mix.

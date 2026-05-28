@@ -50,4 +50,4 @@ cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus
 ## Requirements
 
 - `rustup target add wasm32-unknown-unknown`
-- `cargo install trunk` (provides the `trunk` command)
+- `cargo install trunk` (provides the `trunk` command; `./install-tools.sh --tool trunk` from the repo root installs it too)
