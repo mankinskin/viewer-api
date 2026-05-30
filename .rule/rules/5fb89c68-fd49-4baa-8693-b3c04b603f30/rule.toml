@@ -2,7 +2,6 @@ id = "5fb89c68-fd49-4baa-8693-b3c04b603f30"
 created_at = "2026-05-26T16:27:28.509346200+00:00"
 title = "Owned surfaces"
 state = "draft"
-body = "## Owned surfaces\n\n- The HTTP routes registered by `viewer-api/viewer-api` and re-exposed by each viewer's binary.\n- The GraphQL schema served from the same routes, including request/response shapes for queries and subscriptions.\n- The shared frontend Dioxus package and its TypeScript bindings consumed by each viewer's frontend crate.\n- The Playwright end-to-end suites that exercise the surface (`memory-viewers/viewer-api/viewer-api/frontend/dioxus/e2e/shared/` plus per-viewer wrappers)."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

@@ -2,7 +2,6 @@ id = "abdc5a30-a69d-41fe-8069-8049107bc0d7"
 created_at = "2026-05-22T17:48:27.424230100+00:00"
 title = "1. `CHEAT_SHEET.md` for type-level gotchas and common patterns."
 state = "draft"
-body = "1. `CHEAT_SHEET.md` for type-level gotchas and common patterns.\n2. crate `README.md` and `HIGH_LEVEL_GUIDE.md` for design context.\n3. existing tests for usage examples and assertions."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

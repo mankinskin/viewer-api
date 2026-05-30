@@ -2,7 +2,6 @@ id = "62e1317d-a4a1-405b-8113-686594c927cb"
 created_at = "2026-05-26T16:27:28.451108400+00:00"
 title = "Public surface contracts"
 state = "draft"
-body = "# Public surface contracts\n\nEvery viewer exposes a versioned public contract through `viewer-api` (HTTP routes, GraphQL schema, the shared frontend package). The contract is the integration surface for tests, MCP tools, and downstream automation, and it must be evolved deliberately."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

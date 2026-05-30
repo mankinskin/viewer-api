@@ -2,7 +2,6 @@ id = "13eda740-0268-4225-b187-c2bd445115ef"
 created_at = "2026-05-26T16:27:28.925904200+00:00"
 title = "Why a single boundary"
 state = "draft"
-body = "## Why a single boundary\n\n- Port allocation, locking, and environment composition live in one place; ad-hoc commands bypass them and collide with each other.\n- VS Code tasks (`*: managed start`, `*: open`) delegate to `viewer-ctl` so the editor and the CLI share the same lifecycle view.\n- Health checks, log capture, and browser-validation flows all assume the viewer was started through `viewer-ctl`. Bypassing it produces stale process state, mismatched ports, and silently broken E2E runs."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

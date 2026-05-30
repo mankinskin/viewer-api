@@ -2,7 +2,6 @@ id = "23023c33-a6f5-49b5-bf74-a886eed3268b"
 created_at = "2026-05-26T16:27:28.983118400+00:00"
 title = "Constraints"
 state = "draft"
-body = "## Constraints\n\n- Never invoke `cargo run --bin <viewer>` directly for day-to-day work. Use `viewer-ctl` so the lock and the environment match what tests and the editor expect.\n- `trunk serve` is used only by the lowest-level frontend dev task (`context-editor: trunk serve`) and is itself wrapped by VS Code tasks; other viewers go through `viewer-ctl prepare` + `viewer-ctl start`."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

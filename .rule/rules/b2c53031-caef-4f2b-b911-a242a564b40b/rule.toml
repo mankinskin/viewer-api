@@ -2,7 +2,6 @@ id = "b2c53031-caef-4f2b-b911-a242a564b40b"
 created_at = "2026-05-26T16:27:28.038448400+00:00"
 title = "viewer-api recurring principles"
 state = "draft"
-body = "# viewer-api recurring principles\n\nThis spec captures the cross-cutting design principles that recur across `viewer-api` and the managed viewers (`doc-viewer`, `log-viewer`, `ticket-viewer`, `spec-viewer`). They are the canonical authority for how the shared viewer surface is expected to behave."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

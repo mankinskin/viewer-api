@@ -2,7 +2,6 @@ id = "95e98368-f9d8-473b-9d70-522353021299"
 created_at = "2026-05-11T16:04:19.716436700+00:00"
 title = "Usage Guide"
 state = "draft"
-body = "## Dependency Graph\r\n\r\n```mermaid\r\nflowchart LR\r\n    Config[viewer-ctl.toml] --> Ctl[viewer-ctl]\r\n    Api[viewer-api] --> Servers[viewer servers]\r\n    Dioxus[viewer-api-dioxus] --> Frontends[viewer frontends]\r\n    Ctl --> Servers\r\n    Ctl --> Frontends\r\n```\r\n"
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

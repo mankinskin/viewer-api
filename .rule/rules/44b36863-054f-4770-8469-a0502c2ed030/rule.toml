@@ -2,7 +2,6 @@ id = "44b36863-054f-4770-8469-a0502c2ed030"
 created_at = "2026-05-26T16:27:28.814663800+00:00"
 title = "viewer-ctl lifecycle boundary"
 state = "draft"
-body = "# viewer-ctl lifecycle boundary\n\n`viewer-ctl` is the single supported lifecycle boundary for every managed viewer. Starting, stopping, restarting, preparing, and inspecting a viewer must go through `viewer-ctl` rather than through ad-hoc `cargo run`, raw `trunk serve`, or hand-rolled scripts."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

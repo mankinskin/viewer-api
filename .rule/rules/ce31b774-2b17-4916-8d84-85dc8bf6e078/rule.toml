@@ -2,7 +2,6 @@ id = "ce31b774-2b17-4916-8d84-85dc8bf6e078"
 created_at = "2026-05-11T16:04:19.503894100+00:00"
 title = "viewer-api"
 state = "draft"
-body = "# viewer-api\r\n\r\nviewer-api is the shared runtime repository for viewer servers, viewer lifecycle control, and browser-side UI scaffolding.\r\n\r\n## Tool Surface\r\n\r\n| Package or surface | What it is used for | Typical entry points |\r\n| --- | --- | --- |\r\n| `viewer-api` | Shared HTTP and MCP runtime for viewer tools, including auth, middleware, pagination, query/session helpers, source adapters, SSE, static file serving, and tracing setup. | Rust library consumed by viewer servers |\r\n| `viewer-ctl` | Config-driven lifecycle manager for viewer components declared in `viewer-ctl.toml`. | `viewer-ctl list`, `viewer-ctl start`, `viewer-ctl prepare` |\r\n| `viewer-api-dioxus` | Dioxus viewer platform scaffold with the root app, WebGPU canvas, UI overlay shell, and shared frontend building blocks. | `trunk serve`, `cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus` |\r\n"
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

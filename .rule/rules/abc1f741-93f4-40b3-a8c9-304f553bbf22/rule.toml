@@ -2,7 +2,6 @@ id = "abc1f741-93f4-40b3-a8c9-304f553bbf22"
 created_at = "2026-05-11T16:04:19.819930+00:00"
 title = "Workspace Summary"
 state = "draft"
-body = "## Tool Use Examples\r\n\r\n```bash\r\ncargo run -p viewer-ctl -- list\r\ncargo run -p viewer-ctl -- start spec-viewer\r\ncargo check -p viewer-api\r\ncargo check --target wasm32-unknown-unknown -p viewer-api-dioxus\r\n```\r\n\r\n- Inspect which viewer components are declared in `viewer-ctl.toml`.\r\n- Start a configured viewer through the lifecycle manager.\r\n- Validate the shared backend runtime in `viewer-api`.\r\n- Validate the shared browser scaffold in `viewer-api-dioxus`.\r\n"
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

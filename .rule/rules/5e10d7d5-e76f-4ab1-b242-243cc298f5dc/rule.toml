@@ -2,7 +2,6 @@ id = "5e10d7d5-e76f-4ab1-b242-243cc298f5dc"
 created_at = "2026-05-22T17:32:00.582045800+00:00"
 title = "2. Clarify with interview questions"
 state = "draft"
-body = "2. Clarify with interview questions\n- Ask concise, decision-driving questions when requirements are ambiguous.\n- Capture answers into ticket fields (for example: `component`, `risk_level`, `acceptance_criteria`, `workflow_stage`)."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

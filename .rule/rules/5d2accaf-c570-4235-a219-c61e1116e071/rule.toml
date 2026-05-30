@@ -2,7 +2,6 @@ id = "5d2accaf-c570-4235-a219-c61e1116e071"
 created_at = "2026-05-26T16:27:28.218317400+00:00"
 title = "Sections"
 state = "draft"
-body = "## Sections\n\n- `public-surface-contracts` — Every viewer's HTTP, GraphQL, and frontend surface is a versioned public contract owned by `viewer-api`.\n- `viewer-ctl-lifecycle-boundary` — `viewer-ctl` is the only supported way to start, stop, restart, or prepare a viewer."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

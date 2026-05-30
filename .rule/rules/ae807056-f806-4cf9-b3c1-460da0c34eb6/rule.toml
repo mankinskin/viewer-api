@@ -2,7 +2,6 @@ id = "ae807056-f806-4cf9-b3c1-460da0c34eb6"
 created_at = "2026-05-26T16:27:28.870116100+00:00"
 title = "Supported commands"
 state = "draft"
-body = "## Supported commands\n\n- `viewer-ctl start <viewer>` — boots the viewer in the background with the configured port and environment, holding a lock so only one instance runs.\n- `viewer-ctl stop <viewer>` / `viewer-ctl restart <viewer>` — release the lock and rebuild as needed.\n- `viewer-ctl prepare <viewer>` — builds the frontend assets the viewer needs before serving.\n- `viewer-ctl status <viewer>` — reports running/idle plus the bound port."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

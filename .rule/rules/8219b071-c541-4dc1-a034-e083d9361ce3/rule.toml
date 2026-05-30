@@ -2,7 +2,6 @@ id = "8219b071-c541-4dc1-a034-e083d9361ce3"
 created_at = "2026-05-26T16:27:28.567020+00:00"
 title = "Versioning rules"
 state = "draft"
-body = "## Versioning rules\n\n- Additive changes (new routes, new GraphQL fields, new frontend props with defaults) are allowed without a version bump.\n- Removing or renaming routes, fields, props, or events requires a version bump and a spec entry that documents the migration path.\n- The shared E2E suites must keep passing across all consumers before a contract change is merged; failures in one viewer block the change for all viewers."
 feedback_helpful_count = 0
 feedback_mixed_count = 0
 feedback_not_helpful_count = 0

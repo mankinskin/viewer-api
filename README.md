@@ -35,9 +35,26 @@ flowchart LR
 <!-- rule-api:entry id=abc1f741-93f4-40b3-a8c9-304f553bbf22 slug=viewer-api/readme/viewer-api/workspace-summary/l18 -->
 ## Tool Use Examples
 
+### Install the viewer toolchain
+
+From the `context-engine` repo root, install the lifecycle manager and WASM frontend builder together:
+
 ```bash
-cargo run -p viewer-ctl -- list
-cargo run -p viewer-ctl -- start spec-viewer
+bash ./install-tools.sh --tool viewer-ctl --tool trunk
+```
+
+If you are working from a standalone `memory-viewers/viewer-api` checkout, use Cargo directly from this workspace:
+
+```bash
+cargo install --path viewer-ctl --bin viewer-ctl
+cargo install trunk
+```
+
+After that, `viewer-ctl prepare ...` can build the Dioxus frontends because the `trunk` command is on `PATH`.
+
+```bash
+viewer-ctl list
+viewer-ctl start spec-viewer
 cargo check -p viewer-api
 cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus
 ```
