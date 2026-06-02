@@ -23,7 +23,6 @@ Notable command behavior:
 
 - `start <SERVER>` accepts `--foreground` and forwards any extra arguments after `--` to the server binary.
 - `prepare <SERVER>` is designed for editor and debug pre-launch flows; it prints the resolved install directory to stdout.
-- Failing `build` or `prepare` steps report the executed command, working directory, exit status, and captured child output tail so wrappers around `viewer-ctl` still receive actionable diagnostics.
 - `static-dir <SERVER>` does not build anything; it only resolves the current install location.
 
 ## Usage

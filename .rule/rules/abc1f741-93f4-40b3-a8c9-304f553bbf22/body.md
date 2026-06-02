@@ -17,6 +17,10 @@ cargo install trunk
 
 After that, `viewer-ctl prepare ...` can build the Dioxus frontends because the `trunk` command is on `PATH`.
 
+- `viewer-ctl list`, `viewer-ctl start`, and `viewer-ctl prepare` are documented in [viewer-ctl/README.md](viewer-ctl/README.md).
+- The shared backend runtime checked with `cargo check -p viewer-api` is documented in [viewer-api/README.md](viewer-api/README.md).
+- The frontend `trunk serve` and `cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus` flows are documented in [viewer-api/frontend/dioxus/README.md](viewer-api/frontend/dioxus/README.md).
+
 ```bash
 viewer-ctl list
 viewer-ctl start spec-viewer

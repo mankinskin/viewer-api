@@ -2,6 +2,14 @@
 
 viewer-api is the shared runtime repository for viewer servers, viewer lifecycle control, and browser-side UI scaffolding.
 
+Direct child READMEs:
+
+- [viewer-ctl/README.md](viewer-ctl/README.md)
+- [viewer-api/README.md](viewer-api/README.md)
+- [viewer-api/frontend/dioxus/README.md](viewer-api/frontend/dioxus/README.md)
+
+Installable content in this repository centers on the `viewer-ctl` binary and the reusable `viewer-api` and `viewer-api-dioxus` build targets consumed by viewer servers and frontends.
+
 ## Tool Surface
 
 | Package or surface | What it is used for | Typical entry points |
