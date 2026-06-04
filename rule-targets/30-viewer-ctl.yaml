@@ -1,11 +1,11 @@
+defaults:
+  repo_scope: viewer-api
 folders:
 - name: viewer-ctl
   files:
   - name: README.md
     target:
       name: viewer-ctl-readme
-      repo_scope: viewer-api
-      file_kind: README
       path_scope: viewer-ctl/README.md
       nodes:
       - name: onboarding

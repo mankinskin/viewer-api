@@ -1,16 +1,7 @@
 targets:
 - name: viewer-api-recurring-principles-body
-  repo_scope: viewer-api
-  file_kind: spec-doc
-  path_scope: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/body.md
-  output_path: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/body.md
+  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/body.md
 - name: viewer-api-recurring-principles-public-surface-contracts
-  repo_scope: viewer-api
-  file_kind: spec-doc
-  path_scope: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/public-surface-contracts.md
-  output_path: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/public-surface-contracts.md
+  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/public-surface-contracts.md
 - name: viewer-api-recurring-principles-viewer-ctl-lifecycle-boundary
-  repo_scope: viewer-api
-  file_kind: spec-doc
-  path_scope: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/viewer-ctl-lifecycle-boundary.md
-  output_path: .spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/viewer-ctl-lifecycle-boundary.md
+  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/viewer-ctl-lifecycle-boundary.md

@@ -1,9 +1,9 @@
+defaults:
+  repo_scope: viewer-api
 files:
 - name: README.md
   target:
     name: viewer-api-readme
-    repo_scope: viewer-api
-    file_kind: README
     path_scope: README.md
     nodes:
     - name: tool-surface
@@ -20,8 +20,6 @@ files:
 - name: AGENTS.md
   target:
     name: viewer-api-agents
-    repo_scope: viewer-api
-    file_kind: AGENTS
     path_scope: AGENTS.md
     nodes:
     - name: agent-rules
