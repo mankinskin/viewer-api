@@ -8,7 +8,7 @@ files:
   target:
     name: viewer-api-readme
     path_scope: README.md
-    schema: repository-root-readme-v1
+    schema: viewer-api-root-readme-v1
 - name: AGENTS.md
   target:
     name: viewer-api-agents

@@ -1,5 +1,5 @@
 schemas:
-  - name: repository-root-readme-v1
+  - name: viewer-api-root-readme-v1
     nodes:
       - name: tool-surface
         section: viewer-api
