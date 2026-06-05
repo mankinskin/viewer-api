@@ -119,6 +119,7 @@ pub(crate) fn install(
     state_rc: Rc<RefCell<RenderState>>,
     on_layout_change: Option<EventHandler<Layout3D>>,
     on_camera_change: Option<EventHandler<Camera>>,
+    on_deselect: Option<EventHandler<()>>,
 ) -> Vec<EventListener> {
     let Some(document) = web_sys::window().and_then(|window| window.document())
     else {
@@ -140,6 +141,7 @@ pub(crate) fn install(
         drag_state.clone(),
         state_rc.clone(),
         suppress_contextmenu.clone(),
+        on_deselect,
     );
     let mouse_move = mouse_move_listener(
         &document,

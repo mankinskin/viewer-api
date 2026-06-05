@@ -38,6 +38,7 @@ pub(super) fn mouse_down_listener(
     drag_state: Rc<RefCell<DragState>>,
     state_rc: Rc<RefCell<RenderState>>,
     suppress_contextmenu: Rc<Cell<bool>>,
+    on_deselect: Option<EventHandler<()>>,
 ) -> EventListener {
     EventListener::new(container_target, "mousedown", {
         move |evt| {
@@ -62,6 +63,11 @@ pub(super) fn mouse_down_listener(
                         cursor_y,
                     );
                     return;
+                }
+            } else if event.button() == 0 {
+                // Clicked empty space: trigger deselection.
+                if let Some(ref handler) = on_deselect {
+                    handler.call(());
                 }
             }
 

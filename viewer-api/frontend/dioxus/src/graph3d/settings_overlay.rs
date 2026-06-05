@@ -192,6 +192,15 @@ pub(super) fn GraphSettingsOverlay(
                                         },
                                         "Kanban"
                                     }
+                                    button {
+                                        style: "{opt_btn_style(cur_layout == LayoutMode::Fixed2D)}",
+                                        onclick: move |_| {
+                                            if let Some(ref callback) = on_layout_mode_change {
+                                                callback.call(LayoutMode::Fixed2D);
+                                            }
+                                        },
+                                        "Fixed 2D"
+                                    }
                                 }
                             }
                         }

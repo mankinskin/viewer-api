@@ -633,7 +633,8 @@ fn position_dom_nodes(
         let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
         let is_focus = state.selected_node_id.as_deref() == Some(node.id.as_str())
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let detail_tier = node_detail_tier(pixel_scale, is_focus);
+        let is_hover = state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover);
         let [card_w, card_h] =
             node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 

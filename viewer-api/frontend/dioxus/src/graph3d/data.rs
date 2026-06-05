@@ -45,6 +45,8 @@ pub enum NodeCardProfile {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum NodeDetailTier {
     Minimal,
+    Icon,
+    Label,
     Compact,
     Rich,
 }
@@ -53,8 +55,20 @@ impl NodeDetailTier {
     pub(crate) fn as_str(self) -> &'static str {
         match self {
             Self::Minimal => "minimal",
+            Self::Icon => "icon",
+            Self::Label => "label",
             Self::Compact => "compact",
             Self::Rich => "rich",
+        }
+    }
+
+    pub(crate) fn raise(self) -> Self {
+        match self {
+            Self::Minimal => Self::Icon,
+            Self::Icon => Self::Label,
+            Self::Label => Self::Compact,
+            Self::Compact => Self::Rich,
+            Self::Rich => Self::Rich,
         }
     }
 }
@@ -1134,13 +1148,24 @@ fn node_card_base_size_px(profile: NodeCardProfile) -> [f32; 2] {
 pub(crate) fn node_detail_tier(
     pixel_scale: f32,
     is_focus: bool,
+    is_hover: bool,
 ) -> NodeDetailTier {
-    if is_focus || pixel_scale >= 0.72 {
+    let base_tier = if is_focus || pixel_scale >= 0.72 {
         NodeDetailTier::Rich
-    } else if pixel_scale >= 0.34 {
+    } else if pixel_scale >= 0.48 {
         NodeDetailTier::Compact
+    } else if pixel_scale >= 0.32 {
+        NodeDetailTier::Label
+    } else if pixel_scale >= 0.18 {
+        NodeDetailTier::Icon
     } else {
         NodeDetailTier::Minimal
+    };
+
+    if is_hover {
+        base_tier.raise()
+    } else {
+        base_tier
     }
 }
 
@@ -1150,6 +1175,8 @@ pub(crate) fn node_detail_dimensions_px(
 ) -> [f32; 2] {
     match tier {
         NodeDetailTier::Minimal => [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
+        NodeDetailTier::Icon => [64.0, 64.0],
+        NodeDetailTier::Label => [128.0, 48.0],
         NodeDetailTier::Compact => match profile {
             NodeCardProfile::Compact => [
                 COMPACT_SHARED_NODE_WIDTH_PX,
@@ -1548,10 +1575,27 @@ mod tests {
 
     #[test]
     fn node_detail_tier_thresholds_preserve_selected_rich_detail() {
-        assert_eq!(node_detail_tier(0.20, true), NodeDetailTier::Rich);
-        assert_eq!(node_detail_tier(0.20, false), NodeDetailTier::Minimal);
-        assert_eq!(node_detail_tier(0.34, false), NodeDetailTier::Compact);
-        assert_eq!(node_detail_tier(0.72, false), NodeDetailTier::Rich);
+        assert_eq!(node_detail_tier(0.20, true, false), NodeDetailTier::Rich);
+        assert_eq!(node_detail_tier(0.20, false, false), NodeDetailTier::Icon);
+        assert_eq!(node_detail_tier(0.34, false, false), NodeDetailTier::Label);
+        assert_eq!(node_detail_tier(0.72, false, false), NodeDetailTier::Rich);
+    }
+
+    #[test]
+    fn node_detail_tier_selection() {
+        assert_eq!(node_detail_tier(0.20, true, false), NodeDetailTier::Rich);
+        assert_eq!(node_detail_tier(0.20, false, false), NodeDetailTier::Icon);
+        assert_eq!(node_detail_tier(0.34, false, false), NodeDetailTier::Label);
+        assert_eq!(node_detail_tier(0.50, false, false), NodeDetailTier::Compact);
+        assert_eq!(node_detail_tier(0.72, false, false), NodeDetailTier::Rich);
+    }
+
+    #[test]
+    fn node_detail_tier_hover_promotion() {
+        assert_eq!(node_detail_tier(0.10, false, true), NodeDetailTier::Icon);
+        assert_eq!(node_detail_tier(0.20, false, true), NodeDetailTier::Label);
+        assert_eq!(node_detail_tier(0.34, false, true), NodeDetailTier::Compact);
+        assert_eq!(node_detail_tier(0.50, false, true), NodeDetailTier::Rich);
     }
 
     #[test]

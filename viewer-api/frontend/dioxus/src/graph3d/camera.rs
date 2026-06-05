@@ -18,6 +18,8 @@ pub enum LayoutMode {
     /// State-column kanban table with dependency-group rows and soft
     /// clustering inside each cell.
     KanbanTable,
+    /// Fixed 2D canvas camera mode with matching 2D grid patterns.
+    Fixed2D,
 }
 
 /// Camera projection mode.

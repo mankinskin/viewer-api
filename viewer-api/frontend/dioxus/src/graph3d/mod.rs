@@ -142,6 +142,9 @@ pub struct Graph3DProps {
     /// Called when the interactive canvas mutates the camera state.
     #[props(default)]
     pub on_camera_change: Option<EventHandler<Camera>>,
+    /// Called when the user clicks empty graph space, clearing selection.
+    #[props(default)]
+    pub on_deselect: Option<EventHandler<()>>,
     /// Currently selected node id. Used to emphasize incident edges.
     #[props(default)]
     pub selected_node_id: Option<String>,
@@ -223,7 +226,10 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                     }
                 }
             }
-            {props.children}
+            div {
+                style: "position: absolute; inset: 0; z-index: 0; pointer-events: none;",
+                {props.children}
+            }
             GraphSettingsOverlay {
                 layout_mode: props.layout_mode,
                 projection: props.projection,
@@ -247,6 +253,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
     let on_layout_change = props.on_layout_change.clone();
     let on_camera_change = props.on_camera_change.clone();
+    let on_deselect = props.on_deselect.clone();
     let camera_mode = props.camera_mode;
     let selected_node_id = props.selected_node_id.clone();
     let hovered_node_id = props.hovered_node_id.clone();
@@ -295,6 +302,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
             viewport_insets,
             on_layout_change,
             on_camera_change,
+            on_deselect,
             projection,
             status,
             render_rc,
@@ -345,7 +353,10 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
                     }
                 }
             }
-            {props.children}
+            div {
+                style: "position: absolute; inset: 0; z-index: 0; pointer-events: none;",
+                {props.children}
+            }
             if !status_text.is_empty() {
                 div {
                     style: "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #aaa; font-size: 14px; font-family: sans-serif; text-align: center; pointer-events: none;",
@@ -426,6 +437,7 @@ fn start_graph_bootstrap(
     viewport_insets: [f32; 4],
     on_layout_change: Option<EventHandler<Layout3D>>,
     on_camera_change: Option<EventHandler<Camera>>,
+    on_deselect: Option<EventHandler<()>>,
     projection: Projection,
     mut status: Signal<String>,
     mut render_rc: Signal<Option<Rc<RefCell<RenderState>>>>,
@@ -545,6 +557,7 @@ fn start_graph_bootstrap(
             state_rc.clone(),
             on_layout_change,
             on_camera_change,
+            on_deselect,
         ));
 
         let state_for_callback = state_rc.clone();
