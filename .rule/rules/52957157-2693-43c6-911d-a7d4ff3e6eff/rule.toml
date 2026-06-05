@@ -1,0 +1,17 @@
+id = "52957157-2693-43c6-911d-a7d4ff3e6eff"
+created_at = "2026-06-05T13:42:35.140045500+00:00"
+title = "Parent README"
+state = "draft"
+feedback_helpful_count = 0
+feedback_mixed_count = 0
+feedback_not_helpful_count = 0
+feedback_note_count = 0
+feedback_unresolved_count = 0
+file_kind = "README"
+order_key = 0
+path_scopes = ["viewer-api/README.md"]
+repo_scopes = ["viewer-api"]
+section = "packages/viewer-api/parent-readme"
+sentence_anchors = []
+slug = "viewer-api/readme/packages/viewer-api/parent-readme/l1"
+type = "rule-entry"

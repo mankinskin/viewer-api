@@ -1,5 +1,8 @@
 <!-- rule-api:file generated=true -->
 
+<!-- rule-api:entry id=9219c18d-fb96-46e5-9b16-bd7dca1b921d slug=viewer-api/readme/packages/viewer-ctl/parent-readme/l1 -->
+Back to [viewer-api/README.md](../README.md).
+
 <!-- rule-api:entry id=f796a0b0-33f6-4428-9647-071f3f98b352 slug=viewer-api/readme/tools/viewer-ctl/l1 -->
 # viewer-ctl
 
