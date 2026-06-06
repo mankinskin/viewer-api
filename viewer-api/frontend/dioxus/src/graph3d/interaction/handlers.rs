@@ -73,6 +73,7 @@ pub(super) fn mouse_down_listener(
 
             start_camera_interaction(
                 &mouse_state,
+                &state_rc,
                 cursor_x,
                 cursor_y,
                 event.button(),
@@ -131,6 +132,9 @@ pub(super) fn mouse_up_listener(
             state.orbiting || state.panning
         };
         let was_drag = clear_interaction_state(&mouse_state, &drag_state);
+        if let Ok(mut state) = state_rc.try_borrow_mut() {
+            state.interaction_active = false;
+        }
         if was_drag {
             if let Some(handler) = on_layout_change.clone() {
                 if let Ok(state) = state_rc.try_borrow() {
@@ -272,6 +276,7 @@ fn record_drag_candidate(
 
 fn start_camera_interaction(
     mouse_state: &Rc<RefCell<MouseState>>,
+    state_rc: &Rc<RefCell<RenderState>>,
     cursor_x: f64,
     cursor_y: f64,
     button: i16,
@@ -280,10 +285,18 @@ fn start_camera_interaction(
     let mut state = mouse_state.borrow_mut();
     state.last_x = cursor_x;
     state.last_y = cursor_y;
+    let mut active = false;
     if button == 2 || (button == 0 && shift_key) {
         state.panning = true;
+        active = true;
     } else if button == 0 {
         state.orbiting = true;
+        active = true;
+    }
+    if active {
+        if let Ok(mut r_state) = state_rc.try_borrow_mut() {
+            r_state.interaction_active = true;
+        }
     }
 }
 
@@ -313,6 +326,9 @@ fn handle_active_drag(
     }
     if !already_active {
         drag_state.borrow_mut().active = true;
+        if let Ok(mut state) = state_rc.try_borrow_mut() {
+            state.interaction_active = true;
+        }
     }
 
     update_dragged_node(

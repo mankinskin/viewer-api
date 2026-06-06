@@ -546,6 +546,7 @@ fn start_graph_bootstrap(
             selected_node_id,
             hovered_node_id,
             last_frame_time: None,
+            interaction_active: false,
         }));
         render_rc.set(Some(state_rc.clone()));
         status.set(String::new());
@@ -601,7 +602,26 @@ fn sync_render_state(
         selection_auto_layout,
     );
 
-    if state.base_layout != *layout
+    if state.interaction_active {
+        if state.base_layout != *layout || state.target_layout != target_layout {
+            for node in &layout.nodes {
+                if let Some(target_node) = state.layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                    target_node.label = node.label.clone();
+                    target_node.state = node.state.clone();
+                }
+                if let Some(target_node) = state.target_layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                    target_node.label = node.label.clone();
+                    target_node.state = node.state.clone();
+                }
+                if let Some(target_node) = state.base_layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                    target_node.label = node.label.clone();
+                    target_node.state = node.state.clone();
+                }
+            }
+            state.selection_auto_layout = selection_auto_layout;
+            state.dirty_layout = true;
+        }
+    } else if state.base_layout != *layout
         || state.selection_auto_layout != selection_auto_layout
         || state.target_layout != target_layout
     {

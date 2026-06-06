@@ -80,6 +80,7 @@ pub(crate) struct RenderState {
     pub selected_node_id: Option<String>,
     pub hovered_node_id: Option<String>,
     pub last_frame_time: Option<f32>,
+    pub interaction_active: bool,
 }
 
 struct ScreenPos {
@@ -386,31 +387,17 @@ fn anchor_zoom_scale(
 }
 
 fn position_dom_layout_anchors(
+    doc: &web_sys::Document,
     state: &RenderState,
-    layout: &Layout3D,
+    _layout: &Layout3D,
+    vp: &[f32; 16],
+    node_rects: &[Option<NodeScreenRect>],
     viewport_x: f32,
     viewport_y: f32,
     viewport_w: f32,
     viewport_h: f32,
 ) {
-    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
-        return;
-    };
-
-    let eye = state.camera.eye();
-    let aspect = viewport_w / viewport_h.max(1.0);
-    let proj = match state.projection {
-        Projection::Perspective =>
-            math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
-        Projection::Orthographic => {
-            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
-            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
-        },
-    };
-    let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
-    let vp = math::mul(proj, view);
     let margin = 320.0;
-    let node_rects = collect_dom_node_rects(&doc, state, layout);
 
     if let Ok(anchor_nodes) = doc.query_selector_all(&format!(
         "#{} [data-layout-anchor-x]",
@@ -568,33 +555,16 @@ fn position_dom_layout_anchors(
 }
 
 fn position_dom_nodes(
+    doc: &web_sys::Document,
     state: &RenderState,
     layout: &Layout3D,
+    vp: &[f32; 16],
     viewport_x: f32,
     viewport_y: f32,
     viewport_w: f32,
     viewport_h: f32,
 ) {
-    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
-        return;
-    };
-
-    // Use the container's physical dimensions for the projection.  Since the
-    // camera's viewProj was computed with the same aspect ratio as the
-    // container (and setViewport maps NDC → container region), NDC → pixels
-    // is a simple [0, cont_w] × [0, cont_h] transform with no origin offset.
     let eye = state.camera.eye();
-    let aspect = viewport_w / viewport_h.max(1.0);
-    let proj = match state.projection {
-        Projection::Perspective =>
-            math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
-        Projection::Orthographic => {
-            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
-            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
-        },
-    };
-    let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
-    let vp = math::mul(proj, view);
 
     let Ok(node_list) = doc.query_selector_all(&format!(
         "#{} [data-node-idx]",
@@ -722,16 +692,15 @@ fn sync_node_detail_tier(
 }
 
 fn position_dom_edges(
+    doc: &web_sys::Document,
     state: &RenderState,
     layout: &Layout3D,
+    vp: &[f32; 16],
     viewport_x: f32,
     viewport_y: f32,
     viewport_w: f32,
     viewport_h: f32,
 ) {
-    let Some(doc) = web_sys::window().and_then(|w| w.document()) else {
-        return;
-    };
     let Some(container) = doc.get_element_by_id(&state.container_id) else {
         return;
     };
@@ -762,18 +731,6 @@ fn position_dom_edges(
     );
 
     let eye = state.camera.eye();
-    let aspect = viewport_w / viewport_h.max(1.0);
-    let proj = match state.projection {
-        Projection::Perspective =>
-            math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
-        Projection::Orthographic => {
-            let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
-            math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
-        },
-    };
-    let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
-    let vp = math::mul(proj, view);
-    let node_rects = collect_dom_node_rects(&doc, state, layout);
     let active_focus = edge_visual_state(state).active_focus(&layout.nodes);
 
     let Ok(edge_nodes) = doc.query_selector_all(&format!(
@@ -804,9 +761,9 @@ fn position_dom_edges(
         };
 
         let screen_a =
-            world_to_screen([a.x, a.y, a.z], &vp, viewport_w, viewport_h);
+            world_to_screen([a.x, a.y, a.z], vp, viewport_w, viewport_h);
         let screen_b =
-            world_to_screen([b.x, b.y, b.z], &vp, viewport_w, viewport_h);
+            world_to_screen([b.x, b.y, b.z], vp, viewport_w, viewport_h);
         if (!screen_a.visible && !screen_b.visible)
             || (screen_a.x - screen_b.x).abs() < 1.0
                 && (screen_a.y - screen_b.y).abs() < 1.0
@@ -815,20 +772,50 @@ fn position_dom_edges(
             continue;
         }
 
-        let rect_a = node_rects.get(edge.from_idx).copied().flatten();
-        let rect_b = node_rects.get(edge.to_idx).copied().flatten();
-        let center_a = rect_a
-            .map(|rect| (rect.center_x, rect.center_y))
-            .unwrap_or((viewport_x + screen_a.x, viewport_y + screen_a.y));
-        let center_b = rect_b
-            .map(|rect| (rect.center_x, rect.center_y))
-            .unwrap_or((viewport_x + screen_b.x, viewport_y + screen_b.y));
-        let (x1, y1) = rect_a
-            .map(|rect| clip_edge_endpoint(rect, center_b, 0.0))
-            .unwrap_or(center_a);
-        let (x2, y2) = rect_b
-            .map(|rect| clip_edge_endpoint(rect, center_a, 0.0))
-            .unwrap_or(center_b);
+        // Calculate card detail dimensions for node A in order to build NodeScreenRect analytically
+        let dx_a = eye[0] - a.x;
+        let dy_a = eye[1] - a.y;
+        let dz_a = eye[2] - a.z;
+        let dist_a = (dx_a * dx_a + dy_a * dy_a + dz_a * dz_a).sqrt().max(0.1);
+        let pixel_scale_a = (22.0 / dist_a).clamp(0.14, 3.5);
+        let is_focus_a = state.selected_node_id.as_deref() == Some(a.id.as_str())
+            || state.hovered_node_id.as_deref() == Some(a.id.as_str());
+        let is_hover_a = state.hovered_node_id.as_deref() == Some(a.id.as_str());
+        let detail_tier_a = node_detail_tier(pixel_scale_a, is_focus_a, is_hover_a);
+        let [card_w_a, card_h_a] =
+            node_detail_dimensions_px(detail_tier_a, layout.node_card_profile);
+
+        let rect_a = NodeScreenRect {
+            center_x: viewport_x + screen_a.x,
+            center_y: viewport_y + screen_a.y,
+            half_w: card_w_a * pixel_scale_a * 0.5,
+            half_h: card_h_a * pixel_scale_a * 0.5,
+        };
+
+        // Calculate card detail dimensions for node B
+        let dx_b = eye[0] - b.x;
+        let dy_b = eye[1] - b.y;
+        let dz_b = eye[2] - b.z;
+        let dist_b = (dx_b * dx_b + dy_b * dy_b + dz_b * dz_b).sqrt().max(0.1);
+        let pixel_scale_b = (22.0 / dist_b).clamp(0.14, 3.5);
+        let is_focus_b = state.selected_node_id.as_deref() == Some(b.id.as_str())
+            || state.hovered_node_id.as_deref() == Some(b.id.as_str());
+        let is_hover_b = state.hovered_node_id.as_deref() == Some(b.id.as_str());
+        let detail_tier_b = node_detail_tier(pixel_scale_b, is_focus_b, is_hover_b);
+        let [card_w_b, card_h_b] =
+            node_detail_dimensions_px(detail_tier_b, layout.node_card_profile);
+
+        let rect_b = NodeScreenRect {
+            center_x: viewport_x + screen_b.x,
+            center_y: viewport_y + screen_b.y,
+            half_w: card_w_b * pixel_scale_b * 0.5,
+            half_h: card_h_b * pixel_scale_b * 0.5,
+        };
+
+        let center_a = (rect_a.center_x, rect_a.center_y);
+        let center_b = (rect_b.center_x, rect_b.center_y);
+        let (x1, y1) = clip_edge_endpoint(rect_a, center_b, 0.0);
+        let (x2, y2) = clip_edge_endpoint(rect_b, center_a, 0.0);
 
         let (stroke_width, stroke_opacity) = edge_overlay_style(
             layout,
@@ -972,6 +959,11 @@ pub(crate) fn render_frame(
     state: &mut RenderState,
     frame: &crate::effects::FrameContext,
 ) {
+    let window = web_sys::window();
+    let Some(doc) = window.as_ref().and_then(|w| w.document()) else {
+        return;
+    };
+
     let dt = state
         .last_frame_time
         .map(|last| (frame.time_s - last).clamp(0.0, 0.1))
@@ -997,7 +989,8 @@ pub(crate) fn render_frame(
     // hands us the current frame's swap-chain view. We only need to make
     // sure our depth texture matches the new size; CSS pixel size is
     // recomputed from `frame.canvas_w/h` divided by DPR for DOM positioning.
-    let dpr = web_sys::window()
+    let dpr = window
+        .as_ref()
         .map(|w| w.device_pixel_ratio().clamp(1.0, 4.0))
         .unwrap_or(1.0) as f32;
     let css_w = (frame.canvas_w as f32) / dpr;
@@ -1016,9 +1009,8 @@ pub(crate) fn render_frame(
 
     // Resolve the graph container's bounding rect so the camera and DOM
     // projection are both centred on the container, not the full canvas.
-    let (cont_x_css, cont_y_css, cont_w_css, cont_h_css) = web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.get_element_by_id(&state.container_id))
+    let (cont_x_css, cont_y_css, cont_w_css, cont_h_css) = doc
+        .get_element_by_id(&state.container_id)
         .map(|el| {
             let _ = el.set_attribute(
                 "data-camera-distance",
@@ -1209,24 +1201,34 @@ pub(crate) fn render_frame(
     let render_layout = render_layout.as_ref().unwrap_or(&state.layout);
 
     position_dom_nodes(
+        &doc,
         state,
         render_layout,
+        &vp_mat,
         viewport_x_css,
         viewport_y_css,
         viewport_w_css,
         viewport_h_css,
     );
+
+    let node_rects = collect_dom_node_rects(&doc, state, render_layout);
+
     position_dom_layout_anchors(
+        &doc,
         state,
         render_layout,
+        &vp_mat,
+        &node_rects,
         viewport_x_css,
         viewport_y_css,
         viewport_w_css,
         viewport_h_css,
     );
     position_dom_edges(
+        &doc,
         state,
         render_layout,
+        &vp_mat,
         viewport_x_css,
         viewport_y_css,
         viewport_w_css,
