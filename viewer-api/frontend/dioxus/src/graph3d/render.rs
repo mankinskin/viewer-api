@@ -959,6 +959,7 @@ pub(crate) fn render_frame(
     state: &mut RenderState,
     frame: &crate::effects::FrameContext,
 ) {
+    crate::profile_scope!("graph3d::render_frame");
     let window = web_sys::window();
     let Some(doc) = window.as_ref().and_then(|w| w.document()) else {
         return;

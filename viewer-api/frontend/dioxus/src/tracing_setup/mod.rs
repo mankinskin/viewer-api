@@ -38,6 +38,18 @@ pub fn install() {
         let env_filter = EnvFilter::try_new(&filter_str)
             .unwrap_or_else(|_| EnvFilter::new("info"));
 
+        // Under `profile-browser`, mirror spans into the browser performance
+        // timeline (`performance.measure`) so Chromium captures them under
+        // `blink.user_timing` during a Playwright trace.
+        #[cfg(feature = "profile-browser")]
+        let console_layer = {
+            let config = tracing_wasm::WASMLayerConfigBuilder::new()
+                .set_report_logs_in_timings(true)
+                .set_max_level(tracing::Level::TRACE)
+                .build();
+            tracing_wasm::WASMLayer::new(config)
+        };
+        #[cfg(not(feature = "profile-browser"))]
         let console_layer = tracing_wasm::WASMLayer::new(tracing_wasm::WASMLayerConfig::default());
 
         if is_sink_enabled() {
@@ -74,6 +86,14 @@ fn resolve_filter() -> String {
             return f;
         }
     }
+    // When compiled for profiling, default to TRACE for the graph hot path so
+    // `profile_scope!` spans reach the performance timeline without needing a
+    // `?log=` override.
+    #[cfg(feature = "profile-browser")]
+    {
+        return "info,viewer_api::profiling=trace,viewer_api_dioxus::graph3d=trace".to_string();
+    }
+    #[cfg(not(feature = "profile-browser"))]
     "info".to_string()
 }
 

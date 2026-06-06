@@ -1,6 +1,7 @@
 pub mod components;
 pub mod effects;
 pub mod graph3d;
+pub mod profiling;
 pub mod store;
 #[cfg(target_arch = "wasm32")]
 pub mod tracing_setup;

@@ -11,6 +11,14 @@ path = "src/lib.rs"
 name = "viewer-api-dioxus"
 path = "src/main.rs"
 
+[features]
+# Enable browser performance profiling: keeps TRACE-level `profile_scope!`
+# spans in the build and configures the tracing-wasm console layer to mirror
+# spans into the browser performance timeline (`performance.measure`, captured
+# by Chromium under `blink.user_timing`). Strip from public/production builds
+# by simply not enabling this feature.
+profile-browser = ["tracing/release_max_level_trace"]
+
 [dependencies]
 dioxus = { version = "0.7", default-features = false, features = ["minimal"] }
 dioxus-web = { version = "0.7", default-features = false, features = ["document", "mounted"] }
@@ -91,4 +99,9 @@ web-sys = { version = "0.3", features = [
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Location"] }
+
+# Browser micro-benchmarks (run via `wasm-pack test --chrome --headless`).
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Performance", "console"] }
 
