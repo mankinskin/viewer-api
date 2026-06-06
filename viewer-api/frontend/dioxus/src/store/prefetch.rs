@@ -123,6 +123,15 @@ where
         self.inner.borrow().map.len()
     }
 
+    /// Removes the entry for `key` if present, returning the value.
+    pub fn remove(&self, key: &K) -> Option<V> {
+        let mut inner = self.inner.borrow_mut();
+        if let Some(pos) = inner.order.iter().position(|k| k == key) {
+            inner.order.remove(pos);
+        }
+        inner.map.remove(key)
+    }
+
     /// `true` if the cache holds no entries.
     pub fn is_empty(&self) -> bool {
         self.inner.borrow().map.is_empty()
