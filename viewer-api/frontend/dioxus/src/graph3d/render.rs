@@ -218,60 +218,65 @@ fn world_to_screen(
     }
 }
 
-fn collect_dom_node_rects(
-    doc: &web_sys::Document,
+/// Compute per-node screen-space footprints analytically from the projected
+/// layout, mirroring the projection + LOD math used by `position_dom_nodes`
+/// and `position_dom_edges`. This intentionally performs **no** DOM reads
+/// (`getBoundingClientRect`/`offsetWidth`) so it never forces a synchronous
+/// reflow after the per-frame transform writes — the root cause of node cards
+/// trailing the GPU-drawn edges during orbit/pan/drag.
+fn compute_node_screen_rects(
     state: &RenderState,
     layout: &Layout3D,
+    vp: &[f32; 16],
+    viewport_x: f32,
+    viewport_y: f32,
+    viewport_w: f32,
+    viewport_h: f32,
 ) -> Vec<Option<NodeScreenRect>> {
     let mut rects = vec![None; layout.nodes.len()];
-    let Some(container) = doc.get_element_by_id(&state.container_id) else {
-        return rects;
-    };
-    let Ok(container) = container.dyn_into::<HtmlElement>() else {
-        return rects;
-    };
-    let container_rect = container.get_bounding_client_rect();
-    let Ok(node_list) = doc.query_selector_all(&format!(
-        "#{} [data-node-idx]",
-        state.container_id
-    )) else {
-        return rects;
-    };
+    let eye = state.camera.eye();
+    let margin = 300.0;
 
-    for i in 0..node_list.length() {
-        let Some(node) = node_list.item(i) else {
-            continue;
-        };
-        let Ok(html_el) = node.dyn_into::<HtmlElement>() else {
-            continue;
-        };
-        let Some(idx_str) = html_el.get_attribute("data-node-idx") else {
-            continue;
-        };
-        let Ok(idx) = idx_str.parse::<usize>() else {
-            continue;
-        };
-        let Some(slot) = rects.get_mut(idx) else {
-            continue;
-        };
-        if html_el
-            .style()
-            .get_property_value("display")
-            .ok()
-            .as_deref()
-            == Some("none")
+    for (idx, node) in layout.nodes.iter().enumerate() {
+        let screen = world_to_screen(
+            [node.x, node.y, node.z],
+            vp,
+            viewport_w,
+            viewport_h,
+        );
+
+        let dx = eye[0] - node.x;
+        let dy = eye[1] - node.y;
+        let dz = eye[2] - node.z;
+        let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
+        let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
+
+        // Skip nodes that `position_dom_nodes` would have set to
+        // `display: none` this frame so collision avoidance ignores them.
+        if !screen.visible
+            || screen.x < -margin
+            || screen.x > viewport_w + margin
+            || screen.y < -margin
+            || screen.y > viewport_h + margin
+            || pixel_scale < 0.08
         {
             continue;
         }
 
-        let rect = html_el.get_bounding_client_rect();
-        *slot = Some(NodeScreenRect {
-            center_x: (rect.left() - container_rect.left() + rect.width() * 0.5)
-                as f32,
-            center_y: (rect.top() - container_rect.top() + rect.height() * 0.5)
-                as f32,
-            half_w: (rect.width() * 0.5) as f32,
-            half_h: (rect.height() * 0.5) as f32,
+        let is_focus = state.selected_node_id.as_deref()
+            == Some(node.id.as_str())
+            || state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let is_hover =
+            state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover);
+        let [card_w, card_h] =
+            node_detail_dimensions_px(detail_tier, layout.node_card_profile);
+
+        rects[idx] = Some(NodeScreenRect {
+            center_x: viewport_x + screen.x,
+            center_y: viewport_y + screen.y,
+            half_w: card_w * pixel_scale * 0.5,
+            half_h: card_h * pixel_scale * 0.5,
         });
     }
 
@@ -663,6 +668,12 @@ fn sync_node_detail_tier(
     tier: NodeDetailTier,
 ) {
     let tier_name = tier.as_str();
+    // Skip the nested query + per-child display writes when the card is
+    // already on this LOD tier. During orbit/pan the tier is stable for most
+    // frames, so this avoids N*M redundant DOM writes per frame.
+    if html_el.get_attribute("data-node-lod").as_deref() == Some(tier_name) {
+        return;
+    }
     let _ = html_el.set_attribute("data-node-lod", tier_name);
     let Ok(detail_nodes) = html_el.query_selector_all("[data-node-detail-tier]")
     else {
@@ -1212,7 +1223,15 @@ pub(crate) fn render_frame(
         viewport_h_css,
     );
 
-    let node_rects = collect_dom_node_rects(&doc, state, render_layout);
+    let node_rects = compute_node_screen_rects(
+        state,
+        render_layout,
+        &vp_mat,
+        viewport_x_css,
+        viewport_y_css,
+        viewport_w_css,
+        viewport_h_css,
+    );
 
     position_dom_layout_anchors(
         &doc,
