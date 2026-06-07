@@ -107,6 +107,19 @@ pub(super) fn mouse_move_listener(
                 return;
             }
 
+            // Imperative hover detection — replaces the former Dioxus
+            // `on_hover` round-trip so hovering a node never triggers a
+            // component re-render (which rebuilt every node card). Skip while
+            // orbiting/panning so camera interaction never churns edge
+            // emphasis.
+            let camera_active = {
+                let ms = mouse_state.borrow();
+                ms.orbiting || ms.panning
+            };
+            if !camera_active {
+                update_hover(&state_rc, event);
+            }
+
             update_camera_motion(
                 &mouse_state,
                 &state_rc,
@@ -220,6 +233,26 @@ fn find_card_index(event: &web_sys::MouseEvent) -> Option<usize> {
     let card = element.closest("[data-node-idx]").ok()??;
     let index = card.get_attribute("data-node-idx")?;
     index.parse::<usize>().ok()
+}
+
+/// Resolve the node currently under the cursor (via the DOM card hit-test)
+/// and write it straight into `RenderState`. Marks edges dirty when the
+/// hovered node changes so the next frame re-emphasises the connected edges.
+/// This is the imperative replacement for the old Dioxus `on_hover` signal
+/// path, which re-rendered the whole graph component on every pointer move.
+fn update_hover(
+    state_rc: &Rc<RefCell<RenderState>>,
+    event: &web_sys::MouseEvent,
+) {
+    let idx = find_card_index(event);
+    if let Ok(mut state) = state_rc.try_borrow_mut() {
+        let hovered_id = idx
+            .and_then(|i| state.layout.nodes.get(i).map(|node| node.id.clone()));
+        if state.hovered_node_id != hovered_id {
+            state.hovered_node_id = hovered_id;
+            state.dirty_edges = true;
+        }
+    }
 }
 
 fn record_drag_candidate(

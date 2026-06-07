@@ -578,7 +578,9 @@ fn sync_render_state(
     camera_mode: CameraMode,
     projection: Projection,
     selected_node_id: &Option<String>,
-    hovered_node_id: &Option<String>,
+    // Retained for API symmetry with the bootstrap path; hover is now owned
+    // imperatively by the interaction handler and intentionally not synced here.
+    _hovered_node_id: &Option<String>,
     graph_theme: &GraphThemeSettings,
     selection_auto_layout: bool,
     layout_mode_changed: bool,
@@ -698,10 +700,12 @@ fn sync_render_state(
     }
 
     let selected_changed = state.selected_node_id != *selected_node_id;
-    let hovered_changed = state.hovered_node_id != *hovered_node_id;
-    if selected_changed || hovered_changed {
+    // NOTE: `hovered_node_id` is owned imperatively by the mousemove
+    // interaction handler (`interaction::handlers::update_hover`) so per-pointer
+    // hover never routes through Dioxus reactivity. We deliberately do not write
+    // it here — doing so would clobber the live hover on every re-render.
+    if selected_changed {
         state.selected_node_id = selected_node_id.clone();
-        state.hovered_node_id = hovered_node_id.clone();
         state.dirty_edges = true;
         if selection_auto_focus && selected_changed {
             if let Some(selected_id) = selected_node_id.as_deref() {
