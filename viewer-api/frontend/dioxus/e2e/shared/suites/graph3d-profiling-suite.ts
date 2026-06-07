@@ -20,8 +20,10 @@ export function registerGraph3dProfilingSuite(viewer: ViewerConfig): void {
   test.describe(`${viewer.name} — graph3d profiling capture`, () => {
     test('captures a Chromium trace of graph load + first frames', async ({ page, browser }) => {
       test.setTimeout(120_000);
+      page.on('console', msg => console.log(`[BROWSER] ${msg.type()}: ${msg.text()}`));
 
-      await page.goto(viewer.url, { waitUntil: 'domcontentloaded' });
+      const targetUrl = viewer.name === 'spec-viewer' ? `${viewer.url}/specs/graph` : viewer.url;
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
       await page.locator(viewer.readySelector).first().waitFor({
         state: 'visible',
         timeout: viewer.readyTimeout,
