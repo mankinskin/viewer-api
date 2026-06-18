@@ -18,7 +18,7 @@ Each principle is its own section so a `rule scan` materialises one canonical en
 ## Related tickets
 
 - [f147eb0e Migrate recurring spec principles to canonical rule entries via spec sync-generated](.ticket/tickets/f147eb0e-c758-459b-a956-a1162c3e1af6/ticket.toml)
-- [a5fe4c58 Adopt rule targets for generated spec artifacts](memory-viewers/memory-api/.ticket/tickets/a5fe4c58-f59c-4d97-8ee6-3447724b5fac/ticket.toml)
+- [a5fe4c58 Adopt rule targets for generated spec artifacts](memory-api/.ticket/tickets/a5fe4c58-f59c-4d97-8ee6-3447724b5fac/ticket.toml)
 
 <!-- spec-api:entry id=6980beef-8d68-4a5b-901e-db262aaf8b2f slug=viewer-api/recurring-principles/viewer-api-recurring-principles/related-specs/l17 -->
 ## Related specs

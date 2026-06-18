@@ -102,11 +102,11 @@ mock project layout (folders, modules, source files, doc pages):
 
 ## Traceability
 
-- Related ticket: `memory-viewers/viewer-api/.ticket/tickets/763f8c13-a4bd-47af-8894-3e95a63fde8d`
-- Related ticket: `memory-viewers/viewer-api/.ticket/tickets/735502cd-3aec-4772-b2a8-2184aaaf3c21`
-- Related ticket: `memory-viewers/viewer-api/.ticket/tickets/9a81d3e5-82ca-4fd0-84bf-c0a54f6716e5`
-- Related ticket: `memory-viewers/viewer-api/.ticket/tickets/21a2e8f4-4bd8-4436-be52-c2c4a07bb692`
-- Updated doc: `memory-viewers/viewer-api/.spec/specs/a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6/body.md`
+- Related ticket: `viewer-api/.ticket/tickets/763f8c13-a4bd-47af-8894-3e95a63fde8d`
+- Related ticket: `viewer-api/.ticket/tickets/735502cd-3aec-4772-b2a8-2184aaaf3c21`
+- Related ticket: `viewer-api/.ticket/tickets/9a81d3e5-82ca-4fd0-84bf-c0a54f6716e5`
+- Related ticket: `viewer-api/.ticket/tickets/21a2e8f4-4bd8-4436-be52-c2c4a07bb692`
+- Updated doc: `viewer-api/.spec/specs/a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6/body.md`
 
 ## Validation
 
@@ -124,11 +124,11 @@ mock project layout (folders, modules, source files, doc pages):
 
 ## Code references
 
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/components/tree_view.rs`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/main/demo.rs`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/index.html`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/components/tree_view/explorer_shell.rs`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/components/tree_view/filter_toggle_button.rs`
+- `viewer-api/viewer-api/frontend/dioxus/src/components/tree_view.rs`
+- `viewer-api/viewer-api/frontend/dioxus/src/main/demo.rs`
+- `viewer-api/viewer-api/frontend/dioxus/index.html`
+- `viewer-api/viewer-api/frontend/dioxus/src/components/tree_view/explorer_shell.rs`
+- `viewer-api/viewer-api/frontend/dioxus/src/components/tree_view/filter_toggle_button.rs`
 - `memory-viewers/spec-viewer/frontend/dioxus/src/components/spec_tree.rs`
 - `tools/viewer/doc-viewer/frontend/dioxus/src/app.rs`
 - `memory-viewers/ticket-viewer/frontend/dioxus/src/components/ticket_tree/header.rs`

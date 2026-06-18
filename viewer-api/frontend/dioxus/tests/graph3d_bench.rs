@@ -7,7 +7,7 @@
 //!
 //! ```bash
 //! wasm-pack test --chrome --headless \
-//!   memory-viewers/viewer-api/viewer-api/frontend/dioxus
+//!   viewer-api/viewer-api/frontend/dioxus
 //! ```
 //!
 //! Each benchmark uses the browser high-resolution clock

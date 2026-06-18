@@ -1,7 +1,7 @@
 # viewer-api: Graph3D component
 
 Canonical specification for the shared 3D dependency-graph Dioxus component
-(`memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/`) used by
+(`viewer-api/viewer-api/frontend/dioxus/src/graph3d/`) used by
 ticket-viewer and spec-viewer.
 
 ## Public surface
@@ -51,7 +51,7 @@ graph fetched from `/api/demo/graph`:
   `display: block`.
 - Right-button drag fires `contextmenu` with `defaultPrevented === true`
   (regression coverage for the existing fix in
-  `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/interaction.rs`).
+  `viewer-api/viewer-api/frontend/dioxus/src/graph3d/interaction.rs`).
 - Plain right-click leaves `defaultPrevented === false`.
 - In spec-viewer `/specs/graph`, clicking a visible graph card opens the preview
   panel and marks that card with `node-card-selected`.
@@ -78,9 +78,9 @@ graph fetched from `/api/demo/graph`:
 
 ## Code references
 
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/render.rs`
-- `memory-viewers/viewer-api/viewer-api/frontend/dioxus/src/graph3d/mod.rs`
+- `viewer-api/viewer-api/frontend/dioxus/src/graph3d/`
+- `viewer-api/viewer-api/frontend/dioxus/src/graph3d/render.rs`
+- `viewer-api/viewer-api/frontend/dioxus/src/graph3d/mod.rs`
 - `tools/viewer/e2e/tests/dioxus/graph3d-right-drag.spec.ts`
 - `tools/viewer/e2e/tests/spec-viewer/graph-selection.spec.ts`
 - `memory-viewers/ticket-viewer/frontend/dioxus/e2e-release/graph-edge-overlay-shape.spec.ts`

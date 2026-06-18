@@ -6,7 +6,7 @@ The original phase plan under this tracker succeeded in landing most of the shar
 
 ## Scope
 
-Shared crate: `memory-viewers/viewer-api/viewer-api/frontend/dioxus/`
+Shared crate: `viewer-api/viewer-api/frontend/dioxus/`
 Current Dioxus consumers in scope: `memory-viewers/spec-viewer/frontend/dioxus/`, `memory-viewers/ticket-viewer/frontend/dioxus/`, and `tools/viewer/doc-viewer/frontend/dioxus/`
 Out of scope: the legacy Preact doc-viewer frontend, unrelated viewer layout rewrites, and speculative phases that are not backed by a confirmed current consumer gap.
 

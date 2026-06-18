@@ -11,7 +11,7 @@ Every viewer exposes a versioned public contract through `viewer-api` (HTTP rout
 - The HTTP routes registered by `viewer-api/viewer-api` and re-exposed by each viewer's binary.
 - The GraphQL schema served from the same routes, including request/response shapes for queries and subscriptions.
 - The shared frontend Dioxus package and its TypeScript bindings consumed by each viewer's frontend crate.
-- The Playwright end-to-end suites that exercise the surface (`memory-viewers/viewer-api/viewer-api/frontend/dioxus/e2e/shared/` plus per-viewer wrappers).
+- The Playwright end-to-end suites that exercise the surface (`viewer-api/viewer-api/frontend/dioxus/e2e/shared/` plus per-viewer wrappers).
 
 <!-- spec-api:entry id=8219b071-c541-4dc1-a034-e083d9361ce3 slug=viewer-api/recurring-principles/public-surface-contracts/public-surface-contracts/versioning-rules/l12 -->
 ## Versioning rules
