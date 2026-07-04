@@ -1,5 +1,5 @@
 import type { ViewerConfig } from '../managed-viewers';
-import { test, expect } from '../playwright-runtime';
+import { applyE2eSessionCorrelation, test, expect } from '../playwright-runtime';
 
 export function registerTracingConsoleSuite(viewer: ViewerConfig): void {
   test.describe(`${viewer.name} — WASM tracing`, () => {
@@ -49,9 +49,17 @@ export function registerTracingConsoleSuite(viewer: ViewerConfig): void {
     }) => {
       test.setTimeout(30_000);
 
+      const correlationId = await applyE2eSessionCorrelation(
+        page,
+        `${viewer.name}-log-sink-on`,
+      );
+
       const postedBodies: unknown[] = [];
+      const sessionHeaders: string[] = [];
       page.on('request', (req) => {
         if (!req.url().includes('/api/client-log')) return;
+        const headers = req.headers();
+        if (headers['x-session-id']) sessionHeaders.push(headers['x-session-id']);
         const body = req.postDataJSON();
         if (body) postedBodies.push(body);
       });
@@ -72,6 +80,7 @@ export function registerTracingConsoleSuite(viewer: ViewerConfig): void {
       expect(first, 'payload missing "records" field').toHaveProperty('records');
       expect(Array.isArray(first.records), '"records" is not an array').toBe(true);
       expect(first.records.length, '"records" array is empty').toBeGreaterThan(0);
+      expect(sessionHeaders).toContain(correlationId);
     });
 
     test('localStorage opt-in: network layer activates when viewer-api-log-sink=on', async ({

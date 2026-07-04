@@ -34,6 +34,7 @@
 use axum::{
     body::Bytes,
     extract::State,
+    http::HeaderMap,
     http::StatusCode,
     routing::post,
     Router,
@@ -48,6 +49,7 @@ use tokio::sync::Mutex;
 use tracing::warn;
 
 const MAX_BODY_BYTES: usize = 1_048_576; // 1 MiB
+const SESSION_HEADER: &str = "x-session-id";
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -93,6 +95,7 @@ struct IngestPayload {
 
 async fn ingest(
     State(state): State<ClientLogState>,
+    headers: HeaderMap,
     body: Bytes,
 ) -> Result<StatusCode, (StatusCode, String)> {
     if body.len() > MAX_BODY_BYTES {
@@ -104,6 +107,10 @@ async fn ingest(
 
     let payload: IngestPayload = serde_json::from_slice(&body)
         .map_err(|e| (StatusCode::UNPROCESSABLE_ENTITY, e.to_string()))?;
+    let session_id = headers
+        .get(SESSION_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string);
 
     if payload.records.is_empty() {
         return Ok(StatusCode::NO_CONTENT);
@@ -115,13 +122,15 @@ async fn ingest(
     let result = tokio::task::spawn_blocking({
         let path = state.file_path.clone();
         let records = payload.records;
+        let session_id = session_id.clone();
         move || -> std::io::Result<()> {
             let mut file = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
                 .open(&path)?;
             for record in &records {
-                let line = serde_json::to_string(record).map_err(|e| {
+                let record = with_session_id(record, session_id.as_deref());
+                let line = serde_json::to_string(&record).map_err(|e| {
                     std::io::Error::new(std::io::ErrorKind::InvalidData, e)
                 })?;
                 writeln!(file, "{line}")?;
@@ -143,6 +152,29 @@ async fn ingest(
     Ok(StatusCode::NO_CONTENT)
 }
 
+fn with_session_id(
+    record: &serde_json::Value,
+    session_id: Option<&str>,
+) -> serde_json::Value {
+    let Some(session_id) = session_id else {
+        return record.clone();
+    };
+
+    match record {
+        serde_json::Value::Object(map) => {
+            let mut cloned = map.clone();
+            cloned
+                .entry("session_id".to_string())
+                .or_insert_with(|| serde_json::Value::String(session_id.to_string()));
+            serde_json::Value::Object(cloned)
+        },
+        _ => serde_json::json!({
+            "session_id": session_id,
+            "record": record,
+        }),
+    }
+}
+
 // ── Router factory ────────────────────────────────────────────────────────────
 
 /// Build a sub-router that serves `POST /api/client-log`.
@@ -150,4 +182,58 @@ pub fn client_log_router(state: ClientLogState) -> Router {
     Router::new()
         .route("/api/client-log", post(ingest))
         .with_state(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum_test::TestServer;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn client_log_ingest_persists_session_id_from_header() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("client.jsonl");
+        let app = client_log_router(ClientLogState::with_path(&file_path));
+        let server = TestServer::new(app);
+
+        let response = server
+            .post("/api/client-log")
+            .add_header("x-session-id", "e2e-correlation-123")
+            .json(&serde_json::json!({
+                "records": [
+                    {
+                        "ts": 1,
+                        "level": "info",
+                        "target": "viewer.e2e",
+                        "fields": { "message": "hello" }
+                    }
+                ]
+            }))
+            .await;
+
+        response.assert_status_no_content();
+
+        let content = std::fs::read_to_string(&file_path).unwrap();
+        let first: serde_json::Value = serde_json::from_str(content.lines().next().unwrap()).unwrap();
+        assert_eq!(
+            first.get("session_id").and_then(|v| v.as_str()),
+            Some("e2e-correlation-123")
+        );
+    }
+
+    #[test]
+    fn with_session_id_preserves_existing_session_id() {
+        let record = serde_json::json!({
+            "session_id": "existing-session",
+            "level": "info"
+        });
+
+        let updated = with_session_id(&record, Some("new-session"));
+
+        assert_eq!(
+            updated.get("session_id").and_then(|v| v.as_str()),
+            Some("existing-session")
+        );
+    }
 }
