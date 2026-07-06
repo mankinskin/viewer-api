@@ -26,19 +26,19 @@ pub fn ThemeSettings(
     #[props(default)] on_close: EventHandler<()>,
     #[props(default)] class: String,
 ) -> Element {
-    let mut store = use_context::<ThemeStore>();
-    let mut draft = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
-    let mut committed =
+    let store = use_context::<ThemeStore>();
+    let draft = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
+    let committed =
         use_signal(|| ThemeSnapshot::from_colors(store.colors()));
-    let mut effects_draft = use_signal(|| store.effects_committed());
-    let mut effects_committed_local = use_signal(|| store.effects_committed());
-    let mut custom_themes: Signal<Vec<CustomTheme>> =
+    let effects_draft = use_signal(|| store.effects_committed());
+    let effects_committed_local = use_signal(|| store.effects_committed());
+    let custom_themes: Signal<Vec<CustomTheme>> =
         use_signal(load_custom_themes);
-    let mut save_name = use_signal(String::new);
-    let mut rename_idx: Signal<Option<usize>> = use_signal(|| None);
-    let mut rename_name = use_signal(String::new);
-    let mut import_json = use_signal(String::new);
-    let mut message: Signal<Option<(bool, String)>> = use_signal(|| None);
+    let save_name = use_signal(String::new);
+    let rename_idx: Signal<Option<usize>> = use_signal(|| None);
+    let rename_name = use_signal(String::new);
+    let import_json = use_signal(String::new);
+    let message: Signal<Option<(bool, String)>> = use_signal(|| None);
 
     use_effect(move || {
         let effects = effects_draft.read().clone();
@@ -111,7 +111,7 @@ pub fn ThemeSettings(
 
 fn render_effects_section(
     mut store: ThemeStore,
-    mut effects_draft: Signal<EffectSettings>,
+    effects_draft: Signal<EffectSettings>,
     mut message: Signal<Option<(bool, String)>>,
 ) -> Element {
     rsx! {
