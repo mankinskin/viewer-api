@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! Selector registry, element-kind constants, and packed-buffer sizes.
 //!
 //! Pure data — no DOM access, no GPU dependency. Mirrors

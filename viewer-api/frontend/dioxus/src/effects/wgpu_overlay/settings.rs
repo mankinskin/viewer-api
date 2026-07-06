@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! Comprehensive shader-effect settings for the [`WgpuOverlay`].
 //!
 //! Owns every tunable scalar that the smoke / particle / CRT shaders read

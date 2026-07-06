@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 use super::model::ThemeSnapshot;
 
 pub(super) const PREVIEW_STYLE_ID: &str = "viewer-api-theme-preview";

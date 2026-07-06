@@ -38,6 +38,7 @@ pub struct Defaults {
     pub frontend_install_root: String,
 }
 
+#[allow(dead_code)]
 fn default_install_root() -> String {
     "~/.context-engine/static".to_string()
 }
@@ -95,6 +96,7 @@ pub struct Extension {
     pub build_cmd: Vec<String>,
 }
 
+#[allow(dead_code)]
 fn default_pkg_json() -> String {
     "package.json".to_string()
 }
@@ -158,6 +160,7 @@ impl Config {
     /// extensions. Returns `None` if no match.  Components of different
     /// kinds may share a name (e.g. server + frontend with the same name);
     /// callers needing to disambiguate should use the typed accessors.
+    #[allow(dead_code)]
     pub fn lookup(
         &self,
         name: &str,

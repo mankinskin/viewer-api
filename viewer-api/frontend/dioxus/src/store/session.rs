@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! Session ID utilities backed by `sessionStorage`.
 //!
 //! All operations go through `web_sys` — no inline JS dependencies.

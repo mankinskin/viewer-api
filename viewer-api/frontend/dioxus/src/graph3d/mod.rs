@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! Shared 3-D graph view (WebGPU edges + DOM node cards).
 //!
 //! Architecture (mirrors the `viewer-api` TS reference and the original

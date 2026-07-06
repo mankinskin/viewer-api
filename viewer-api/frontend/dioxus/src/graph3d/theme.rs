@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 use crate::effects::wgpu_overlay::PaletteColor;
 
 const STORAGE_KEY: &str = "viewer-api-graph-theme";

@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! ThemeStore — reactive theme colours with CSS custom-property injection.
 //!
 //! Provides [`ThemeColors`] (all `--theme-*` tokens), four built-in presets,

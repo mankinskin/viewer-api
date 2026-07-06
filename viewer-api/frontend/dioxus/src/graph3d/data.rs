@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+
 //! Data types for the shared 3-D graph view.
 //!
 //! Domain-agnostic: a node is just a positioned id with optional label/state,
