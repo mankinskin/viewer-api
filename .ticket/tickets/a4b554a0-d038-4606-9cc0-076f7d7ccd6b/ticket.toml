@@ -1,0 +1,6 @@
+id = "a4b554a0-d038-4606-9cc0-076f7d7ccd6b"
+created_at = "2026-07-06T00:31:35.119683400+00:00"
+title = "[audit-roadmap][ticket_graph][batch-3][chunk-2] viewer-api orphan micro-chunk (8)"
+state = "new"
+depends_on = ["4102096d-cdba-4001-9fa2-266511b4f353", "5f910868-ce90-4166-9c0a-ba1e6a5f1711", "61cbc31f-c66d-46bf-807e-0d4236e04c9e", "63184300-e5d2-4c9b-9052-64ceabdc7f9e", "7149d59e-d303-4a5a-aad3-5b0100b9c5f7", "7a2cc57e-aeed-4302-a483-6eb68955cbd0", "86cde60c-49db-4820-a3a9-37c472ca1c2f", "d54f034c-b6ab-4c8d-bb81-a287d05834a1"]
+type = "tracker-improvement"
