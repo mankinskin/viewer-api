@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+Canonical specification for the shared `TreeView` Dioxus component (`viewer-api/frontend/dioxus/src/components/tree_view.rs`) — the expandable tree used in doc-viewer (crate browser), log-viewer (file list), spec-viewer (spec hierarchy), and ticket-viewer (ticket hierarchy).
+
+## Behavior Story
+
+Canonical specification for the shared `TreeView` Dioxus component (`viewer-api/frontend/dioxus/src/components/tree_view.rs`) — the expandable tree used in doc-viewer (crate browser), log-viewer (file list), spec-viewer (spec hierarchy), and ticket-viewer (ticket hierarchy).
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: TreeView component
 
 Canonical specification for the shared `TreeView` Dioxus component

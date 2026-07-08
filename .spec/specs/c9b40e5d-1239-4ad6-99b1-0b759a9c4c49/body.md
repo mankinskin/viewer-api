@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+Canonical specification for `viewer-api::pagination` and `viewer-api::query` — the cursor / page parsing helpers reused by every viewer's list endpoints.
+
+## Behavior Story
+
+Canonical specification for `viewer-api::pagination` and `viewer-api::query` — the cursor / page parsing helpers reused by every viewer's list endpoints.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: pagination + query helpers
 
 Canonical specification for `viewer-api::pagination` and `viewer-api::query`

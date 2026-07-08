@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+viewer-ctl needs to find and terminate processes that occupy a TCP port. The implementation in `src/process.rs` favours the most reliable tool available on each platform and falls back gracefully when one is missing or returns no results.
+
+## Behavior Story
+
+viewer-ctl needs to find and terminate processes that occupy a TCP port. The implementation in `src/process.rs` favours the most reliable tool available on each platform and falls back gracefully when one is missing or returns no results.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-ctl/process-management
 
 viewer-ctl needs to find and terminate processes that occupy a TCP port.

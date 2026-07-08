@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+The **demo-viewer** is a reference application that lives inside the `viewer-api` crate (`tools/viewer/viewer-api/examples/demo-viewer/`) and exists for one purpose: **showcase, exercise, and end-to-end-test every public feature of `viewer-api`** in a single, hosted application.
+
+## Behavior Story
+
+The **demo-viewer** is a reference application that lives inside the `viewer-api` crate (`tools/viewer/viewer-api/examples/demo-viewer/`) and exists for one purpose: **showcase, exercise, and end-to-end-test every public feature of `viewer-api`** in a single, hosted application.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: demo-viewer
 
 The **demo-viewer** is a reference application that lives inside the `viewer-api`

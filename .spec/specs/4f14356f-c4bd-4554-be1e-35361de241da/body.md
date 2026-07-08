@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+Canonical specification for the shared 3D dependency-graph Dioxus component (`viewer-api/viewer-api/frontend/dioxus/src/graph3d/`) used by ticket-viewer and spec-viewer.
+
+## Behavior Story
+
+Canonical specification for the shared 3D dependency-graph Dioxus component (`viewer-api/viewer-api/frontend/dioxus/src/graph3d/`) used by ticket-viewer and spec-viewer.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: Graph3D component
 
 Canonical specification for the shared 3D dependency-graph Dioxus component

@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+Canonical UX and behavior specification for the **shared theme-settings panel** used by every Dioxus viewer (`doc-viewer`, `log-viewer`, `ticket-viewer`, `spec-viewer`). The reference implementation lives in `tools/viewer/viewer-api/frontend/ts/src/components/ThemeSettings/ThemeSettings.tsx` and `…/store/theme.ts`. The Dioxus port lives in `tools/viewer/viewer-api/frontend/dioxus/src/components/theme_settings.rs`. CSS (`viewer-api.css`) is the single source of truth and is mirrored verbatim into each viewer's `frontend/dioxus/public/`.
+
+## Behavior Story
+
+Canonical UX and behavior specification for the **shared theme-settings panel** used by every Dioxus viewer (`doc-viewer`, `log-viewer`, `ticket-viewer`, `spec-viewer`). The reference implementation lives in `tools/viewer/viewer-api/frontend/ts/src/components/ThemeSettings/ThemeSettings.tsx` and `…/store/theme.ts`. The Dioxus port lives in `tools/viewer/viewer-api/frontend/dioxus/src/components/theme_settings.rs`. CSS (`viewer-api.css`) is the single source of truth and is mirrored verbatim into each viewer's `frontend/dioxus/public/`.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: theme settings
 
 Canonical UX and behavior specification for the **shared theme-settings panel** used by every Dioxus viewer (`doc-viewer`, `log-viewer`, `ticket-viewer`, `spec-viewer`). The reference implementation lives in

@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+Canonical specification for `viewer-api::session` — the lightweight server session helper (cookie-backed UUID + per-session key/value store) used by viewers to persist non-sensitive user state across reloads.
+
+## Behavior Story
+
+Canonical specification for `viewer-api::session` — the lightweight server session helper (cookie-backed UUID + per-session key/value store) used by viewers to persist non-sensitive user state across reloads.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-api: session
 
 Canonical specification for `viewer-api::session` — the lightweight server

@@ -1,3 +1,31 @@
+<!-- aligned-structure:v1 -->
+
+# Summary
+
+viewer-ctl installs three classes of artifacts. The layout is fixed and documented so that downstream tools (servers, scripts, documentation) can rely on knowing where things land.
+
+## Behavior Story
+
+viewer-ctl installs three classes of artifacts. The layout is fixed and documented so that downstream tools (servers, scripts, documentation) can rely on knowing where things land.
+
+## Provided Surface Contracts
+
+- Define provided contracts for this behavior slice.
+
+## Required Validation
+
+- Triangulate behavior with executable checks, natural-language clauses, and code/schema/API references when available.
+
+## Related Implementation Tickets
+
+- No related implementation ticket is linked yet.
+
+## Background Knowledge References
+
+- Prefer entity references and context rendering over embedding fully expanded payloads in this spec body.
+
+## Legacy Content (Preserved)
+
 # viewer-ctl/install-layout
 
 viewer-ctl installs three classes of artifacts. The layout is fixed and
