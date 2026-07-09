@@ -134,7 +134,10 @@ mock project layout (folders, modules, source files, doc pages):
 - Related ticket: `viewer-api/.ticket/tickets/735502cd-3aec-4772-b2a8-2184aaaf3c21`
 - Related ticket: `viewer-api/.ticket/tickets/9a81d3e5-82ca-4fd0-84bf-c0a54f6716e5`
 - Related ticket: `viewer-api/.ticket/tickets/21a2e8f4-4bd8-4436-be52-c2c4a07bb692`
+- Related ticket: `memory-viewers/.ticket/tickets/6ccbe0b7-0b6c-44fc-989b-db66c963b623`
 - Updated doc: `viewer-api/.spec/specs/a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6/body.md`
+- Validation execution artifact: `.test/default/executions/exec-vt-ticket-viewer-w3-20260710-compile-libtest.json`
+- Validation execution artifact (blocked companion): `.test/default/executions/exec-vt-ticket-viewer-w3-20260710-doctest-blocker.json`
 
 ## Validation
 

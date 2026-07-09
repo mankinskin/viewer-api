@@ -1,4 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{
+    BTreeSet,
+    HashSet,
+};
 
 use dioxus::prelude::*;
 
@@ -9,13 +12,13 @@ use super::{
 
 fn collect_visible_ids(
     nodes: &[TreeNode],
-    expanded_ids: &[String],
+    expanded_lookup: &HashSet<&str>,
 ) -> Vec<String> {
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(nodes.len());
     for node in nodes {
         result.push(node.id.clone());
-        if node.is_dir && expanded_ids.contains(&node.id) {
-            result.extend(collect_visible_ids(&node.children, expanded_ids));
+        if node.is_dir && expanded_lookup.contains(node.id.as_str()) {
+            result.extend(collect_visible_ids(&node.children, expanded_lookup));
         }
     }
     result
@@ -39,7 +42,10 @@ pub fn TreeView(
 
     let nodes_for_order = nodes.clone();
     let visible_order: Memo<Vec<String>> = use_memo(move || {
-        collect_visible_ids(&nodes_for_order, &expanded_ids.read())
+        let expanded = expanded_ids.read();
+        let expanded_lookup: HashSet<&str> =
+            expanded.iter().map(String::as_str).collect();
+        collect_visible_ids(&nodes_for_order, &expanded_lookup)
     });
 
     let combined = if class.is_empty() {
