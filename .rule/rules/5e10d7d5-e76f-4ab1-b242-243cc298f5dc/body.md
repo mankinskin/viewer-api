@@ -1,3 +1,2 @@
 2. Clarify with interview questions
-- Ask concise, decision-driving questions when requirements are ambiguous.
-- Capture answers into ticket fields (for example: `component`, `risk_level`, `acceptance_criteria`, `workflow_stage`).
+- In viewer-api, reuse the canonical interview workflow from memory-api and add local prompts only when viewer-surface planning needs extra detail.

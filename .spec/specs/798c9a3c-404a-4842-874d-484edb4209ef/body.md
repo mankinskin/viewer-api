@@ -17,12 +17,9 @@ Each principle is its own section so a `rule scan` materialises one canonical en
 <!-- spec-api:entry id=925ea219-ff23-45cf-9ced-de2a23c3bac5 slug=viewer-api/recurring-principles/viewer-api-recurring-principles/related-tickets/l12 -->
 ## Related tickets
 
-- [f147eb0e Migrate recurring spec principles to canonical rule entries via spec sync-generated](.ticket/tickets/f147eb0e-c758-459b-a956-a1162c3e1af6/ticket.toml)
-- [a5fe4c58 Adopt rule targets for generated spec artifacts](memory-api/.ticket/tickets/a5fe4c58-f59c-4d97-8ee6-3447724b5fac/ticket.toml)
+Viewer-specific recurring-principles follow-up should be recorded only when the shared migration history at the context-engine root is not enough for a managed-viewer release or viewer-api contract change.
 
 <!-- spec-api:entry id=6980beef-8d68-4a5b-901e-db262aaf8b2f slug=viewer-api/recurring-principles/viewer-api-recurring-principles/related-specs/l17 -->
 ## Related specs
 
-- `spec-api/generated-documents` (`1cf68c36-7f64-4d81-b553-1947b978fbe3` in memory-viewers/memory-api)
-- `memory-api/recurring-principles` (`f9c32554-9884-41c4-8b5b-d1d32b37e341` in memory-viewers/memory-api)
-- `context-engine/recurring-principles` (`954d9807-f357-41e5-9fd4-b1da39e0933d` at the context-engine root)
+Viewer-api uses the context-engine root recurring-principles spec as the cross-workspace contract anchor, and should mention neighboring viewer-specific specs here only when that extra traceability is needed.
