@@ -28,8 +28,7 @@ pub fn ThemeSettings(
 ) -> Element {
     let store = use_context::<ThemeStore>();
     let draft = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
-    let committed =
-        use_signal(|| ThemeSnapshot::from_colors(store.colors()));
+    let committed = use_signal(|| ThemeSnapshot::from_colors(store.colors()));
     let effects_draft = use_signal(|| store.effects_committed());
     let effects_committed_local = use_signal(|| store.effects_committed());
     let custom_themes: Signal<Vec<CustomTheme>> =

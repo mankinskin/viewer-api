@@ -124,7 +124,10 @@ where
     }
 
     /// Removes the entry for `key` if present, returning the value.
-    pub fn remove(&self, key: &K) -> Option<V> {
+    pub fn remove(
+        &self,
+        key: &K,
+    ) -> Option<V> {
         let mut inner = self.inner.borrow_mut();
         if let Some(pos) = inner.order.iter().position(|k| k == key) {
             inner.order.remove(pos);

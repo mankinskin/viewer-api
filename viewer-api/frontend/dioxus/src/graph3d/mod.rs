@@ -607,17 +607,27 @@ fn sync_render_state(
     );
 
     if state.interaction_active {
-        if state.base_layout != *layout || state.target_layout != target_layout {
+        if state.base_layout != *layout || state.target_layout != target_layout
+        {
             for node in &layout.nodes {
-                if let Some(target_node) = state.layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                if let Some(target_node) =
+                    state.layout.nodes.iter_mut().find(|n| n.id == node.id)
+                {
                     target_node.label = node.label.clone();
                     target_node.state = node.state.clone();
                 }
-                if let Some(target_node) = state.target_layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                if let Some(target_node) = state
+                    .target_layout
+                    .nodes
+                    .iter_mut()
+                    .find(|n| n.id == node.id)
+                {
                     target_node.label = node.label.clone();
                     target_node.state = node.state.clone();
                 }
-                if let Some(target_node) = state.base_layout.nodes.iter_mut().find(|n| n.id == node.id) {
+                if let Some(target_node) =
+                    state.base_layout.nodes.iter_mut().find(|n| n.id == node.id)
+                {
                     target_node.label = node.label.clone();
                     target_node.state = node.state.clone();
                 }
@@ -827,8 +837,11 @@ fn layout_topology_matches(
 }
 
 fn sorted_node_ids(layout: &Layout3D) -> Vec<String> {
-    let mut node_ids =
-        layout.nodes.iter().map(|node| node.id.clone()).collect::<Vec<_>>();
+    let mut node_ids = layout
+        .nodes
+        .iter()
+        .map(|node| node.id.clone())
+        .collect::<Vec<_>>();
     node_ids.sort();
     node_ids
 }
@@ -910,7 +923,9 @@ mod tests {
                 false,
             )
         else {
-            panic!("expected same-topology layout refresh to preserve positions");
+            panic!(
+                "expected same-topology layout refresh to preserve positions"
+            );
         };
 
         assert_eq!(preserved_base_layout.nodes[0].x, 18.0);
@@ -926,17 +941,10 @@ mod tests {
     #[test]
     fn preserve_same_topology_layout_skips_layout_mode_changes() {
         let layout = sample_layout();
-        assert!(
-            preserve_same_topology_layout(
-                &layout,
-                &layout,
-                &layout,
-                &layout,
-                false,
-                true,
-            )
-            .is_none()
-        );
+        assert!(preserve_same_topology_layout(
+            &layout, &layout, &layout, &layout, false, true,
+        )
+        .is_none());
     }
 
     #[test]

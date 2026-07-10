@@ -246,8 +246,9 @@ fn update_hover(
 ) {
     let idx = find_card_index(event);
     if let Ok(mut state) = state_rc.try_borrow_mut() {
-        let hovered_id = idx
-            .and_then(|i| state.layout.nodes.get(i).map(|node| node.id.clone()));
+        let hovered_id = idx.and_then(|i| {
+            state.layout.nodes.get(i).map(|node| node.id.clone())
+        });
         if state.hovered_node_id != hovered_id {
             state.hovered_node_id = hovered_id;
             state.dirty_edges = true;

@@ -80,12 +80,14 @@ pub fn run_cmd_owned(
         })?
     };
 
-    let stdout = child.stdout.take().ok_or_else(|| {
-        format!("failed to capture stdout for `{rendered}`")
-    })?;
-    let stderr = child.stderr.take().ok_or_else(|| {
-        format!("failed to capture stderr for `{rendered}`")
-    })?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| format!("failed to capture stdout for `{rendered}`"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| format!("failed to capture stderr for `{rendered}`"))?;
 
     let stdout_handle = forward_stream(stdout, std::io::stdout());
     let stderr_handle = forward_stream(stderr, std::io::stderr());
@@ -140,9 +142,9 @@ fn join_stream(
     handle: thread::JoinHandle<Result<Vec<u8>, String>>,
     name: &str,
 ) -> Result<Vec<u8>, String> {
-    handle.join().map_err(|_| {
-        format!("failed to join {name} forwarding thread")
-    })?
+    handle
+        .join()
+        .map_err(|_| format!("failed to join {name} forwarding thread"))?
 }
 
 fn push_tail(
@@ -215,8 +217,7 @@ fn render_cmd(parts: &[String]) -> String {
 }
 
 fn quote_cmd_part(part: &str) -> String {
-    if part.is_empty()
-        || part.chars().any(|ch| ch.is_whitespace() || ch == '"')
+    if part.is_empty() || part.chars().any(|ch| ch.is_whitespace() || ch == '"')
     {
         format!("\"{}\"", part.replace('\\', "\\\\").replace('"', "\\\""))
     } else {
@@ -246,10 +247,10 @@ mod tests {
     use std::path::Path;
 
     use super::{
+        MAX_CAPTURE_BYTES,
         format_failure_report,
         push_tail,
         quote_cmd_part,
-        MAX_CAPTURE_BYTES,
     };
 
     #[test]
@@ -266,7 +267,10 @@ mod tests {
         );
 
         assert!(report.contains("trunk build --release"));
-        assert!(report.contains("/repo/memory-viewers/ticket-viewer/frontend/dioxus"));
+        assert!(
+            report
+                .contains("/repo/memory-viewers/ticket-viewer/frontend/dioxus")
+        );
         assert!(report.contains("exit status: 101"));
         assert!(report.contains("rustup target add wasm32-unknown-unknown"));
         assert!(report.contains("starting build"));

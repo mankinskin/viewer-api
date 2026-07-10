@@ -1176,18 +1176,15 @@ pub(crate) fn node_detail_dimensions_px(
     profile: NodeCardProfile,
 ) -> [f32; 2] {
     match tier {
-        NodeDetailTier::Minimal => [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
+        NodeDetailTier::Minimal =>
+            [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
         NodeDetailTier::Icon => [64.0, 64.0],
         NodeDetailTier::Label => [128.0, 48.0],
         NodeDetailTier::Compact => match profile {
-            NodeCardProfile::Compact => [
-                COMPACT_SHARED_NODE_WIDTH_PX,
-                COMPACT_SHARED_NODE_HEIGHT_PX,
-            ],
-            NodeCardProfile::TicketWide => [
-                COMPACT_TICKET_NODE_WIDTH_PX,
-                COMPACT_TICKET_NODE_HEIGHT_PX,
-            ],
+            NodeCardProfile::Compact =>
+                [COMPACT_SHARED_NODE_WIDTH_PX, COMPACT_SHARED_NODE_HEIGHT_PX],
+            NodeCardProfile::TicketWide =>
+                [COMPACT_TICKET_NODE_WIDTH_PX, COMPACT_TICKET_NODE_HEIGHT_PX],
         },
         NodeDetailTier::Rich => node_card_base_size_px(profile),
     }

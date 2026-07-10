@@ -34,8 +34,10 @@
 use axum::{
     body::Bytes,
     extract::State,
-    http::HeaderMap,
-    http::StatusCode,
+    http::{
+        HeaderMap,
+        StatusCode,
+    },
     routing::post,
     Router,
 };
@@ -163,9 +165,9 @@ fn with_session_id(
     match record {
         serde_json::Value::Object(map) => {
             let mut cloned = map.clone();
-            cloned
-                .entry("session_id".to_string())
-                .or_insert_with(|| serde_json::Value::String(session_id.to_string()));
+            cloned.entry("session_id".to_string()).or_insert_with(|| {
+                serde_json::Value::String(session_id.to_string())
+            });
             serde_json::Value::Object(cloned)
         },
         _ => serde_json::json!({
@@ -215,7 +217,8 @@ mod tests {
         response.assert_status_no_content();
 
         let content = std::fs::read_to_string(&file_path).unwrap();
-        let first: serde_json::Value = serde_json::from_str(content.lines().next().unwrap()).unwrap();
+        let first: serde_json::Value =
+            serde_json::from_str(content.lines().next().unwrap()).unwrap();
         assert_eq!(
             first.get("session_id").and_then(|v| v.as_str()),
             Some("e2e-correlation-123")

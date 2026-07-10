@@ -31,11 +31,11 @@ use super::{
         animate_layout_nodes,
         apply_node_view_transform,
         edge_color,
+        node_detail_dimensions_px,
+        node_detail_tier,
         EdgeRef3D,
         EdgeVisualState,
         Layout3D,
-        node_detail_dimensions_px,
-        node_detail_tier,
         NodeCardProfile,
         NodeDetailTier,
         NodeViewTransform,
@@ -111,8 +111,7 @@ fn rects_overlap(
     pad_y: f32,
 ) -> bool {
     (a.center_x - b.center_x).abs() < (a.half_w + b.half_w + pad_x)
-        && (a.center_y - b.center_y).abs()
-            < (a.half_h + b.half_h + pad_y)
+        && (a.center_y - b.center_y).abs() < (a.half_h + b.half_h + pad_y)
 }
 
 fn right_center_anchor_rect(
@@ -361,11 +360,8 @@ fn anchor_zoom_scale(
         Projection::Perspective => {
             let eye = state.camera.eye();
             let forward = state.camera.forward();
-            let to_anchor = [
-                anchor[0] - eye[0],
-                anchor[1] - eye[1],
-                anchor[2] - eye[2],
-            ];
+            let to_anchor =
+                [anchor[0] - eye[0], anchor[1] - eye[1], anchor[2] - eye[2]];
             (to_anchor[0] * forward[0]
                 + to_anchor[1] * forward[1]
                 + to_anchor[2] * forward[2])
@@ -423,11 +419,13 @@ fn position_dom_layout_anchors(
                 continue;
             };
 
-            let screen = world_to_screen([x, y, z], &vp, viewport_w, viewport_h);
+            let screen =
+                world_to_screen([x, y, z], &vp, viewport_w, viewport_h);
             let origin = html_el
                 .get_attribute("data-layout-anchor-origin")
                 .unwrap_or_else(|| "center".to_string());
-            let behind_camera = !screen.visible && screen.x == 0.0 && screen.y == 0.0;
+            let behind_camera =
+                !screen.visible && screen.x == 0.0 && screen.y == 0.0;
 
             let (screen_x, screen_y, hide) = match origin.as_str() {
                 // Keep column headers visible at the top edge even when the
@@ -519,8 +517,10 @@ fn position_dom_layout_anchors(
                 continue;
             };
 
-            let start = world_to_screen([x1, y1, z1], &vp, viewport_w, viewport_h);
-            let end = world_to_screen([x2, y2, z2], &vp, viewport_w, viewport_h);
+            let start =
+                world_to_screen([x1, y1, z1], &vp, viewport_w, viewport_h);
+            let end =
+                world_to_screen([x2, y2, z2], &vp, viewport_w, viewport_h);
             if (!start.visible && !end.visible)
                 || ((start.x - end.x).abs() < 1.0
                     && (start.y - end.y).abs() < 1.0)
@@ -606,9 +606,11 @@ fn position_dom_nodes(
         let dz = eye[2] - node.z;
         let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
         let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
-        let is_focus = state.selected_node_id.as_deref() == Some(node.id.as_str())
+        let is_focus = state.selected_node_id.as_deref()
+            == Some(node.id.as_str())
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let is_hover = state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let is_hover =
+            state.hovered_node_id.as_deref() == Some(node.id.as_str());
         let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover);
         let [card_w, card_h] =
             node_detail_dimensions_px(detail_tier, layout.node_card_profile);
@@ -675,7 +677,8 @@ fn sync_node_detail_tier(
         return;
     }
     let _ = html_el.set_attribute("data-node-lod", tier_name);
-    let Ok(detail_nodes) = html_el.query_selector_all("[data-node-detail-tier]")
+    let Ok(detail_nodes) =
+        html_el.query_selector_all("[data-node-detail-tier]")
     else {
         return;
     };
@@ -687,10 +690,9 @@ fn sync_node_detail_tier(
         let Ok(detail_el) = node.dyn_into::<HtmlElement>() else {
             continue;
         };
-        let matches_tier = detail_el
-            .get_attribute("data-node-detail-tier")
-            .as_deref()
-            == Some(tier_name);
+        let matches_tier =
+            detail_el.get_attribute("data-node-detail-tier").as_deref()
+                == Some(tier_name);
         let display = if matches_tier {
             detail_el
                 .get_attribute("data-node-detail-display")
@@ -789,10 +791,13 @@ fn position_dom_edges(
         let dz_a = eye[2] - a.z;
         let dist_a = (dx_a * dx_a + dy_a * dy_a + dz_a * dz_a).sqrt().max(0.1);
         let pixel_scale_a = (22.0 / dist_a).clamp(0.14, 3.5);
-        let is_focus_a = state.selected_node_id.as_deref() == Some(a.id.as_str())
+        let is_focus_a = state.selected_node_id.as_deref()
+            == Some(a.id.as_str())
             || state.hovered_node_id.as_deref() == Some(a.id.as_str());
-        let is_hover_a = state.hovered_node_id.as_deref() == Some(a.id.as_str());
-        let detail_tier_a = node_detail_tier(pixel_scale_a, is_focus_a, is_hover_a);
+        let is_hover_a =
+            state.hovered_node_id.as_deref() == Some(a.id.as_str());
+        let detail_tier_a =
+            node_detail_tier(pixel_scale_a, is_focus_a, is_hover_a);
         let [card_w_a, card_h_a] =
             node_detail_dimensions_px(detail_tier_a, layout.node_card_profile);
 
@@ -809,10 +814,13 @@ fn position_dom_edges(
         let dz_b = eye[2] - b.z;
         let dist_b = (dx_b * dx_b + dy_b * dy_b + dz_b * dz_b).sqrt().max(0.1);
         let pixel_scale_b = (22.0 / dist_b).clamp(0.14, 3.5);
-        let is_focus_b = state.selected_node_id.as_deref() == Some(b.id.as_str())
+        let is_focus_b = state.selected_node_id.as_deref()
+            == Some(b.id.as_str())
             || state.hovered_node_id.as_deref() == Some(b.id.as_str());
-        let is_hover_b = state.hovered_node_id.as_deref() == Some(b.id.as_str());
-        let detail_tier_b = node_detail_tier(pixel_scale_b, is_focus_b, is_hover_b);
+        let is_hover_b =
+            state.hovered_node_id.as_deref() == Some(b.id.as_str());
+        let detail_tier_b =
+            node_detail_tier(pixel_scale_b, is_focus_b, is_hover_b);
         let [card_w_b, card_h_b] =
             node_detail_dimensions_px(detail_tier_b, layout.node_card_profile);
 
