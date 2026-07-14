@@ -3,7 +3,7 @@
 //! Selector registry, element-kind constants, and packed-buffer sizes.
 //!
 //! Pure data — no DOM access, no GPU dependency. Mirrors
-//! `tools/viewer/log-viewer/frontend/src/components/WgpuOverlay/element-types.ts`.
+//! `memory-viewers/log-viewer/frontend/src/components/WgpuOverlay/element-types.ts`.
 
 // ── Storage buffer layout ────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 //! `WgpuOverlay` — full-screen WebGPU compositor component for Dioxus web.
 //!
 //! Mirrors the canonical TypeScript implementation at
-//! `tools/viewer/log-viewer/frontend/src/components/WgpuOverlay/`.
+//! `memory-viewers/log-viewer/frontend/src/components/WgpuOverlay/`.
 //!
 //! ## Architecture
 //!

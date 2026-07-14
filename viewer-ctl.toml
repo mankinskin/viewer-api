@@ -34,13 +34,13 @@ frontend_install_root = "~/.context-engine/static"
 name = "doc-viewer"
 package = "doc-viewer"
 port = 3001
-source_dir = "tools/viewer/doc-viewer"
+source_dir = "memory-viewers/doc-viewer"
 
 [[server]]
 name = "log-viewer"
 package = "log-viewer"
 port = 3000
-source_dir = "tools/viewer/log-viewer"
+source_dir = "memory-viewers/log-viewer"
 start_args = ["--static"]
 
 [[server]]
@@ -60,10 +60,10 @@ source_dir = "tools/viewer/spec-viewer"
 [[frontend]]
 name = "doc-viewer"
 serves = "doc-viewer"
-source_dir = "tools/viewer/doc-viewer/frontend/dioxus"
+source_dir = "memory-viewers/doc-viewer/frontend/dioxus"
 build_cmd = ["trunk", "build", "--release"]
-build_output = "tools/viewer/doc-viewer/frontend/dioxus/dist"
-extra_assets = ["tools/viewer/doc-viewer/frontend/dioxus/public"]
+build_output = "memory-viewers/doc-viewer/frontend/dioxus/dist"
+extra_assets = ["memory-viewers/doc-viewer/frontend/dioxus/public"]
 
 [[frontend.prebuild]]
 dir = "viewer-api/frontend/ts"
@@ -73,9 +73,9 @@ condition = "missing:node_modules"
 [[frontend]]
 name = "log-viewer"
 serves = "log-viewer"
-source_dir = "tools/viewer/log-viewer/frontend"
+source_dir = "memory-viewers/log-viewer/frontend"
 build_cmd = ["npx", "vite", "build"]
-build_output = "tools/viewer/log-viewer/static"
+build_output = "memory-viewers/log-viewer/static"
 
 [[frontend.prebuild]]
 dir = "viewer-api/frontend/ts"
@@ -83,7 +83,7 @@ cmd = ["npm", "install"]
 condition = "missing:node_modules"
 
 [[frontend.prebuild]]
-dir = "tools/viewer/log-viewer/frontend"
+dir = "memory-viewers/log-viewer/frontend"
 cmd = ["npm", "install"]
 condition = "missing:node_modules"
 
