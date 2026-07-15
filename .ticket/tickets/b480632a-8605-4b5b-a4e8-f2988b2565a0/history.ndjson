@@ -1,1 +1,2 @@
 {"rev":1,"ts":"2026-04-27T17:35:34.403823+00:00","fields":{"priority":"medium","state":"new","title":"viewer-api-dioxus: structured tracing for WASM frontend","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-07-14T23:19:01.277640600+00:00","fields":{"component":"viewer-api-observability","depends_on":["8f349d96-a307-400b-a90e-3aceb2250166"],"effort":"1200","priority":"high","risk_level":"medium","state":"new","title":"viewer-api-dioxus: structured tracing for WASM frontend","type":"tracker-improvement"},"author":"GitHub Copilot"}

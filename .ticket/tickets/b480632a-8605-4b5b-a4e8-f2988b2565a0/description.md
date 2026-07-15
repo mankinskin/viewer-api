@@ -1,26 +1,33 @@
-Replace ad-hoc `web_sys::console::log_1!()` calls in the Dioxus WASM frontend (viewer-api, spec-viewer, ticket-viewer) with structured tracing.
+# Goal
 
-## Motivation
+Replace ad-hoc browser console calls in viewer-api Dioxus/WASM code with structured tracing that supports levels, fields, spans, runtime filtering, console diagnostics, and the separate persisted sink.
 
-Recent WgpuOverlay/Graph3D shared-GPU refactor (commit `d09bfe39`) added several diagnostic `console.log` calls to debug a cross-device WebGPU issue. They are useful but unstructured: no levels, no spans, no filtering, no persistence.
+# Current implementation evidence
 
-The codebase already uses the `tracing` crate extensively on the Rust/native side. The WASM frontend should follow the same pattern.
+The repository contains a tracing subscriber setup, runtime filter controls, tracing-wasm console/timeline integration, and shared Playwright checks that look for the startup subscriber record. Remaining work is to audit migration completeness, validate structured field/span behavior across viewers, and record release-browser evidence.
 
-## Scope
+# Scope
 
-- Add `tracing` + `tracing-wasm` (or `tracing-web`) dependencies to `tools/viewer/viewer-api/frontend/dioxus`.
-- Wire a tracing subscriber at app bootstrap (`lib.rs` / `main.rs`) that writes to the browser console.
-- Migrate existing `console::log_1!()` / `console::error_1!()` calls (especially in `effects/wgpu_overlay/*` and `graph3d/*`) to tracing macros (`info!`, `warn!`, `error!`, `debug!`) with structured fields (e.g. `device.label`, `frame.n`).
-- Use spans for grouped operations (overlay bootstrap, graph3d init, per-frame render).
-- Make level filtering configurable at runtime (e.g. via a query-string param or `localStorage` key).
+- Audit viewer-api, ticket-viewer, and spec-viewer WASM code for direct diagnostic console calls.
+- Use tracing macros and stable targets/fields for overlay bootstrap, Graph3D initialization, API operations, and errors.
+- Keep per-frame spans behind the profiling feature so normal release logging remains bounded.
+- Validate default INFO, runtime DEBUG override, and `log=off` behavior.
+- Preserve browser console output while enabling the file sink owned by `8f349d96`.
 
-## Out of Scope (separate ticket)
+# Acceptance criteria
 
-- File sink: shipping logs to a server endpoint for persistence.
+- [ ] Diagnostic direct console calls are removed or explicitly justified as non-tracing browser integration.
+- [ ] DevTools records expose level, target, structured fields, and operation spans.
+- [ ] Default level is INFO; DEBUG and OFF controls work through documented query/localStorage settings.
+- [ ] Per-frame trace volume is bounded in ordinary release builds.
+- [ ] Ticket-viewer and spec-viewer pass the same shared tracing-console suite.
+- [ ] WgpuOverlay and Graph3D startup/navigation remain functional in release-browser checks.
+- [ ] Validation executions and correlated logs are recorded.
 
-## Acceptance Criteria
+# Implementation steps
 
-- All `console::log_1!()` / `console::error_1!()` in `viewer-api/frontend/dioxus` replaced with tracing macros.
-- Browser DevTools shows structured log lines with level, target, and fields.
-- Default log level is `INFO`; can be raised to `DEBUG` via a documented mechanism.
-- No regressions: WgpuOverlay still bootstraps, Graph3D still renders, smoke effect still visible after SPA navigation.
+1. Audit remaining direct console usage.
+2. Normalize stable tracing targets and fields.
+3. Verify runtime filters and profiling feature boundaries.
+4. Run shared release-browser tracing checks.
+5. Record evidence and hand off persistence-specific behavior to `8f349d96`/`9202bc21`.
