@@ -1,1 +1,2 @@
 {"rev":1,"ts":"2026-04-29T10:45:03.437348400+00:00","fields":{"component":"viewer-api","state":"ready","tags":"probe","title":"demo-viewer probe ticket","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-07-23T13:13:03.200165+00:00","fields":{"component":"viewer-api","deleted":true,"effort":"300","state":"ready","tags":"probe","title":"demo-viewer probe ticket","type":"tracker-improvement"},"author":"github-copilot"}

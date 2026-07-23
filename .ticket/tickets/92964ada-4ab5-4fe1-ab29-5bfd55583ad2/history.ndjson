@@ -1,1 +1,2 @@
 {"rev":1,"ts":"2026-05-02T21:39:10.725549300+00:00","fields":{"component":"viewer-api-dioxus","priority":"medium","risk_level":"high","state":"new","title":"Refactor: extract viewer-theme and viewer-widgets crates from viewer-api-dioxus","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-07-23T13:13:04.786770600+00:00","fields":{"component":"viewer-api-dioxus","effort":"3400","priority":"medium","risk_level":"high","state":"new","title":"Refactor: extract viewer-theme and viewer-widgets crates from viewer-api-dioxus","type":"tracker-improvement"},"author":"github-copilot"}

@@ -1,1 +1,2 @@
 {"rev":1,"ts":"2026-05-02T21:39:36.430101900+00:00","fields":{"component":"viewer-api-dioxus","priority":"medium","risk_level":"high","state":"new","title":"Feature: tiling + tabbed panel system replacing flat Sidebar/Panel primitives","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-07-23T13:33:08.715710100+00:00","fields":{"component":"viewer-api-dioxus","effort":"1200","priority":"medium","risk_level":"high","state":"new","title":"Feature: tiling + tabbed panel system replacing flat Sidebar/Panel primitives","type":"tracker-improvement"},"author":"github-copilot"}

@@ -6,6 +6,7 @@ acceptance_criteria = "HypergraphView extracted; file tree sync working; mobile 
 component = "viewer-api"
 depends_on = ["01932eb7-54e5-441b-87bc-db3013a0882c", "29897f92-59bf-45f9-b963-caa7bfad71c8", "4e0dc8fb-18fa-4be1-a43d-37008d0453e3", "7b33f98e-9572-4ceb-8379-189621e4ae74", "b005a8fe-9971-4e59-a3df-171f81b6d3f7", "b3f9878d-5839-4a87-989c-aa3101ee38aa", "b4127011-4e08-47bc-ac73-3d3761f29587", "bce0d2fb-8ac3-4be3-af42-47f5b6928caa", "d7971816-6f84-419e-abd8-0f84d5f7b82f", "dc83b7b4-4b0f-4732-9163-488ef0c6bcc4"]
 doc_category = "plan"
+effort = "1200"
 risk_level = "medium"
 source_agent_files = "plans/20260304_PLAN_VIEWER_REFACTORING_AND_MOBILE.md"
 type = "tracker-improvement"

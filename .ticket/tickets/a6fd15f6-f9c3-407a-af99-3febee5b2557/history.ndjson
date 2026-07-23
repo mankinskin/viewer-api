@@ -1,1 +1,2 @@
 {"rev":1,"ts":"2026-04-30T11:58:53.591465400+00:00","fields":{"state":"new","title":"[doc-viewer][P6] (Deferred) Migrate doc-viewer onto shared viewer-api","type":"tracker-improvement"}}
+{"rev":2,"ts":"2026-07-23T13:13:05.374780500+00:00","fields":{"depends_on":["0feb20f3-205a-4e71-9902-31c8c5bb13eb"],"effort":"4000","state":"new","title":"[doc-viewer][P6] (Deferred) Migrate doc-viewer onto shared viewer-api","type":"tracker-improvement"},"author":"github-copilot"}

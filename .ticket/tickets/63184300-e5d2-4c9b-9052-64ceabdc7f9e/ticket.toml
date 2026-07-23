@@ -4,5 +4,6 @@ title = "demo-viewer probe ticket"
 state = "ready"
 component = "viewer-api"
 deleted = true
+effort = "300"
 tags = "probe"
 type = "tracker-improvement"

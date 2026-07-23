@@ -6,6 +6,7 @@ acceptance_criteria = "All planned viewer tool features from 20260301 batch impl
 component = "viewer-api"
 depends_on = ["3b1345eb-9983-4567-a3ab-c2e00c7cec1e", "6bbda148-e144-4dff-92de-dd6584c82bd7", "ad056493-716c-4c32-b8f6-9b67a25bc52e"]
 doc_category = "plan"
+effort = "2000"
 risk_level = "low"
 source_agent_files = "plans/20260301_PLAN_VIEWER_TOOLS_FEATURES.md"
 type = "tracker-improvement"

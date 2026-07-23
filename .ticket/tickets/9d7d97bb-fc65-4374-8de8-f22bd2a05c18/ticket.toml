@@ -5,6 +5,7 @@ state = "ready"
 acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
 depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
+effort = "4800"
 risk_level = "medium"
 spec_refs = "f153483c-f984-4564-94ac-36234b5cbe3f"
 tags = "demo-viewer,viewer-api"
