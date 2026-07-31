@@ -1,1 +1,0 @@
-For viewer-api, reuse the canonical roast mission owned by memory-api and add local sarcasm only when the viewer stack needs a surface-specific twist.

@@ -1,1 +1,0 @@
-For viewer-api, inherit the canonical roast tone from memory-api and add only the viewer-surface barbs needed for this workspace.

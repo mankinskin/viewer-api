@@ -1,7 +1,0 @@
-targets:
-- name: viewer-api-recurring-principles-body
-  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/body.md
-- name: viewer-api-recurring-principles-public-surface-contracts
-  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/public-surface-contracts.md
-- name: viewer-api-recurring-principles-viewer-ctl-lifecycle-boundary
-  scope: viewer-api:.spec/specs/798c9a3c-404a-4842-874d-484edb4209ef/sections/viewer-ctl-lifecycle-boundary.md
