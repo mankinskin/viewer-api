@@ -7,6 +7,7 @@ component = "viewer-api"
 depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
 effort = "1200"
 linked = ["21a2e8f4-4bd8-4436-be52-c2c4a07bb692", "735502cd-3aec-4772-b2a8-2184aaaf3c21", "763f8c13-a4bd-47af-8894-3e95a63fde8d", "9a81d3e5-82ca-4fd0-84bf-c0a54f6716e5"]
+parts = [{ id = "33ab1d56-a8b5-4bdc-b9af-fa842e06aa57", kind = "objective", path = "parts/33ab1d56-a8b5-4bdc-b9af-fa842e06aa57.md", frozen = false, created_at = "2026-07-30T21:02:28.972166500Z" }, { id = "1d7b855d-3fe8-4f7f-babb-5ea53660dbc8", kind = "validation", path = "parts/1d7b855d-3fe8-4f7f-babb-5ea53660dbc8.md", frozen = false, created_at = "2026-07-30T21:02:28.976331400Z" }]
 risk_level = "medium"
 spec_refs = "a20a0395-4f3b-4b55-ba7a-a0c38ba9f7a6"
 tags = "demo-viewer,viewer-api"

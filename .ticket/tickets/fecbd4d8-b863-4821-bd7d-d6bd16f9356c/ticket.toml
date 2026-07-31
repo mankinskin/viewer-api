@@ -4,6 +4,7 @@ title = "[viewer-api] Preserve frontend build diagnostics in viewer-ctl failures
 state = "done"
 acceptance_criteria = "viewer-ctl frontend build failures include the failing command, cwd, exit status, and captured child output tail so callers still receive actionable diagnostics."
 component = "viewer-api"
+parts = [{ id = "85df1855-6bfc-4e68-8d82-08e48201160d", kind = "objective", path = "parts/85df1855-6bfc-4e68-8d82-08e48201160d.md", frozen = false, created_at = "2026-07-30T21:05:26.166672100Z" }, { id = "0430d558-75e4-45f9-986c-db026fe004af", kind = "validation", path = "parts/0430d558-75e4-45f9-986c-db026fe004af.md", frozen = false, created_at = "2026-07-30T21:05:26.171027300Z" }]
 priority = "medium"
 risk_level = "low"
 spec_refs = "c23166c7-2315-4b89-9160-cde7df3086e6"

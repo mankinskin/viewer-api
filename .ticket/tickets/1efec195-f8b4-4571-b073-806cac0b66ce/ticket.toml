@@ -7,6 +7,7 @@ component = "viewer-api"
 depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
 effort = "1200"
 linked = ["4d9293ab-b7a8-4113-b80a-bfe39297bad2"]
+parts = [{ id = "969e4dae-332a-4805-9d21-190e990080ff", kind = "objective", path = "parts/969e4dae-332a-4805-9d21-190e990080ff.md", frozen = false, created_at = "2026-07-30T21:02:28.991641800Z" }, { id = "42c040ca-6c62-4be8-81c5-461095911d92", kind = "validation", path = "parts/42c040ca-6c62-4be8-81c5-461095911d92.md", frozen = false, created_at = "2026-07-30T21:02:28.995603700Z" }]
 risk_level = "medium"
 spec_refs = "baaa35ff-4eb6-4288-b4d3-257311b98aa4"
 tags = "demo-viewer,viewer-api"

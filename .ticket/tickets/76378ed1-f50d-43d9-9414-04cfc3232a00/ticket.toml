@@ -6,6 +6,7 @@ acceptance_criteria = "See ticket body and the linked feature spec."
 component = "viewer-api"
 depends_on = ["b779c650-0775-4e4f-a692-3eaaa939a910", "b83b1002-41ba-4eb7-9f1a-c20cbf49137b"]
 effort = "2600"
+parts = [{ id = "8271d6a6-0d32-4016-b4bf-a6f1c8c0d1f5", kind = "objective", path = "parts/8271d6a6-0d32-4016-b4bf-a6f1c8c0d1f5.md", frozen = false, created_at = "2026-07-30T21:02:31.713803900Z" }, { id = "51bc9aad-31e4-4730-9210-e8d3c970d771", kind = "validation", path = "parts/51bc9aad-31e4-4730-9210-e8d3c970d771.md", frozen = false, created_at = "2026-07-30T21:02:31.718173600Z" }]
 risk_level = "medium"
 spec_refs = "52521803-fd21-4b40-a4e5-6801b823d59d"
 tags = "demo-viewer,viewer-api"

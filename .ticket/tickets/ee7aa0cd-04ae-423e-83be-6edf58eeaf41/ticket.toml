@@ -6,6 +6,7 @@ acceptance_criteria = "Nesting view mode implemented and wired in HypergraphView
 component = "viewer-api"
 doc_category = "plan"
 effort = "1200"
+parts = [{ id = "2f5e324b-a5a2-4761-928a-3d6e3d7d40b0", kind = "objective", path = "parts/2f5e324b-a5a2-4761-928a-3d6e3d7d40b0.md", frozen = false, created_at = "2026-07-30T21:02:28.890988100Z" }, { id = "07fc2115-6783-4b97-b37f-6ffc5380dd57", kind = "validation", path = "parts/07fc2115-6783-4b97-b37f-6ffc5380dd57.md", frozen = false, created_at = "2026-07-30T21:02:28.894721600Z" }]
 risk_level = "low"
 source_agent_files = "plans/20260307_PLAN_NESTING_VIEW_MODE.md"
 type = "tracker-improvement"

@@ -6,6 +6,7 @@ acceptance_criteria = "Shared server infra extracted from viewer-api; log-viewer
 component = "viewer-api"
 doc_category = "plan"
 effort = "2000"
+parts = [{ id = "4cd124ea-895b-403b-b0f3-1b527f29a5be", kind = "objective", path = "parts/4cd124ea-895b-403b-b0f3-1b527f29a5be.md", frozen = false, created_at = "2026-07-30T21:02:31.541973Z" }, { id = "cdb6990a-7752-46d3-b743-012b8e7b2558", kind = "validation", path = "parts/cdb6990a-7752-46d3-b743-012b8e7b2558.md", frozen = false, created_at = "2026-07-30T21:02:31.546421400Z" }, { id = "5ed31a26-7b43-4ddd-9d3a-cf617e92cdba", kind = "objective", path = "parts/5ed31a26-7b43-4ddd-9d3a-cf617e92cdba.md", frozen = false, created_at = "2026-07-30T21:02:31.550572Z" }]
 risk_level = "low"
 source_agent_files = "plans/20260221_VIEWER_API_REFACTORING.md"
 tags = "#plan,#refactoring,#tools,#viewer-api"

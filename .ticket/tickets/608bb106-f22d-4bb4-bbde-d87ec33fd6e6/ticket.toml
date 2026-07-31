@@ -6,6 +6,7 @@ acceptance_criteria = "Search results visualised as highlighted subgraph in view
 component = "viewer-api"
 doc_category = "plan"
 effort = "1200"
+parts = [{ id = "f8e5e3dd-b0e6-46a0-a1f6-f8a2e90a0a93", kind = "objective", path = "parts/f8e5e3dd-b0e6-46a0-a1f6-f8a2e90a0a93.md", frozen = false, created_at = "2026-07-30T21:02:28.935596500Z" }, { id = "35b76ee0-79bd-4814-b010-49f10c6d7093", kind = "validation", path = "parts/35b76ee0-79bd-4814-b010-49f10c6d7093.md", frozen = false, created_at = "2026-07-30T21:02:28.939284600Z" }]
 risk_level = "low"
 source_agent_files = "plans/20260223_PLAN_SEARCH_VISUALIZATION.md"
 tags = "#plan,#visualization,#search,#logging,#frontend"
