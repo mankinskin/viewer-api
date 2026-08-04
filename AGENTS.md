@@ -4,7 +4,7 @@ Global working rules for this repository. Keep this file small and stable.
 
 ## Operating Principles
 
-Viewer-api follows the root operating principles as its default contract. Use this local section only for principles about shared-viewer surfaces, viewer-ctl boundaries, or frontend/public-API ownership that are too specific for the workspace-wide rules.
+Viewer-api follows the root operating principles as its default contract. Use this local section only for principles about shared-viewer surfaces, install-ctl boundaries (the config-driven lifecycle manager now lives in the main repo at `tools/install/install-ctl/`, not in this submodule), or frontend/public-API ownership that are too specific for the workspace-wide rules.
 
 ## Discovery Protocol (Before Editing)
 
@@ -20,7 +20,7 @@ Use static references as support:
 
 ## Task Routing
 
-Viewer-api follows the root task-routing rules by default. Add local routing notes here only when shared-viewer frontend, viewer-ctl lifecycle, or browser verification work needs a narrower execution path than the shared workflow already provides.
+Viewer-api follows the root task-routing rules by default. Add local routing notes here only when shared-viewer frontend, install-ctl lifecycle (`tools/install/install-ctl/` in the main repo), or browser verification work needs a narrower execution path than the shared workflow already provides.
 
 ## Quality Gates
 
