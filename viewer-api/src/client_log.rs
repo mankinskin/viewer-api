@@ -72,15 +72,10 @@ impl Default for ClientLogState {
 }
 
 impl ClientLogState {
-    /// Create a state that writes to `file_path`.  Parent directories are
-    /// created eagerly so the first POST doesn't fail on a missing dir.
+    /// Create a state that writes to `file_path` when the first log arrives.
     pub fn with_path(file_path: impl Into<PathBuf>) -> Self {
-        let file_path = file_path.into();
-        if let Some(parent) = file_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
         ClientLogState {
-            file_path,
+            file_path: file_path.into(),
             write_lock: Arc::new(Mutex::new(())),
         }
     }
@@ -126,6 +121,11 @@ async fn ingest(
         let records = payload.records;
         let session_id = session_id.clone();
         move || -> std::io::Result<()> {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    std::fs::create_dir_all(parent)?;
+                }
+            }
             let mut file = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)

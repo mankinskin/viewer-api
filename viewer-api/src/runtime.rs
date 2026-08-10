@@ -56,12 +56,14 @@ impl TracingConfig {
     ) -> Self {
         let level =
             env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
-        let file_logging = env::var("LOG_FILE").is_ok();
+        let log_dir = env::var_os("LOG_DIR")
+            .map(PathBuf::from)
+            .or_else(|| env::var_os("LOG_FILE").map(|_| default_log_dir));
 
         Self {
             level,
-            file_logging,
-            log_dir: Some(default_log_dir),
+            file_logging: log_dir.is_some(),
+            log_dir,
             log_file_prefix: log_file_prefix.into(),
         }
     }
@@ -86,6 +88,28 @@ impl TracingConfig {
     }
 }
 
+fn file_appender(
+    config: &TracingConfig
+) -> Option<(
+    tracing_appender::non_blocking::NonBlocking,
+    tracing_appender::non_blocking::WorkerGuard,
+)> {
+    if !config.file_logging {
+        return None;
+    }
+
+    let log_dir = config
+        .log_dir
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("logs"));
+    std::fs::create_dir_all(&log_dir).ok();
+
+    let log_file_name = format!("{}.log", config.log_file_prefix);
+    let file_appender =
+        tracing_appender::rolling::daily(&log_dir, log_file_name);
+    Some(tracing_appender::non_blocking(file_appender))
+}
+
 pub fn init_tracing_full(config: &TracingConfig) {
     let filter = EnvFilter::try_new(&config.level)
         .unwrap_or_else(|_| EnvFilter::new("info"));
@@ -96,18 +120,7 @@ pub fn init_tracing_full(config: &TracingConfig) {
         .with_file(true)
         .with_line_number(true);
 
-    if config.file_logging {
-        let log_dir = config
-            .log_dir
-            .clone()
-            .unwrap_or_else(|| PathBuf::from("logs"));
-        std::fs::create_dir_all(&log_dir).ok();
-
-        let log_file_name = format!("{}.log", config.log_file_prefix);
-        let file_appender =
-            tracing_appender::rolling::daily(&log_dir, &log_file_name);
-        let (non_blocking, guard) =
-            tracing_appender::non_blocking(file_appender);
+    if let Some((non_blocking, guard)) = file_appender(config) {
         std::mem::forget(guard);
 
         let file_layer = fmt::layer()
@@ -124,16 +137,98 @@ pub fn init_tracing_full(config: &TracingConfig) {
             .with(file_layer)
             .init();
 
+        let log_dir = config
+            .log_dir
+            .as_deref()
+            .unwrap_or_else(|| std::path::Path::new("logs"));
         info!(
             "File logging enabled to {}/{}",
             to_unix_path(&log_dir),
-            log_file_name
+            format!("{}.log", config.log_file_prefix)
         );
     } else {
         tracing_subscriber::registry()
             .with(filter)
             .with(fmt_layer)
             .init();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        io::Write,
+        time::{
+            SystemTime,
+            UNIX_EPOCH,
+        },
+    };
+
+    use super::{
+        file_appender,
+        init_tracing_full,
+        TracingConfig,
+    };
+
+    #[test]
+    fn explicit_file_logging_creates_log_directory_and_file() {
+        let log_dir = std::env::temp_dir().join(format!(
+            "viewer-api-log-test-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let config = TracingConfig::default()
+            .with_file_logging(log_dir.clone(), "viewer-api");
+        let (mut writer, guard) = file_appender(&config).unwrap();
+
+        writer.write_all(b"configured file logging\n").unwrap();
+        drop(writer);
+        drop(guard);
+
+        assert!(log_dir.is_dir());
+        assert!(std::fs::read_dir(&log_dir).unwrap().next().is_some());
+        std::fs::remove_dir_all(log_dir).unwrap();
+    }
+
+    #[test]
+    fn default_tracing_initialization_does_not_create_log_artifacts() {
+        let temp_root = std::env::temp_dir().join(format!(
+            "viewer-api-default-log-test-{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let log_dir = temp_root.join("logs");
+        let log_file = log_dir.join("viewer-api.log");
+        let previous_log_dir = std::env::var_os("LOG_DIR");
+        let previous_log_file = std::env::var_os("LOG_FILE");
+
+        std::env::remove_var("LOG_DIR");
+        std::env::remove_var("LOG_FILE");
+
+        let result = std::panic::catch_unwind(|| {
+            let config = TracingConfig::from_env("viewer-api", log_dir.clone());
+            assert!(!config.file_logging);
+            init_tracing_full(&config);
+
+            assert!(!log_dir.exists());
+            assert!(!log_file.exists());
+            assert!(!temp_root.exists());
+        });
+
+        match previous_log_dir {
+            Some(value) => std::env::set_var("LOG_DIR", value),
+            None => std::env::remove_var("LOG_DIR"),
+        }
+        match previous_log_file {
+            Some(value) => std::env::set_var("LOG_FILE", value),
+            None => std::env::remove_var("LOG_FILE"),
+        }
+
+        result.unwrap();
     }
 }
 
