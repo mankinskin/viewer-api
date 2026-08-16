@@ -28,6 +28,7 @@ use super::{
         CAM_UNIFORM_FLOATS,
     },
     data::{
+        anchor_zoom_scale_for_distance,
         animate_layout_nodes,
         apply_node_view_transform,
         edge_color,
@@ -267,7 +268,12 @@ fn compute_node_screen_rects(
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
         let is_hover =
             state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover);
+        let detail_tier = node_detail_tier(
+            pixel_scale,
+            is_focus,
+            is_hover,
+            &state.graph_theme,
+        );
         let [card_w, card_h] =
             node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 
@@ -369,22 +375,7 @@ fn anchor_zoom_scale(
         },
     };
 
-    let close_boost = ((36.0 - distance) / 20.0).clamp(0.0, 0.45);
-    let row_label_boost = ((295.0 - distance) / 30.0).clamp(0.0, 1.0) * 0.22;
-
-    match origin {
-        "center-bottom" => ((26.0 / distance).clamp(0.42, 1.0)
-            + close_boost * 0.18)
-            .clamp(0.42, 1.08),
-        // Row labels need a broader zoom ramp than headers in orthographic
-        // mode, but they still need to shrink back out when the camera pulls
-        // away. Keep node-size awareness in collision avoidance rather than a
-        // hard scale floor so zoom-out remains compact.
-        "right-center" => ((20.0 / distance).clamp(0.10, 1.0)
-            + row_label_boost)
-            .clamp(0.10, 0.62),
-        _ => 1.0,
-    }
+    anchor_zoom_scale_for_distance(origin, distance, &state.graph_theme)
 }
 
 fn position_dom_layout_anchors(
@@ -611,7 +602,12 @@ fn position_dom_nodes(
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
         let is_hover =
             state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover);
+        let detail_tier = node_detail_tier(
+            pixel_scale,
+            is_focus,
+            is_hover,
+            &state.graph_theme,
+        );
         let [card_w, card_h] =
             node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 
@@ -796,8 +792,12 @@ fn position_dom_edges(
             || state.hovered_node_id.as_deref() == Some(a.id.as_str());
         let is_hover_a =
             state.hovered_node_id.as_deref() == Some(a.id.as_str());
-        let detail_tier_a =
-            node_detail_tier(pixel_scale_a, is_focus_a, is_hover_a);
+        let detail_tier_a = node_detail_tier(
+            pixel_scale_a,
+            is_focus_a,
+            is_hover_a,
+            &state.graph_theme,
+        );
         let [card_w_a, card_h_a] =
             node_detail_dimensions_px(detail_tier_a, layout.node_card_profile);
 
@@ -819,8 +819,12 @@ fn position_dom_edges(
             || state.hovered_node_id.as_deref() == Some(b.id.as_str());
         let is_hover_b =
             state.hovered_node_id.as_deref() == Some(b.id.as_str());
-        let detail_tier_b =
-            node_detail_tier(pixel_scale_b, is_focus_b, is_hover_b);
+        let detail_tier_b = node_detail_tier(
+            pixel_scale_b,
+            is_focus_b,
+            is_hover_b,
+            &state.graph_theme,
+        );
         let [card_w_b, card_h_b] =
             node_detail_dimensions_px(detail_tier_b, layout.node_card_profile);
 

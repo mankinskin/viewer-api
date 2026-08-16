@@ -1,5 +1,5 @@
-
 use super::{
+    anchor_zoom_scale_for_distance,
     animate_layout_nodes,
     apply_node_view_transform,
     apply_selected_node_auto_layout,
@@ -204,30 +204,120 @@ fn gpu_edge_instances_keep_only_grid_lines() {
 
 #[test]
 fn node_detail_tier_thresholds_preserve_selected_rich_detail() {
-    assert_eq!(node_detail_tier(0.20, true, false), NodeDetailTier::Rich);
-    assert_eq!(node_detail_tier(0.20, false, false), NodeDetailTier::Icon);
-    assert_eq!(node_detail_tier(0.34, false, false), NodeDetailTier::Label);
-    assert_eq!(node_detail_tier(0.72, false, false), NodeDetailTier::Rich);
+    let theme = GraphThemeSettings::default();
+    assert_eq!(
+        node_detail_tier(0.20, true, false, &theme),
+        NodeDetailTier::Rich
+    );
+    assert_eq!(
+        node_detail_tier(0.20, false, false, &theme),
+        NodeDetailTier::Icon
+    );
+    assert_eq!(
+        node_detail_tier(0.34, false, false, &theme),
+        NodeDetailTier::Label
+    );
+    assert_eq!(
+        node_detail_tier(0.72, false, false, &theme),
+        NodeDetailTier::Rich
+    );
 }
 
 #[test]
 fn node_detail_tier_selection() {
-    assert_eq!(node_detail_tier(0.20, true, false), NodeDetailTier::Rich);
-    assert_eq!(node_detail_tier(0.20, false, false), NodeDetailTier::Icon);
-    assert_eq!(node_detail_tier(0.34, false, false), NodeDetailTier::Label);
+    let theme = GraphThemeSettings::default();
     assert_eq!(
-        node_detail_tier(0.50, false, false),
+        node_detail_tier(0.20, true, false, &theme),
+        NodeDetailTier::Rich
+    );
+    assert_eq!(
+        node_detail_tier(0.20, false, false, &theme),
+        NodeDetailTier::Icon
+    );
+    assert_eq!(
+        node_detail_tier(0.34, false, false, &theme),
+        NodeDetailTier::Label
+    );
+    assert_eq!(
+        node_detail_tier(0.50, false, false, &theme),
         NodeDetailTier::Compact
     );
-    assert_eq!(node_detail_tier(0.72, false, false), NodeDetailTier::Rich);
+    assert_eq!(
+        node_detail_tier(0.72, false, false, &theme),
+        NodeDetailTier::Rich
+    );
 }
 
 #[test]
 fn node_detail_tier_hover_promotion() {
-    assert_eq!(node_detail_tier(0.10, false, true), NodeDetailTier::Icon);
-    assert_eq!(node_detail_tier(0.20, false, true), NodeDetailTier::Label);
-    assert_eq!(node_detail_tier(0.34, false, true), NodeDetailTier::Compact);
-    assert_eq!(node_detail_tier(0.50, false, true), NodeDetailTier::Rich);
+    let theme = GraphThemeSettings::default();
+    assert_eq!(
+        node_detail_tier(0.10, false, true, &theme),
+        NodeDetailTier::Icon
+    );
+    assert_eq!(
+        node_detail_tier(0.20, false, true, &theme),
+        NodeDetailTier::Label
+    );
+    assert_eq!(
+        node_detail_tier(0.34, false, true, &theme),
+        NodeDetailTier::Compact
+    );
+    assert_eq!(
+        node_detail_tier(0.50, false, true, &theme),
+        NodeDetailTier::Rich
+    );
+}
+
+#[test]
+fn render_tuning_keeps_focus_rich_at_ticket_scales() {
+    let mut theme = GraphThemeSettings::default();
+    theme.render_tuning.rich_detail_threshold = 1.08;
+
+    assert_eq!(
+        node_detail_tier(1.066, false, false, &theme),
+        NodeDetailTier::Compact
+    );
+    assert_eq!(
+        node_detail_tier(1.104, false, false, &theme),
+        NodeDetailTier::Rich
+    );
+    assert_eq!(
+        node_detail_tier(1.066, true, false, &theme),
+        NodeDetailTier::Rich
+    );
+    assert_eq!(
+        node_detail_tier(1.066, false, true, &theme),
+        NodeDetailTier::Rich
+    );
+}
+
+#[test]
+fn anchor_zoom_scale_uses_default_and_ticket_render_tuning() {
+    let distance = 110.6469;
+    let default_theme = GraphThemeSettings::default();
+    assert!(
+        (anchor_zoom_scale_for_distance(
+            "right-center",
+            distance,
+            &default_theme
+        ) - 0.4008)
+            .abs()
+            < 0.0001
+    );
+
+    let mut ticket_theme = GraphThemeSettings::default();
+    ticket_theme.render_tuning.row_label_scale_numerator = 13.0;
+    ticket_theme.render_tuning.row_label_boost_factor = 0.0;
+    assert!(
+        (anchor_zoom_scale_for_distance(
+            "right-center",
+            distance,
+            &ticket_theme
+        ) - 0.1175)
+            .abs()
+            < 0.0001
+    );
 }
 
 #[test]

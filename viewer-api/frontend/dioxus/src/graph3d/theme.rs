@@ -46,6 +46,23 @@ impl GraphEdgeBlendMode {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GraphRenderTuning {
+    pub rich_detail_threshold: f32,
+    pub row_label_scale_numerator: f32,
+    pub row_label_boost_factor: f32,
+}
+
+impl Default for GraphRenderTuning {
+    fn default() -> Self {
+        Self {
+            rich_detail_threshold: 0.72,
+            row_label_scale_numerator: 20.0,
+            row_label_boost_factor: 0.22,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct GraphThemeSettings {
     pub edge_dependency: PaletteColor,
     pub edge_blocking: PaletteColor,
@@ -57,6 +74,7 @@ pub(crate) struct GraphThemeSettings {
     pub node_border: PaletteColor,
     pub node_text: PaletteColor,
     pub node_shadow_alpha: f32,
+    pub render_tuning: GraphRenderTuning,
 }
 
 impl Default for GraphThemeSettings {
@@ -72,6 +90,7 @@ impl Default for GraphThemeSettings {
             node_border: [0.80, 0.85, 0.95, 0.18],
             node_text: [0.96, 0.97, 1.00, 1.00],
             node_shadow_alpha: 0.32,
+            render_tuning: GraphRenderTuning::default(),
         }
     }
 }
@@ -112,6 +131,16 @@ impl GraphThemeSettings {
             "parent" | "child" | "section" => self.edge_structural,
             _ => self.edge_default,
         }
+    }
+
+    pub(crate) fn with_render_tuning(
+        mut self,
+        render_tuning: Option<GraphRenderTuning>,
+    ) -> Self {
+        if let Some(render_tuning) = render_tuning {
+            self.render_tuning = render_tuning;
+        }
+        self
     }
 
     fn to_storage_string(&self) -> String {
@@ -177,6 +206,18 @@ impl GraphThemeSettings {
             "node_shadow_alpha={}\n",
             self.node_shadow_alpha
         ));
+        out.push_str(&format!(
+            "rich_detail_threshold={}\n",
+            self.render_tuning.rich_detail_threshold
+        ));
+        out.push_str(&format!(
+            "row_label_scale_numerator={}\n",
+            self.render_tuning.row_label_scale_numerator
+        ));
+        out.push_str(&format!(
+            "row_label_boost_factor={}\n",
+            self.render_tuning.row_label_boost_factor
+        ));
         out
     }
 
@@ -221,6 +262,21 @@ fn apply_storage_line(
             if let Ok(value) = value.trim().parse::<f32>() {
                 settings.node_shadow_alpha = value.clamp(0.0, 1.0);
             },
+        "rich_detail_threshold" =>
+            if let Ok(value) = value.trim().parse::<f32>() {
+                settings.render_tuning.rich_detail_threshold =
+                    value.clamp(0.0, 3.5);
+            },
+        "row_label_scale_numerator" =>
+            if let Ok(value) = value.trim().parse::<f32>() {
+                settings.render_tuning.row_label_scale_numerator =
+                    value.clamp(0.0, 100.0);
+            },
+        "row_label_boost_factor" =>
+            if let Ok(value) = value.trim().parse::<f32>() {
+                settings.render_tuning.row_label_boost_factor =
+                    value.clamp(0.0, 1.0);
+            },
         _ => {},
     }
 }
@@ -233,5 +289,38 @@ fn parse_color(
         if let Ok(value) = part.trim().parse::<f32>() {
             dst[index] = value;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        GraphRenderTuning,
+        GraphThemeSettings,
+    };
+
+    #[test]
+    fn storage_round_trip_preserves_render_tuning() {
+        let mut settings = GraphThemeSettings::default();
+        settings.render_tuning = GraphRenderTuning {
+            rich_detail_threshold: 1.08,
+            row_label_scale_numerator: 13.0,
+            row_label_boost_factor: 0.0,
+        };
+
+        assert_eq!(
+            GraphThemeSettings::from_storage_string(
+                &settings.to_storage_string()
+            ),
+            settings
+        );
+    }
+
+    #[test]
+    fn legacy_storage_uses_default_render_tuning() {
+        let settings =
+            GraphThemeSettings::from_storage_string("node_shadow_alpha=0.4\n");
+
+        assert_eq!(settings.render_tuning, GraphRenderTuning::default());
     }
 }

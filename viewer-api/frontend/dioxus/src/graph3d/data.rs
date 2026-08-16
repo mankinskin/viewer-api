@@ -1151,8 +1151,11 @@ pub(crate) fn node_detail_tier(
     pixel_scale: f32,
     is_focus: bool,
     is_hover: bool,
+    graph_theme: &GraphThemeSettings,
 ) -> NodeDetailTier {
-    let base_tier = if is_focus || pixel_scale >= 0.72 {
+    let base_tier = if is_focus
+        || pixel_scale >= graph_theme.render_tuning.rich_detail_threshold
+    {
         NodeDetailTier::Rich
     } else if pixel_scale >= 0.48 {
         NodeDetailTier::Compact
@@ -1171,6 +1174,27 @@ pub(crate) fn node_detail_tier(
     }
 }
 
+pub(crate) fn anchor_zoom_scale_for_distance(
+    origin: &str,
+    distance: f32,
+    graph_theme: &GraphThemeSettings,
+) -> f32 {
+    let close_boost = ((36.0 - distance) / 20.0).clamp(0.0, 0.45);
+    let row_label_boost = ((295.0 - distance) / 30.0).clamp(0.0, 1.0)
+        * graph_theme.render_tuning.row_label_boost_factor;
+
+    match origin {
+        "center-bottom" => ((26.0 / distance).clamp(0.42, 1.0)
+            + close_boost * 0.18)
+            .clamp(0.42, 1.08),
+        "right-center" =>
+            ((graph_theme.render_tuning.row_label_scale_numerator / distance)
+                .clamp(0.10, 1.0)
+                + row_label_boost)
+                .clamp(0.10, 0.62),
+        _ => 1.0,
+    }
+}
 pub(crate) fn node_detail_dimensions_px(
     tier: NodeDetailTier,
     profile: NodeCardProfile,

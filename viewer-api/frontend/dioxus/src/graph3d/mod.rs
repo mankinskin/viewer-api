@@ -54,6 +54,7 @@ pub use data::{
     NodeCardProfile,
     NodeViewTransform,
 };
+pub use theme::GraphRenderTuning;
 
 use self::{
     settings_overlay::GraphSettingsOverlay,
@@ -204,13 +205,18 @@ pub struct Graph3DProps {
     /// Called when the user picks a different projection in the settings panel.
     #[props(default)]
     pub on_projection_change: Option<EventHandler<Projection>>,
+    /// Optional per-instance tuning applied after ThemeStore updates.
+    #[props(default)]
+    pub render_tuning: Option<GraphRenderTuning>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[component]
 pub fn Graph3D(props: Graph3DProps) -> Element {
     let theme_store = use_context::<ThemeStore>();
-    let graph_theme = theme_store.graph_theme();
+    let graph_theme = theme_store
+        .graph_theme()
+        .with_render_tuning(props.render_tuning);
     let style =
         graph_container_style(&props.container_style, false, &graph_theme);
     let edge_count = props.layout.edges.len();
@@ -246,7 +252,9 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
 #[component]
 pub fn Graph3D(props: Graph3DProps) -> Element {
     let theme_store = use_context::<ThemeStore>();
-    let graph_theme = theme_store.graph_theme();
+    let graph_theme = theme_store
+        .graph_theme()
+        .with_render_tuning(props.render_tuning);
     let layout = props.layout.clone();
     let edge_count = layout.edges.len();
     let container_id = props.container_id.clone();
