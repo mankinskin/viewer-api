@@ -1,0 +1,377 @@
+/* theme-settings.css — extracted from viewer-api.css */
+
+.theme-settings {
+  width: min(720px, 92vw);
+  max-height: 86vh;
+  overflow: hidden;
+  font-size: 13px;
+}
+.theme-settings__body {
+  padding: 12px 16px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.theme-settings__section {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--bg-primary, rgba(0,0,0,0.18));
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.05));
+  border-radius: 6px;
+}
+.theme-settings__section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+.theme-settings__section-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
+/* Preset pickers */
+.theme-settings__preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.theme-settings__preset-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.theme-settings__preset-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-orange);
+}
+.theme-settings__preset-btn--active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+}
+
+/* Token grid (color pickers) */
+.theme-settings__token-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.theme-settings__token-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.theme-settings__token-label {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.theme-settings__token-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--border-primary);
+}
+.theme-settings__color-input {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+}
+.theme-settings__color-input::-webkit-color-swatch-wrapper { padding: 1px; }
+.theme-settings__color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+.theme-settings__hex-input {
+  width: 76px;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+}
+.theme-settings__hex-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+/* Save / custom themes / actions */
+.theme-settings__save-row,
+.theme-settings__custom-row,
+.theme-settings__export-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.theme-settings__name-input {
+  flex: 1 1 160px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.theme-settings__action-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.theme-settings__action-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-blue);
+}
+.theme-settings__action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.theme-settings__action-btn--danger {
+  color: var(--accent-red);
+}
+.theme-settings__action-btn--danger:hover:not(:disabled) {
+  background: var(--accent-red);
+  color: #fff;
+  border-color: var(--accent-red);
+}
+.theme-settings__custom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.theme-settings__custom-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+/* Effect toggle row + iOS-style switch */
+.theme-settings__effect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+.theme-settings__effect-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.theme-settings__effect-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.theme-settings__effect-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.theme-settings__toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.theme-settings__toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.theme-settings__toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 11px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-settings__toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.theme-settings__toggle-switch input:checked + .theme-settings__toggle-slider {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+.theme-settings__toggle-switch input:checked + .theme-settings__toggle-slider::before {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+/* ── Effect-controls (collapsible details/summary cards) ─────────────────── */
+
+/* The Effects section hosts a series of `<details>` blocks, one per shader
+   pass.  Each looks like a flat sub-card so the panel still feels grouped
+   even with several open at once. */
+.theme-settings__section > details {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: 5px;
+}
+.theme-settings__section > details + details {
+  margin-top: 6px;
+}
+.theme-settings__section > details[open] {
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
+  border-color: var(--border-primary);
+  padding-bottom: 10px;
+}
+.theme-settings__effect-summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 4px 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theme-settings__effect-summary::-webkit-details-marker { display: none; }
+.theme-settings__effect-summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.theme-settings__section > details[open] > .theme-settings__effect-summary::before {
+  transform: rotate(90deg);
+}
+
+/* Subhead inside Particles (Sparks / Embers / …). */
+.theme-settings__effect-subhead {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 10px 0 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+.theme-settings__effect-subhead:first-of-type { margin-top: 4px; }
+
+/* The "Enabled" checkbox row inside each `<details>` block.
+   Override the master `.theme-settings__effect-row` (which is also used by
+   the GPU master switch in `space-between` mode) to a left-aligned compact
+   inline layout with the checkbox first. */
+.theme-settings__section > details > .theme-settings__effect-row {
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 2px 0 6px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.theme-settings__section > details > .theme-settings__effect-row > input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+}
+
+/* Slider row: label / range / value, in a fixed three-column grid so the
+   numbers line up neatly across all sliders in a section. */
+.theme-settings__slider-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.theme-settings__slider-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theme-settings__slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.theme-settings__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 1px solid var(--bg-primary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.theme-settings__slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  border: 1px solid var(--bg-primary);
+  cursor: pointer;
+}
+.theme-settings__slider-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Palette grid: two columns of swatches so all 24 colours fit without
+   excessive vertical scroll. */
+.theme-settings__section > details > .theme-settings__token-grid {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+  row-gap: 2px;
+  margin-top: 4px;
+}

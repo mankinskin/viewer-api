@@ -1,0 +1,60 @@
+/* syntect.css — extracted from viewer-api.css */
+
+/* Use .highlight class as container for scope-mapped spans */
+
+.highlight .k,   /* keyword */
+.highlight .kn,  /* keyword.namespace */
+.highlight .kd,  /* keyword.declaration */
+.highlight .kr,  /* keyword.reserved */
+.highlight .kt   /* keyword.type */
+{ color: var(--accent-purple); }
+
+.highlight .s,   /* string */
+.highlight .s1,
+.highlight .s2,
+.highlight .sb,
+.highlight .sc,
+.highlight .sd,
+.highlight .se,
+.highlight .sf,
+.highlight .si,
+.highlight .sx,
+.highlight .sr,
+.highlight .ss
+{ color: var(--accent-green); }
+
+.highlight .c,   /* comment */
+.highlight .c1,
+.highlight .cm,
+.highlight .cs,
+.highlight .cp
+{ color: var(--text-muted); font-style: italic; }
+
+.highlight .mi,  /* literal.number.integer */
+.highlight .mf,  /* literal.number.float */
+.highlight .mh,  /* literal.number.hex */
+.highlight .mo   /* literal.number.octal */
+{ color: var(--accent-orange); }
+
+.highlight .nf,  /* name.function */
+.highlight .fm   /* name.function.magic */
+{ color: var(--accent-blue); }
+
+.highlight .nn,  /* name.namespace */
+.highlight .nc   /* name.class */
+{ color: var(--accent-yellow); }
+
+.highlight .nt   /* name.tag */
+{ color: var(--accent-blue); }
+
+.highlight .na   /* name.attribute */
+{ color: var(--accent-orange); }
+
+.highlight .nb   /* name.builtin */
+{ color: var(--accent-purple); }
+
+.highlight .ge   /* generic.emph */
+{ font-style: italic; }
+
+.highlight .gs   /* generic.strong */
+{ font-weight: bold; }
