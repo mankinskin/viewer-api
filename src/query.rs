@@ -56,8 +56,6 @@ impl std::error::Error for QueryError {}
 
 /// A compiled jq filter ready to execute
 pub struct JqFilter {
-    #[allow(dead_code)]
-    ctx: ParseCtx,
     filter: jaq_interpret::Filter,
 }
 
@@ -92,7 +90,7 @@ impl JqFilter {
             });
         }
 
-        Ok(Self { ctx, filter })
+        Ok(Self { filter })
     }
 
     /// Run the filter on a JSON value, returning all outputs
