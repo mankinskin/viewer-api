@@ -6,7 +6,6 @@ description = "Shared HTTP/MCP server API library for viewer tools"
 
 [features]
 default = []
-ts-gen = ["context-api/ts-gen"]
 
 [lib]
 name = "viewer_api"
@@ -22,9 +21,6 @@ tower = { version = "0.4", features = ["util"] }
 
 # Generic filesystem-backed storage, indexing, and jq query primitives
 memory-kernel = { git = "https://github.com/mankinskin/memory-kernel", branch = "main" }
-
-# Domain types and log parser from context-api
-context-api = { git = "https://github.com/mankinskin/context-stack", branch = "main" }
 
 tower-http = { version = "0.6", features = ["fs", "cors"] }
 tracing = "0.1"
