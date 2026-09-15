@@ -1,7 +1,7 @@
 id = "4e0dc8fb-18fa-4be1-a43d-37008d0453e3"
 created_at = "2026-05-12T15:24:20.039209900+00:00"
 title = "[viewer-api][ticket-viewer][design] viewer-wide keyboard support model"
-state = "new"
+state = "planning"
 acceptance_criteria = "Approved shortcut map, focus/precedence rules, phased rollout plan, and follow-up implementation breakdown for viewer-wide keyboard support"
 component = "viewer-api"
 design_status = "draft"

@@ -1,7 +1,7 @@
 id = "81a6a595-7426-478d-9487-17142dcfa8a0"
 created_at = "2026-03-21T02:00:38.289310600+00:00"
 title = "Plan: Context API phase 4.1 — viewer-api + log-viewer as thin frontend layers"
-state = "new"
+state = "planning"
 acceptance_criteria = "viewer-api and log-viewer depend on context-http for all backend APIs; old direct paths removed"
 component = "viewer-api"
 depends_on = ["7f41940d-617a-495d-aad8-5a19111bdab9", "a6fd15f6-f9c3-407a-af99-3febee5b2557", "ca0f6ccc-545d-45df-bbbb-74a3daf0d18c"]

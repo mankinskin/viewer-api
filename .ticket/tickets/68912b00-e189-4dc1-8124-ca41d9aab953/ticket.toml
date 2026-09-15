@@ -1,7 +1,7 @@
 id = "68912b00-e189-4dc1-8124-ca41d9aab953"
 created_at = "2026-03-21T02:00:39.587767100+00:00"
 title = "Plan: viewer tools features (2026-03-01 batch)"
-state = "new"
+state = "planning"
 acceptance_criteria = "All planned viewer tool features from 20260301 batch implemented and tested"
 component = "viewer-api"
 depends_on = ["3b1345eb-9983-4567-a3ab-c2e00c7cec1e", "6bbda148-e144-4dff-92de-dd6584c82bd7", "ad056493-716c-4c32-b8f6-9b67a25bc52e"]

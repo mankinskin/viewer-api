@@ -1,7 +1,7 @@
 id = "92964ada-4ab5-4fe1-ab29-5bfd55583ad2"
 created_at = "2026-05-02T21:39:10.506638600+00:00"
 title = "Refactor: extract viewer-theme and viewer-widgets crates from viewer-api-dioxus"
-state = "new"
+state = "planning"
 component = "viewer-api-dioxus"
 effort = "3400"
 parts = [{ id = "31cd29ff-9256-473b-82c0-4e42a86cca28", kind = "objective", path = "parts/31cd29ff-9256-473b-82c0-4e42a86cca28.md", frozen = false, created_at = "2026-07-30T21:02:31.771462400Z" }, { id = "0f66c90e-8fb4-4357-a223-44a1432adc4d", kind = "notes", path = "parts/0f66c90e-8fb4-4357-a223-44a1432adc4d.md", frozen = false, created_at = "2026-07-30T21:02:31.777480400Z" }]
