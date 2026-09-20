@@ -1,0 +1,8 @@
+id = "e302d4c3-c24f-4778-bef0-453d3c1997bb"
+created_at = "2026-07-15T17:32:22.465395100+00:00"
+title = "Cross-viewer measurable browser and GPU validation"
+state = "draft"
+component = "viewer-api"
+scope = "internal"
+slug = "viewer-platform/cross-viewer-browser-gpu-validation"
+type = "specification"

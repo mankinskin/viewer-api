@@ -1,0 +1,57 @@
+# Port log-viewer visualization tabs and overlay-backed tooling to viewer-api-dioxus
+
+## Problem
+
+The current log-viewer frontend uses the shared viewer-api frontend for more than the log list. `App.tsx` mounts a shared `WgpuOverlay` and exposes multiple non-trivial surfaces beyond the basic browser pane:
+- `HypergraphView` wrapping shared graph rendering with log-viewer-specific search/path panels
+- `Scene3D` rendered through the shared overlay callback system
+- `EffectsDebug` as a GPU effects showcase / selector harness
+- `ThemeSettings` backed by the shared viewer-api theme/effects system
+
+The existing migration plan (`LOG-5a`, `LOG-5b`) does not cover these tabs. If the migration stops at the basic file/list/search/stats UI, the Dioxus frontend will lose the main viewer-api integration surfaces that make log-viewer a useful platform testbed.
+
+## Scope
+
+1. Port the overlay mount and schema wiring to Dioxus:
+   - mount the viewer-api Dioxus overlay in the root app
+   - wire the log-viewer-specific GPU schema/effect selectors
+   - preserve runtime FX enable/disable behavior from the header
+2. Port the Hypergraph tab to Dioxus:
+   - read graph snapshot / graph-op derived state from the Dioxus store
+   - render the shared viewer-api Dioxus hypergraph core
+   - port the log-viewer-specific panels and controls that currently wrap the shared core (`SearchStatePanel`, `InsertStatePanel`, `PathChainPanel`, `QueryPathPanel`, `ControlsHUD`)
+3. Port the debug/auxiliary visualization tabs:
+   - `Scene3D`
+   - `EffectsDebug`
+   - `ThemeSettings`
+4. Where the TypeScript viewer-api frontend still owns required primitives, extract or recreate them in `viewer-api-dioxus` rather than copying TS-only logic directly into `log-viewer-dioxus`.
+5. Preserve per-file tab persistence for the tabs that matter to log-viewer migration (`hypergraph`, `logs`, `debug`, `scene3d`, `settings`).
+
+## Acceptance Criteria
+
+- The Dioxus Hypergraph tab renders graph snapshot data and graph-op/path state for log files that contain those events.
+- The Dioxus Hypergraph tab includes the same log-viewer-specific side panels/control overlays that exist in the current frontend.
+- Theme settings update the shared overlay/theme state live in the Dioxus app.
+- The FX toggle still enables/disables overlay effects globally.
+- `EffectsDebug` renders as a working migration harness for the overlay-scanned selectors/effects.
+- `Scene3D` renders through the Dioxus/shared overlay path without breaking the rest of the app shell.
+- Any newly required reusable primitives land in `viewer-api-dioxus` rather than as one-off log-viewer copies.
+
+## Validation
+
+- `cargo check --target wasm32-unknown-unknown -p log-viewer-dioxus`
+- `trunk serve` and manual tab sweep across hypergraph, debug/effects, scene3d, and settings
+- focused browser validation that theme/FX changes update the overlay live
+
+## Relevant Current Frontend Anchors
+
+- `tools/viewer/log-viewer/frontend/src/components/HypergraphView/HypergraphView.tsx`
+- `tools/viewer/log-viewer/frontend/src/components/HypergraphView/components/`
+- `tools/viewer/log-viewer/frontend/src/components/Scene3D/Scene3D.tsx`
+- `tools/viewer/log-viewer/frontend/src/components/EffectsDebug/EffectsDebug.tsx`
+- `tools/viewer/log-viewer/frontend/src/components/ThemeSettings/`
+- `tools/viewer/log-viewer/frontend/src/gpu-schema.ts`
+
+## Depends on
+
+- `LOG-5d` app shell/state parity ticket

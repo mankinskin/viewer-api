@@ -1,0 +1,14 @@
+id = "b22b2a49-1e3a-40f4-b534-0f5e86610da7"
+created_at = "2026-05-09T19:13:27.893643400+00:00"
+title = "[LOG-5f] Cut log-viewer over from Preact/Vite to Dioxus/trunk and lock in migration validation"
+state = "planning"
+acceptance_criteria = "Make Dioxus the default served frontend, keep dist artifacts ignored, and validate the migrated log-viewer flows end-to-end."
+component = "viewer-api"
+depends_on = ["6d0dc335-693a-450e-92ba-9cdaa4087afa", "972c239e-e110-49da-9449-8bdcfaea5f18"]
+effort = "1200"
+parts = [{ id = "bb380e46-f109-46fb-bb28-b2782c367270", kind = "objective", path = "parts/bb380e46-f109-46fb-bb28-b2782c367270.md", frozen = false, created_at = "2026-07-30T21:02:30.091278200Z" }, { id = "e1bbec8e-5dc4-49d1-83df-183800ed1148", kind = "validation", path = "parts/e1bbec8e-5dc4-49d1-83df-183800ed1148.md", frozen = false, created_at = "2026-07-30T21:02:30.095213900Z" }, { id = "d03da820-b629-4c23-9903-87a7eb33ceba", kind = "objective", path = "parts/d03da820-b629-4c23-9903-87a7eb33ceba.md", frozen = false, created_at = "2026-07-30T21:02:30.099019300Z" }]
+priority = "P2"
+risk_level = "medium"
+tags = "#log-viewer #frontend #dioxus #migration"
+type = "tracker-improvement"
+validation_plan = "Run cargo check, viewer-ctl prepare/start log-viewer, and smoke/E2E checks for migrated Dioxus flows."

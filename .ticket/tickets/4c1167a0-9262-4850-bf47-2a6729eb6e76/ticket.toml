@@ -1,0 +1,13 @@
+id = "4c1167a0-9262-4850-bf47-2a6729eb6e76"
+created_at = "2026-05-09T19:13:26.826905800+00:00"
+title = "[LOG-5d] Port log-viewer app shell, URL state, and per-file store to Dioxus"
+state = "done"
+acceptance_criteria = "Port app shell, URL restore, per-file state cache, sidebar/header controls, and API-mode parity to Dioxus."
+component = "viewer-api"
+depends_on = ["c179ef57-6866-451d-ba7f-f7923ad1374b"]
+parts = [{ id = "22a11d9c-1904-4f8a-b958-ec9975af0a06", kind = "objective", path = "parts/22a11d9c-1904-4f8a-b958-ec9975af0a06.md", frozen = false, created_at = "2026-07-30T21:05:26.737203400Z" }, { id = "cf9ca685-da04-41e0-9339-b627c8566d18", kind = "validation", path = "parts/cf9ca685-da04-41e0-9339-b627c8566d18.md", frozen = false, created_at = "2026-07-30T21:05:26.741836400Z" }, { id = "85c93555-7757-45b4-82d6-74e88c9e2af6", kind = "objective", path = "parts/85c93555-7757-45b4-82d6-74e88c9e2af6.md", frozen = false, created_at = "2026-07-30T21:05:26.746051600Z" }]
+priority = "P1"
+risk_level = "high"
+tags = "#log-viewer #frontend #dioxus #viewer-api"
+type = "tracker-improvement"
+validation_plan = "Run cargo check for log-viewer-dioxus, trunk serve, and manual shell/url/file-switch smoke checks."

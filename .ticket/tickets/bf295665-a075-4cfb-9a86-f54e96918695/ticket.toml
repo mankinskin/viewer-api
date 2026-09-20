@@ -1,0 +1,11 @@
+id = "bf295665-a075-4cfb-9a86-f54e96918695"
+created_at = "2026-06-05T14:03:50.826751+00:00"
+title = "[log-viewer] Integrate graph improvements (selection, rendering tiers, panel framing, 2D mode)"
+state = "planning"
+component = "viewer-api"
+depends_on = ["254ac30d-26c0-4bfe-8a66-b10ab9e4843a"]
+effort = "1200"
+priority = "high"
+risk_level = "medium"
+tags = "log-viewer,viewer-api,graph,integration"
+type = "tracker-improvement"

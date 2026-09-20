@@ -1,0 +1,14 @@
+id = "6d0dc335-693a-450e-92ba-9cdaa4087afa"
+created_at = "2026-05-09T19:13:27.631310900+00:00"
+title = "[LOG-5e] Port log-viewer visualization tabs and overlay-backed tooling to viewer-api-dioxus"
+state = "planning"
+acceptance_criteria = "Port hypergraph, overlay/effects, scene3d, theme settings, and debug surfaces to Dioxus without duplicating viewer-api logic."
+component = "viewer-api"
+depends_on = ["4c1167a0-9262-4850-bf47-2a6729eb6e76"]
+effort = "1200"
+parts = [{ id = "f64bb49a-d484-40b4-a415-ade93f5f8224", kind = "objective", path = "parts/f64bb49a-d484-40b4-a415-ade93f5f8224.md", frozen = false, created_at = "2026-07-30T21:02:30.433342200Z" }, { id = "31f24f42-d759-46cc-8161-8fc4676007aa", kind = "validation", path = "parts/31f24f42-d759-46cc-8161-8fc4676007aa.md", frozen = false, created_at = "2026-07-30T21:02:30.437473Z" }, { id = "90e5124f-db31-47f4-8c1c-65431cd9a6ec", kind = "objective", path = "parts/90e5124f-db31-47f4-8c1c-65431cd9a6ec.md", frozen = false, created_at = "2026-07-30T21:02:30.441534400Z" }]
+priority = "P2"
+risk_level = "high"
+tags = "#log-viewer #frontend #dioxus #viewer-api #wgpu"
+type = "tracker-improvement"
+validation_plan = "Run cargo check for log-viewer-dioxus plus manual tab/overlay/theme smoke checks under trunk serve."

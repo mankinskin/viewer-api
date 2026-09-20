@@ -1,0 +1,15 @@
+id = "322ba030-160c-41d3-8a12-42936ae92858"
+created_at = "2026-05-25T11:48:36.984625+00:00"
+title = "[viewer-api][ticket-viewer] Add multi-level graph node detail rendering"
+state = "done"
+acceptance_criteria = "1. Graph nodes render through several distinct detail tiers instead of a single fixed card. 2. Zoomed-out graphs fall back to minimal representations that avoid unreadable text walls. 3. Zooming in restores progressively richer ticket content. 4. Focus or hover can keep the active node more informative than distant nodes at the same zoom level."
+component = "viewer-api"
+depends_on = ["60092819-f725-48ec-93f0-aba195ef81eb"]
+effort = "1200"
+parts = [{ id = "5f797ce6-c778-4187-8a3c-0cf13295c913", kind = "objective", path = "parts/5f797ce6-c778-4187-8a3c-0cf13295c913.md", frozen = false, created_at = "2026-07-30T21:02:29.041345600Z" }, { id = "414f604b-aeab-4d55-ae71-dbfd40a47bb0", kind = "validation", path = "parts/414f604b-aeab-4d55-ae71-dbfd40a47bb0.md", frozen = false, created_at = "2026-07-30T21:02:29.045579800Z" }, { id = "f352ea97-cff4-489e-9db8-480879979356", kind = "objective", path = "parts/f352ea97-cff4-489e-9db8-480879979356.md", frozen = false, created_at = "2026-07-30T21:02:29.049501800Z" }]
+priority = "high"
+risk_level = "medium"
+spec_refs = "8c4d51ef-c0b6-437d-bc14-672b0802cef2"
+tags = "viewer-api,ticket-viewer,graph,lod,rendering"
+type = "tracker-improvement"
+validation_summary = "Previous review evidence is blocked by explicit dependency 60092819. Revalidated 2026-05-31: ticket 60092819 still fails focused Edge-backed Playwright coverage for the default hierarchical/isometric graph ordering path (\"graph mode defaults to hierarchical isometric controls and preserves top-to-bottom depth ordering\"): child y 557.26 was above the root threshold of 632.96. Multi-level graph node detail rendering is moved back to in-implementation until the dependency is fixed and rerun."

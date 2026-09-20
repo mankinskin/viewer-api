@@ -1,0 +1,11 @@
+id = "e8d9bfcd-d729-43a6-8efa-4554af609d0c"
+created_at = "2026-06-05T14:11:54.852293200+00:00"
+title = "[viewer-api] Update Graph3D component documentation and examples"
+state = "planning"
+component = "viewer-api"
+depends_on = ["254ac30d-26c0-4bfe-8a66-b10ab9e4843a"]
+effort = "1200"
+priority = "medium"
+risk_level = "low"
+tags = "viewer-api,documentation,graph,examples"
+type = "tracker-improvement"

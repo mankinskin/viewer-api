@@ -1,0 +1,15 @@
+id = "f9e9aaae-b1ec-434c-a839-7ec990d1e6c7"
+created_at = "2026-06-05T00:27:06.018046+00:00"
+title = "[viewer-api][ticket-viewer] Introduce property-based graph node rendering tiers"
+state = "planning"
+acceptance_criteria = "1. Rendering is selected from explicit property-based rules instead of a card-first default. 2. The ordered tier ladder is point-or-sphere → icon → label → compact → full. 3. Minimal tiers switch by camera mode between flat points in 2D and shaded spheres in 3D. 4. Hover raises a node by exactly one detail tier. 5. Non-full tiers do not rely on an extra tooltip fallback when tier promotion is sufficient. 6. Full HTML rendering is reserved for high-detail tiers only. 7. Release Playwright coverage proves tier ordering, camera-mode-specific lowest tiers, and one-tier hover promotion."
+component = "viewer-api"
+effort = "1200"
+parts = [{ id = "f262854d-1af8-4c3e-a9cb-1c40d52a700a", kind = "objective", path = "parts/f262854d-1af8-4c3e-a9cb-1c40d52a700a.md", frozen = true, created_at = "2026-07-31T07:35:07.394676800Z" }, { id = "d444f2aa-24f7-4ee1-9934-085aae15cf5f", kind = "requirements", path = "parts/d444f2aa-24f7-4ee1-9934-085aae15cf5f.md", frozen = true, created_at = "2026-07-31T07:35:07.395093200Z" }, { id = "a9eabf6b-8391-463f-8e91-9967769bae36", kind = "design", path = "parts/a9eabf6b-8391-463f-8e91-9967769bae36.md", frozen = true, created_at = "2026-07-31T07:35:07.396205900Z" }, { id = "01c8fc04-12d3-407b-87d2-f103315f0f60", kind = "examples", path = "parts/01c8fc04-12d3-407b-87d2-f103315f0f60.md", frozen = true, created_at = "2026-07-31T07:35:07.396495200Z" }, { id = "8099aeeb-b9a3-4a5d-9575-5db6b7d3185d", kind = "acceptance_criteria", path = "parts/8099aeeb-b9a3-4a5d-9575-5db6b7d3185d.md", frozen = true, created_at = "2026-07-31T07:35:07.396696600Z" }]
+plan_revision = 1
+priority = "high"
+risk_level = "high"
+spec_refs = "98b4f75d-3628-470d-a5cc-c91b6cc9811a"
+status_summary = "Triage 2026-07-31: no implementation work landed; returned to planned for re-scoping."
+tags = "viewer-api,ticket-viewer,graph,lod,rendering,performance"
+type = "tracker-improvement"

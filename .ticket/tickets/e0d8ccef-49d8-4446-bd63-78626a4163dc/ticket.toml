@@ -1,0 +1,13 @@
+id = "e0d8ccef-49d8-4446-bd63-78626a4163dc"
+created_at = "2026-07-09T22:36:37.955469200+00:00"
+title = "[viewer-api] Optimize Graph3D renderer for performance and extensibility"
+state = "planning"
+acceptance_criteria = "1. The Graph3D renderer efficiently supports the currently implemented features (focus, property-based LOD, node detail tiers). 2. It supports bounded-neighbourhood rendering from a cached graph efficiently. 3. Rendering extension points are documented for reuse in other contexts (rule/audit/demo viewers). 4. No visual/behavioural regression versus the current renderer."
+component = "viewer-api"
+depends_on = ["e978d833-bbaa-4cb8-8c1a-52a282a079d9"]
+effort = "12000"
+priority = "high"
+risk_level = "high"
+spec_refs = "4f14356f-c4bd-4554-be1e-35361de241da"
+tags = "viewer-api,graph3d,performance,extensibility"
+type = "tracker-improvement"
