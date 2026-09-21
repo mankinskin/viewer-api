@@ -1,0 +1,13 @@
+id = "379ac56a-4580-4ed6-a571-eb76282ef375"
+created_at = "2026-08-15T16:23:00.299115300+00:00"
+title = "[viewer-api][bug] Standalone manifest cannot resolve context-api"
+state = "done"
+component = "viewer-api"
+effort = "800"
+linked = ["1c452ff1-6edc-47c8-a73d-d07ce9b4d473", "ba4aaa9c-d270-4cfc-a1e2-395634608371"]
+parts = [{ id = "c5d9ae7e-bce4-4b8d-9b72-b2ec2338a04d", kind = "objective", path = "parts/c5d9ae7e-bce4-4b8d-9b72-b2ec2338a04d.md", frozen = true, created_at = "2026-08-15T16:29:37.360688300Z" }, { id = "d14fdef4-e90e-4cbc-9b38-48bd4460f467", kind = "requirements", path = "parts/d14fdef4-e90e-4cbc-9b38-48bd4460f467.md", frozen = true, created_at = "2026-08-15T16:29:37.360934100Z" }, { id = "189bddcc-bef1-48e2-be5d-869bd31e5510", kind = "design", path = "parts/189bddcc-bef1-48e2-be5d-869bd31e5510.md", frozen = true, created_at = "2026-08-15T16:29:37.361327100Z" }, { id = "ba53bb45-cf6e-4575-9084-ea13f52952ef", kind = "examples", path = "parts/ba53bb45-cf6e-4575-9084-ea13f52952ef.md", frozen = true, created_at = "2026-08-15T16:29:37.361525900Z" }, { id = "890b54df-1a69-4874-a4a2-96a311be819a", kind = "acceptance_criteria", path = "parts/890b54df-1a69-4874-a4a2-96a311be819a.md", frozen = true, created_at = "2026-08-15T16:29:37.361698400Z" }, { id = "4fc40f1b-edca-45ad-9620-1bd8450b9307", kind = "review", path = "parts/4fc40f1b-edca-45ad-9620-1bd8450b9307.md", frozen = false, created_at = "2026-08-15T17:27:28.215601700Z" }, { id = "2a35524a-041c-44ac-b4a8-e0437a8e2316", kind = "review", path = "parts/2a35524a-041c-44ac-b4a8-e0437a8e2316.md", frozen = false, created_at = "2026-08-15T17:52:49.434284300Z" }]
+plan_revision = 1
+priority = "high"
+related_specs = "5ee7f36a-2aea-4373-8c67-e6b26ae174bf"
+risk_level = "high"
+type = "bug"
