@@ -5,26 +5,12 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Function,
-    Reflect,
-};
-use wasm_bindgen::{
-    JsCast,
-    JsValue,
-};
-use web_sys::{
-    GpuBuffer,
-    GpuDevice,
-    GpuRenderPipeline,
-};
+use js_sys::{Array, Function, Reflect};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{GpuBuffer, GpuDevice, GpuRenderPipeline};
 
 use super::super::{
-    camera::{
-        CAM_UNIFORM_FLOATS,
-        PALETTE_FLOATS,
-    },
+    camera::{CAM_UNIFORM_FLOATS, PALETTE_FLOATS},
     interop::*,
 };
 use crate::effects::wgpu_overlay::EffectSettings;
@@ -79,28 +65,25 @@ pub(crate) fn init_gpu(
     bgl_entries.push(&JsValue::from(bgl_entry1));
     let bgl_desc = obj();
     set(&bgl_desc, "entries", &JsValue::from(bgl_entries));
-    let bgl_js =
-        Reflect::get(&device.clone().into(), &js_str("createBindGroupLayout"))
-            .and_then(|f| f.dyn_into::<Function>())
-            .map_err(|_| "createBindGroupLayout")?
-            .call1(&device.clone().into(), &JsValue::from(bgl_desc))
-            .map_err(|_| "bgl call")?;
+    let bgl_js = Reflect::get(&device.clone().into(), &js_str("createBindGroupLayout"))
+        .and_then(|f| f.dyn_into::<Function>())
+        .map_err(|_| "createBindGroupLayout")?
+        .call1(&device.clone().into(), &JsValue::from(bgl_desc))
+        .map_err(|_| "bgl call")?;
 
     // pipeline layout
     let pl_bgls = Array::new();
     pl_bgls.push(&bgl_js);
     let pl_desc = obj();
     set(&pl_desc, "bindGroupLayouts", &JsValue::from(pl_bgls));
-    let pipeline_layout =
-        Reflect::get(&device.clone().into(), &js_str("createPipelineLayout"))
-            .and_then(|f| f.dyn_into::<Function>())
-            .map_err(|_| "createPipelineLayout")?
-            .call1(&device.clone().into(), &JsValue::from(pl_desc))
-            .map_err(|_| "pl call")?;
+    let pipeline_layout = Reflect::get(&device.clone().into(), &js_str("createPipelineLayout"))
+        .and_then(|f| f.dyn_into::<Function>())
+        .map_err(|_| "createPipelineLayout")?
+        .call1(&device.clone().into(), &JsValue::from(pl_desc))
+        .map_err(|_| "pl call")?;
 
     let edge_pipeline = build_edge_pipeline(&device, &pipeline_layout, format)?;
-    let node_quad_pipeline =
-        build_node_quad_pipeline(&device, &pipeline_layout, format)?;
+    let node_quad_pipeline = build_node_quad_pipeline(&device, &pipeline_layout, format)?;
 
     // uniform buffers
     let cam_buf = create_buf(
@@ -108,8 +91,7 @@ pub(crate) fn init_gpu(
         CAM_UNIFORM_FLOATS * 4,
         USAGE_UNIFORM | USAGE_COPY_DST,
     );
-    let palette_buf =
-        create_buf(&device, PALETTE_FLOATS * 4, USAGE_UNIFORM | USAGE_COPY_DST);
+    let palette_buf = create_buf(&device, PALETTE_FLOATS * 4, USAGE_UNIFORM | USAGE_COPY_DST);
     let palette = EffectSettings::default().palette_flat();
     write_buffer(&device, &palette_buf, &palette);
 
@@ -132,12 +114,11 @@ pub(crate) fn init_gpu(
     let bg_desc = obj();
     set(&bg_desc, "layout", &bgl_js);
     set(&bg_desc, "entries", &JsValue::from(bg_entries));
-    let bind_group =
-        Reflect::get(&device.clone().into(), &js_str("createBindGroup"))
-            .and_then(|f| f.dyn_into::<Function>())
-            .map_err(|_| "createBindGroup")?
-            .call1(&device.clone().into(), &JsValue::from(bg_desc))
-            .map_err(|_| "bg call")?;
+    let bind_group = Reflect::get(&device.clone().into(), &js_str("createBindGroup"))
+        .and_then(|f| f.dyn_into::<Function>())
+        .map_err(|_| "createBindGroup")?
+        .call1(&device.clone().into(), &JsValue::from(bg_desc))
+        .map_err(|_| "bg call")?;
 
     // shared full-screen quad (4 verts, triangle-strip)
     let quad_data: [f32; 8] = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0];

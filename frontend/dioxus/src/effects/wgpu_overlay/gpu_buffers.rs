@@ -5,17 +5,10 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Float32Array,
-    Object,
-};
+use js_sys::{Array, Float32Array, Object};
 use wasm_bindgen::JsValue;
 
-use super::{
-    element_types::*,
-    webgpu::*,
-};
+use super::{element_types::*, webgpu::*};
 
 pub(super) struct GpuBuffers {
     pub uniform_buf: JsValue,
@@ -28,10 +21,7 @@ pub(super) struct GpuBuffers {
 impl GpuBuffers {
     /// Allocate all four buffers and seed the particle/palette buffers with
     /// initial data.
-    pub fn new(
-        device: &JsValue,
-        queue: &JsValue,
-    ) -> Option<Self> {
+    pub fn new(device: &JsValue, queue: &JsValue) -> Option<Self> {
         let uniform_buf = gpu_buffer(
             device,
             UNIFORMS_BYTE_SIZE as u32,
@@ -55,9 +45,7 @@ impl GpuBuffers {
 
         // Zero-init the particle buffer so all particles start dead.
         {
-            let zeros = Float32Array::new_with_length(
-                (NUM_PARTICLES * PARTICLE_FLOATS) as u32,
-            );
+            let zeros = Float32Array::new_with_length((NUM_PARTICLES * PARTICLE_FLOATS) as u32);
             queue_write_f32(queue, &particle_buf, 0, &zeros);
         }
         // Default dark-theme palette.
@@ -75,11 +63,7 @@ impl GpuBuffers {
     /// Ensure `elem_buf` can hold `count` elements, doubling the allocation
     /// when needed.  Returns `true` when the buffer was reallocated (caller
     /// must rebuild the bind groups).
-    pub fn ensure_elem_capacity(
-        &mut self,
-        device: &JsValue,
-        count: usize,
-    ) -> bool {
+    pub fn ensure_elem_capacity(&mut self, device: &JsValue, count: usize) -> bool {
         if count <= self.elem_capacity {
             return false;
         }

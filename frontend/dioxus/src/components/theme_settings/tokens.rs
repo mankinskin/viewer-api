@@ -58,10 +58,7 @@ static TOKEN_GROUPS: &[TokenGroup] = &[
     },
 ];
 
-pub(super) fn get_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> &'a str {
+pub(super) fn get_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> &'a str {
     background_token(snapshot, key)
         .or_else(|| text_token(snapshot, key))
         .or_else(|| border_token(snapshot, key))
@@ -70,11 +67,7 @@ pub(super) fn get_token<'a>(
         .unwrap_or("")
 }
 
-pub(super) fn set_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: String,
-) {
+pub(super) fn set_token(snapshot: &mut ThemeSnapshot, key: &str, value: String) {
     if set_background_token(snapshot, key, &value)
         || set_text_token(snapshot, key, &value)
         || set_border_token(snapshot, key, &value)
@@ -143,10 +136,7 @@ pub(super) fn TokenSections(mut draft: Signal<ThemeSnapshot>) -> Element {
     }
 }
 
-fn background_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> Option<&'a str> {
+fn background_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> Option<&'a str> {
     match key {
         "bg_primary" => Some(&snapshot.bg_primary),
         "bg_secondary" => Some(&snapshot.bg_secondary),
@@ -156,10 +146,7 @@ fn background_token<'a>(
     }
 }
 
-fn text_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> Option<&'a str> {
+fn text_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> Option<&'a str> {
     match key {
         "text_primary" => Some(&snapshot.text_primary),
         "text_secondary" => Some(&snapshot.text_secondary),
@@ -168,10 +155,7 @@ fn text_token<'a>(
     }
 }
 
-fn border_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> Option<&'a str> {
+fn border_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> Option<&'a str> {
     match key {
         "border_primary" => Some(&snapshot.border_primary),
         "border_secondary" => Some(&snapshot.border_secondary),
@@ -179,10 +163,7 @@ fn border_token<'a>(
     }
 }
 
-fn accent_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> Option<&'a str> {
+fn accent_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> Option<&'a str> {
     match key {
         "accent_blue" => Some(&snapshot.accent_blue),
         "accent_purple" => Some(&snapshot.accent_purple),
@@ -195,10 +176,7 @@ fn accent_token<'a>(
     }
 }
 
-fn syntax_token<'a>(
-    snapshot: &'a ThemeSnapshot,
-    key: &str,
-) -> Option<&'a str> {
+fn syntax_token<'a>(snapshot: &'a ThemeSnapshot, key: &str) -> Option<&'a str> {
     match key {
         "syntax_keyword" => Some(&snapshot.syntax_keyword),
         "syntax_string" => Some(&snapshot.syntax_string),
@@ -211,11 +189,7 @@ fn syntax_token<'a>(
     }
 }
 
-fn set_background_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: &str,
-) -> bool {
+fn set_background_token(snapshot: &mut ThemeSnapshot, key: &str, value: &str) -> bool {
     match key {
         "bg_primary" => snapshot.bg_primary = value.to_string(),
         "bg_secondary" => snapshot.bg_secondary = value.to_string(),
@@ -226,11 +200,7 @@ fn set_background_token(
     true
 }
 
-fn set_text_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: &str,
-) -> bool {
+fn set_text_token(snapshot: &mut ThemeSnapshot, key: &str, value: &str) -> bool {
     match key {
         "text_primary" => snapshot.text_primary = value.to_string(),
         "text_secondary" => snapshot.text_secondary = value.to_string(),
@@ -240,11 +210,7 @@ fn set_text_token(
     true
 }
 
-fn set_border_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: &str,
-) -> bool {
+fn set_border_token(snapshot: &mut ThemeSnapshot, key: &str, value: &str) -> bool {
     match key {
         "border_primary" => snapshot.border_primary = value.to_string(),
         "border_secondary" => snapshot.border_secondary = value.to_string(),
@@ -253,11 +219,7 @@ fn set_border_token(
     true
 }
 
-fn set_accent_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: &str,
-) -> bool {
+fn set_accent_token(snapshot: &mut ThemeSnapshot, key: &str, value: &str) -> bool {
     match key {
         "accent_blue" => snapshot.accent_blue = value.to_string(),
         "accent_purple" => snapshot.accent_purple = value.to_string(),
@@ -271,11 +233,7 @@ fn set_accent_token(
     true
 }
 
-fn set_syntax_token(
-    snapshot: &mut ThemeSnapshot,
-    key: &str,
-    value: &str,
-) -> bool {
+fn set_syntax_token(snapshot: &mut ThemeSnapshot, key: &str, value: &str) -> bool {
     match key {
         "syntax_keyword" => snapshot.syntax_keyword = value.to_string(),
         "syntax_string" => snapshot.syntax_string = value.to_string(),

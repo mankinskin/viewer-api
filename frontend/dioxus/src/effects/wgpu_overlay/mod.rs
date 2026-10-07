@@ -44,12 +44,7 @@ mod render_loop;
 mod webgpu;
 
 pub use settings::{
-    hex_to_rgba,
-    rgba_to_hex,
-    EffectSettings,
-    PaletteColor,
-    PALETTE_LABELS,
-    PALETTE_LEN,
+    hex_to_rgba, rgba_to_hex, EffectSettings, PaletteColor, PALETTE_LABELS, PALETTE_LEN,
 };
 
 // ── Shared GPU handles + frame-callback registry ────────────────────────────
@@ -62,10 +57,7 @@ pub use settings::{
 // uninterrupted when secondary renderers come and go.
 
 #[cfg(target_arch = "wasm32")]
-use std::cell::{
-    Cell,
-    RefCell,
-};
+use std::cell::{Cell, RefCell};
 #[cfg(target_arch = "wasm32")]
 use std::rc::Rc;
 #[cfg(target_arch = "wasm32")]
@@ -141,9 +133,7 @@ thread_local! {
 ///
 /// The canvas is always owned by [`WgpuOverlay`]; secondary renderers
 /// composite into the same frame via [`register_frame_callback`].
-#[deprecated(
-    note = "secondary renderers should use register_frame_callback instead"
-)]
+#[deprecated(note = "secondary renderers should use register_frame_callback instead")]
 pub fn set_gpu_canvas_owner(_taken: bool) {}
 
 /// Enable or disable the WebGPU overlay master switch.
@@ -219,8 +209,8 @@ where
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn invoke_frame_callbacks(ctx: &FrameContext) {
     // Snapshot the list so callbacks may freely register/unregister.
-    let cbs: Vec<Rc<RefCell<FrameCallback>>> = FRAME_CALLBACKS
-        .with(|c| c.borrow().iter().map(|(_, cb)| cb.clone()).collect());
+    let cbs: Vec<Rc<RefCell<FrameCallback>>> =
+        FRAME_CALLBACKS.with(|c| c.borrow().iter().map(|(_, cb)| cb.clone()).collect());
     for cb in cbs {
         if let Ok(mut f) = cb.try_borrow_mut() {
             (f)(ctx);
@@ -261,10 +251,7 @@ pub(crate) fn take_palette_dirty() -> bool {
 /// Store the current cursor position (CSS client coordinates).
 /// Called by the `mousemove` listener installed during overlay bootstrap.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn set_mouse_pos(
-    x: f32,
-    y: f32,
-) {
+pub(crate) fn set_mouse_pos(x: f32, y: f32) {
     MOUSE_X.with(|c| c.set(x));
     MOUSE_Y.with(|c| c.set(y));
 }

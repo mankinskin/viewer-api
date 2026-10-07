@@ -1,37 +1,13 @@
 use super::{
-    anchor_zoom_scale_for_distance,
-    animate_layout_nodes,
-    apply_node_view_transform,
-    apply_selected_node_auto_layout,
-    camera_plane_to_screen_px,
-    camera_plane_view_center_weight,
-    length,
-    node_detail_dimensions_px,
-    node_detail_tier,
-    pixel_scale_for_distance,
-    required_camera_plane_half_extents_px,
-    world_to_camera_space,
-    CameraBasis,
-    EdgeRef3D,
-    EdgeVisualState,
-    GraphThemeSettings,
-    Layout3D,
-    Node3D,
-    NodeCardProfile,
-    NodeDetailTier,
-    NodeViewTransform,
-    CAMERA_PLANE_MIN_CENTER_PIXEL_SCALE,
-    EDGE_FLAG_DEFAULT,
-    EDGE_FLAG_DIMMED,
-    EDGE_FLAG_HOVERED,
-    EDGE_FLAG_SELECTED,
-    EDGE_INST_FLOATS,
-    GRID_LINE_COUNT,
+    anchor_zoom_scale_for_distance, animate_layout_nodes, apply_node_view_transform,
+    apply_selected_node_auto_layout, camera_plane_to_screen_px, camera_plane_view_center_weight,
+    length, node_detail_dimensions_px, node_detail_tier, pixel_scale_for_distance,
+    required_camera_plane_half_extents_px, world_to_camera_space, CameraBasis, EdgeRef3D,
+    EdgeVisualState, GraphThemeSettings, Layout3D, Node3D, NodeCardProfile, NodeDetailTier,
+    NodeViewTransform, CAMERA_PLANE_MIN_CENTER_PIXEL_SCALE, EDGE_FLAG_DEFAULT, EDGE_FLAG_DIMMED,
+    EDGE_FLAG_HOVERED, EDGE_FLAG_SELECTED, EDGE_INST_FLOATS, GRID_LINE_COUNT,
 };
-use crate::graph3d::camera::{
-    Camera,
-    CAMERA_FOV,
-};
+use crate::graph3d::camera::{Camera, CAMERA_FOV};
 
 fn sample_nodes() -> Vec<Node3D> {
     vec![
@@ -114,10 +90,7 @@ fn focus_edges() -> Vec<EdgeRef3D> {
     ]
 }
 
-fn graph_edge_flag(
-    edge_data: &[f32],
-    edge_index: usize,
-) -> f32 {
+fn graph_edge_flag(edge_data: &[f32], edge_index: usize) -> f32 {
     edge_data[(GRID_LINE_COUNT + edge_index) * EDGE_INST_FLOATS + 10]
 }
 
@@ -145,14 +118,13 @@ fn ticket_wide_profile_uses_ticket_directed_edge_type() {
 #[test]
 fn selected_focus_marks_incident_edges_and_dims_the_rest() {
     let layout = Layout3D::new(focus_nodes(), focus_edges());
-    let (edge_data, edge_count) = layout
-        .build_edge_instances_with_visual_state(
-            EdgeVisualState {
-                selected_node_id: Some("root"),
-                hovered_node_id: Some("leaf"),
-            },
-            &GraphThemeSettings::default(),
-        );
+    let (edge_data, edge_count) = layout.build_edge_instances_with_visual_state(
+        EdgeVisualState {
+            selected_node_id: Some("root"),
+            hovered_node_id: Some("leaf"),
+        },
+        &GraphThemeSettings::default(),
+    );
 
     assert_eq!(edge_count as usize, GRID_LINE_COUNT + 2);
     assert_eq!(graph_edge_flag(&edge_data, 0), EDGE_FLAG_SELECTED);
@@ -162,14 +134,13 @@ fn selected_focus_marks_incident_edges_and_dims_the_rest() {
 #[test]
 fn hovered_focus_is_used_when_no_selection_exists() {
     let layout = Layout3D::new(focus_nodes(), focus_edges());
-    let (edge_data, edge_count) = layout
-        .build_edge_instances_with_visual_state(
-            EdgeVisualState {
-                selected_node_id: None,
-                hovered_node_id: Some("leaf"),
-            },
-            &GraphThemeSettings::default(),
-        );
+    let (edge_data, edge_count) = layout.build_edge_instances_with_visual_state(
+        EdgeVisualState {
+            selected_node_id: None,
+            hovered_node_id: Some("leaf"),
+        },
+        &GraphThemeSettings::default(),
+    );
 
     assert_eq!(edge_count as usize, GRID_LINE_COUNT + 2);
     assert_eq!(graph_edge_flag(&edge_data, 0), EDGE_FLAG_DIMMED);
@@ -179,14 +150,13 @@ fn hovered_focus_is_used_when_no_selection_exists() {
 #[test]
 fn stale_hover_focus_is_ignored() {
     let layout = Layout3D::new(focus_nodes(), focus_edges());
-    let (edge_data, edge_count) = layout
-        .build_edge_instances_with_visual_state(
-            EdgeVisualState {
-                selected_node_id: None,
-                hovered_node_id: Some("missing-node"),
-            },
-            &GraphThemeSettings::default(),
-        );
+    let (edge_data, edge_count) = layout.build_edge_instances_with_visual_state(
+        EdgeVisualState {
+            selected_node_id: None,
+            hovered_node_id: Some("missing-node"),
+        },
+        &GraphThemeSettings::default(),
+    );
 
     assert_eq!(edge_count as usize, GRID_LINE_COUNT + 2);
     assert_eq!(graph_edge_flag(&edge_data, 0), EDGE_FLAG_DEFAULT);
@@ -297,12 +267,7 @@ fn anchor_zoom_scale_uses_default_and_ticket_render_tuning() {
     let distance = 110.6469;
     let default_theme = GraphThemeSettings::default();
     assert!(
-        (anchor_zoom_scale_for_distance(
-            "right-center",
-            distance,
-            &default_theme
-        ) - 0.4008)
-            .abs()
+        (anchor_zoom_scale_for_distance("right-center", distance, &default_theme) - 0.4008).abs()
             < 0.0001
     );
 
@@ -310,12 +275,7 @@ fn anchor_zoom_scale_uses_default_and_ticket_render_tuning() {
     ticket_theme.render_tuning.row_label_scale_numerator = 13.0;
     ticket_theme.render_tuning.row_label_boost_factor = 0.0;
     assert!(
-        (anchor_zoom_scale_for_distance(
-            "right-center",
-            distance,
-            &ticket_theme
-        ) - 0.1175)
-            .abs()
+        (anchor_zoom_scale_for_distance("right-center", distance, &ticket_theme) - 0.1175).abs()
             < 0.0001
     );
 }
@@ -323,31 +283,19 @@ fn anchor_zoom_scale_uses_default_and_ticket_render_tuning() {
 #[test]
 fn node_detail_dimensions_follow_profile_and_tier() {
     assert_eq!(
-        node_detail_dimensions_px(
-            NodeDetailTier::Minimal,
-            NodeCardProfile::TicketWide,
-        ),
+        node_detail_dimensions_px(NodeDetailTier::Minimal, NodeCardProfile::TicketWide,),
         [52.0, 52.0],
     );
     assert_eq!(
-        node_detail_dimensions_px(
-            NodeDetailTier::Compact,
-            NodeCardProfile::TicketWide,
-        ),
+        node_detail_dimensions_px(NodeDetailTier::Compact, NodeCardProfile::TicketWide,),
         [176.0, 72.0],
     );
     assert_eq!(
-        node_detail_dimensions_px(
-            NodeDetailTier::Compact,
-            NodeCardProfile::Compact,
-        ),
+        node_detail_dimensions_px(NodeDetailTier::Compact, NodeCardProfile::Compact,),
         [172.0, 92.0],
     );
     assert_eq!(
-        node_detail_dimensions_px(
-            NodeDetailTier::Rich,
-            NodeCardProfile::TicketWide,
-        ),
+        node_detail_dimensions_px(NodeDetailTier::Rich, NodeCardProfile::TicketWide,),
         [212.0, 132.0],
     );
 }
@@ -535,16 +483,10 @@ fn camera_plane_transform_clears_center_overlap() {
         })
         .collect();
 
-    let center_a_weight = camera_plane_view_center_weight(
-        screen_positions[0],
-        viewport_width,
-        viewport_height,
-    );
-    let center_b_weight = camera_plane_view_center_weight(
-        screen_positions[1],
-        viewport_width,
-        viewport_height,
-    );
+    let center_a_weight =
+        camera_plane_view_center_weight(screen_positions[0], viewport_width, viewport_height);
+    let center_b_weight =
+        camera_plane_view_center_weight(screen_positions[1], viewport_width, viewport_height);
     let required_a = required_camera_plane_half_extents_px(
         camera_positions[0],
         NodeCardProfile::Compact,
@@ -558,10 +500,7 @@ fn camera_plane_transform_clears_center_overlap() {
     let dx = (screen_positions[1][0] - screen_positions[0][0]).abs();
     let dy = (screen_positions[1][1] - screen_positions[0][1]).abs();
 
-    assert!(
-        dx >= required_a[0] + required_b[0] - 1.0
-            || dy >= required_a[1] + required_b[1] - 1.0
-    );
+    assert!(dx >= required_a[0] + required_b[0] - 1.0 || dy >= required_a[1] + required_b[1] - 1.0);
 }
 
 #[test]
@@ -635,17 +574,13 @@ fn camera_plane_transform_strength_softens_low_influence() {
         .nodes
         .iter()
         .zip(weak.nodes.iter())
-        .map(|(base, moved)| {
-            length([moved.x - base.x, moved.y - base.y, moved.z - base.z])
-        })
+        .map(|(base, moved)| length([moved.x - base.x, moved.y - base.y, moved.z - base.z]))
         .sum::<f32>();
     let strong_shift = layout
         .nodes
         .iter()
         .zip(strong.nodes.iter())
-        .map(|(base, moved)| {
-            length([moved.x - base.x, moved.y - base.y, moved.z - base.z])
-        })
+        .map(|(base, moved)| length([moved.x - base.x, moved.y - base.y, moved.z - base.z]))
         .sum::<f32>();
 
     assert!(weak_shift > 0.0);

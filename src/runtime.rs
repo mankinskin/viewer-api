@@ -1,27 +1,11 @@
 use axum::Router;
-use std::{
-    env,
-    future::Future,
-    path::PathBuf,
-    pin::Pin,
-};
+use std::{env, future::Future, path::PathBuf, pin::Pin};
 use tower_http::{
-    cors::{
-        Any,
-        CorsLayer,
-    },
+    cors::{Any, CorsLayer},
     services::ServeDir,
 };
-use tracing::{
-    error,
-    info,
-};
-use tracing_subscriber::{
-    fmt,
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-    EnvFilter,
-};
+use tracing::{error, info};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use crate::to_unix_path;
 
@@ -50,12 +34,8 @@ impl Default for TracingConfig {
 }
 
 impl TracingConfig {
-    pub fn from_env(
-        log_file_prefix: impl Into<String>,
-        default_log_dir: PathBuf,
-    ) -> Self {
-        let level =
-            env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
+    pub fn from_env(log_file_prefix: impl Into<String>, default_log_dir: PathBuf) -> Self {
+        let level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
         let log_dir = env::var_os("LOG_DIR")
             .map(PathBuf::from)
             .or_else(|| env::var_os("LOG_FILE").map(|_| default_log_dir));
@@ -68,19 +48,12 @@ impl TracingConfig {
         }
     }
 
-    pub fn with_level(
-        mut self,
-        level: impl Into<String>,
-    ) -> Self {
+    pub fn with_level(mut self, level: impl Into<String>) -> Self {
         self.level = level.into();
         self
     }
 
-    pub fn with_file_logging(
-        mut self,
-        log_dir: PathBuf,
-        prefix: impl Into<String>,
-    ) -> Self {
+    pub fn with_file_logging(mut self, log_dir: PathBuf, prefix: impl Into<String>) -> Self {
         self.file_logging = true;
         self.log_dir = Some(log_dir);
         self.log_file_prefix = prefix.into();
@@ -89,7 +62,7 @@ impl TracingConfig {
 }
 
 fn file_appender(
-    config: &TracingConfig
+    config: &TracingConfig,
 ) -> Option<(
     tracing_appender::non_blocking::NonBlocking,
     tracing_appender::non_blocking::WorkerGuard,
@@ -105,14 +78,12 @@ fn file_appender(
     std::fs::create_dir_all(&log_dir).ok();
 
     let log_file_name = format!("{}.log", config.log_file_prefix);
-    let file_appender =
-        tracing_appender::rolling::daily(&log_dir, log_file_name);
+    let file_appender = tracing_appender::rolling::daily(&log_dir, log_file_name);
     Some(tracing_appender::non_blocking(file_appender))
 }
 
 pub fn init_tracing_full(config: &TracingConfig) {
-    let filter = EnvFilter::try_new(&config.level)
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter = EnvFilter::try_new(&config.level).unwrap_or_else(|_| EnvFilter::new("info"));
 
     let fmt_layer = fmt::layer()
         .with_target(true)
@@ -158,17 +129,10 @@ pub fn init_tracing_full(config: &TracingConfig) {
 mod tests {
     use std::{
         io::Write,
-        time::{
-            SystemTime,
-            UNIX_EPOCH,
-        },
+        time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{
-        file_appender,
-        init_tracing_full,
-        TracingConfig,
-    };
+    use super::{file_appender, init_tracing_full, TracingConfig};
 
     #[test]
     fn explicit_file_logging_creates_log_directory_and_file() {
@@ -179,8 +143,7 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let config = TracingConfig::default()
-            .with_file_logging(log_dir.clone(), "viewer-api");
+        let config = TracingConfig::default().with_file_logging(log_dir.clone(), "viewer-api");
         let (mut writer, guard) = file_appender(&config).unwrap();
 
         writer.write_all(b"configured file logging\n").unwrap();
@@ -242,10 +205,7 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(
-        name: impl Into<String>,
-        default_port: u16,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, default_port: u16) -> Self {
         Self {
             name: name.into(),
             default_port,
@@ -255,26 +215,17 @@ impl ServerConfig {
         }
     }
 
-    pub fn with_static_dir(
-        mut self,
-        dir: PathBuf,
-    ) -> Self {
+    pub fn with_static_dir(mut self, dir: PathBuf) -> Self {
         self.static_dir = Some(dir);
         self
     }
 
-    pub fn with_host(
-        mut self,
-        host: impl Into<String>,
-    ) -> Self {
+    pub fn with_host(mut self, host: impl Into<String>) -> Self {
         self.host = host.into();
         self
     }
 
-    pub fn with_workspace_root(
-        mut self,
-        root: PathBuf,
-    ) -> Self {
+    pub fn with_workspace_root(mut self, root: PathBuf) -> Self {
         self.workspace_root = Some(root);
         self
     }
@@ -305,10 +256,7 @@ pub fn display_host(host: &str) -> &str {
 
 mod cli;
 
-pub use cli::{
-    init_tracing,
-    ServerArgs,
-};
+pub use cli::{init_tracing, ServerArgs};
 
 pub fn default_cors() -> CorsLayer {
     CorsLayer::new()
@@ -322,18 +270,10 @@ pub async fn shutdown_signal() {
     info!("Received shutdown signal");
 }
 
-pub fn with_static_files(
-    router: Router,
-    static_dir: Option<PathBuf>,
-) -> Router {
+pub fn with_static_files(router: Router, static_dir: Option<PathBuf>) -> Router {
     use axum::{
         body::Body,
-        http::{
-            header,
-            HeaderValue,
-            Response,
-            StatusCode,
-        },
+        http::{header, HeaderValue, Response, StatusCode},
         response::IntoResponse,
     };
     use tower::service_fn;
@@ -345,8 +285,7 @@ pub fn with_static_files(
             let spa_fallback = service_fn(move |_req| {
                 let body = index_html.clone();
                 async move {
-                    let mut res: Response<Body> =
-                        (StatusCode::OK, body).into_response();
+                    let mut res: Response<Body> = (StatusCode::OK, body).into_response();
                     res.headers_mut().insert(
                         header::CONTENT_TYPE,
                         HeaderValue::from_static("text/html; charset=utf-8"),
@@ -367,14 +306,7 @@ pub type McpServerFactory<S> = Box<
     dyn FnOnce(
             S,
         ) -> Pin<
-            Box<
-                dyn Future<
-                        Output = Result<
-                            (),
-                            Box<dyn std::error::Error + Send + Sync>,
-                        >,
-                    > + Send,
-            >,
+            Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>> + Send>,
         > + Send,
 >;
 
@@ -389,14 +321,7 @@ where
     F: FnOnce(
             S,
         ) -> Pin<
-            Box<
-                dyn Future<
-                        Output = Result<
-                            (),
-                            Box<dyn std::error::Error + Send + Sync>,
-                        >,
-                    > + Send,
-            >,
+            Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>> + Send>,
         > + Send
         + 'static,
 {
@@ -407,14 +332,14 @@ where
 
     if args.mcp && !args.http {
         if let Some(factory) = mcp_factory {
-            factory(state).await.map_err(
-                |error| -> Box<dyn std::error::Error> {
+            factory(state)
+                .await
+                .map_err(|error| -> Box<dyn std::error::Error> {
                     Box::new(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         error.to_string(),
                     ))
-                },
-            )?;
+                })?;
         } else {
             eprintln!("MCP mode requested but no MCP handler provided");
             return Err("MCP mode not supported".into());

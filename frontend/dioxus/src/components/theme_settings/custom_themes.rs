@@ -1,10 +1,6 @@
 use dioxus::prelude::*;
 
-use super::model::{
-    save_custom_themes_storage,
-    CustomTheme,
-    ThemeSnapshot,
-};
+use super::model::{save_custom_themes_storage, CustomTheme, ThemeSnapshot};
 
 #[component]
 pub(super) fn CustomThemesSection(

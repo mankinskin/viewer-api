@@ -2,11 +2,7 @@
 
 use axum::{
     http::StatusCode,
-    response::{
-        IntoResponse,
-        Json,
-        Response,
-    },
+    response::{IntoResponse, Json, Response},
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -49,10 +45,7 @@ impl ApiError {
         }
     }
 
-    pub fn with_details(
-        mut self,
-        details: Value,
-    ) -> Self {
+    pub fn with_details(mut self, details: Value) -> Self {
         self.details = Some(details);
         self
     }
@@ -67,10 +60,7 @@ impl ApiError {
     }
 
     /// Build a 404 Not Found error.
-    pub fn not_found(
-        resource: impl Into<String>,
-        request_id: &str,
-    ) -> Self {
+    pub fn not_found(resource: impl Into<String>, request_id: &str) -> Self {
         let resource = resource.into();
         Self::new("not_found", format!("{resource} not found"), request_id)
     }
@@ -90,19 +80,12 @@ impl ApiError {
     }
 
     /// Build a 409 Conflict error.
-    pub fn conflict(
-        code: impl Into<String>,
-        message: impl Into<String>,
-        request_id: &str,
-    ) -> Self {
+    pub fn conflict(code: impl Into<String>, message: impl Into<String>, request_id: &str) -> Self {
         Self::new(code, message, request_id)
     }
 
     /// Render as an axum Response with the given status code.
-    pub fn into_response_with_status(
-        self,
-        status: StatusCode,
-    ) -> Response {
+    pub fn into_response_with_status(self, status: StatusCode) -> Response {
         (status, Json(self)).into_response()
     }
 }

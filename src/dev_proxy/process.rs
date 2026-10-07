@@ -1,26 +1,13 @@
 use std::{
-    path::{
-        Path,
-        PathBuf,
-    },
-    process::{
-        Child,
-        Command,
-        Stdio,
-    },
+    path::{Path, PathBuf},
+    process::{Child, Command, Stdio},
 };
 
-use tracing::{
-    debug,
-    info,
-};
+use tracing::{debug, info};
 
-pub(super) fn ensure_npm_installed(
-    frontend_dir: &Path
-) -> Result<(), Box<dyn std::error::Error>> {
+pub(super) fn ensure_npm_installed(frontend_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let bin_dir = frontend_dir.join("node_modules/.bin");
-    let has_vite =
-        bin_dir.join("vite").exists() || bin_dir.join("vite.cmd").exists();
+    let has_vite = bin_dir.join("vite").exists() || bin_dir.join("vite.cmd").exists();
     if has_vite {
         debug!(dir = %frontend_dir.display(), "vite binary found, skipping npm install");
         return Ok(());
@@ -28,9 +15,7 @@ pub(super) fn ensure_npm_installed(
 
     info!(dir = %frontend_dir.display(), "vite not found — running npm install");
 
-    if let Ok(pkg_contents) =
-        std::fs::read_to_string(frontend_dir.join("package.json"))
-    {
+    if let Ok(pkg_contents) = std::fs::read_to_string(frontend_dir.join("package.json")) {
         for dep_dir in resolve_file_deps(&pkg_contents, frontend_dir) {
             if !dep_dir.join("node_modules").exists() {
                 info!(dep = %dep_dir.display(), "Installing local file: dependency");
@@ -93,9 +78,7 @@ fn run_npm_install(dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
             .stderr(Stdio::inherit())
             .status()
             .or_else(|_| {
-                debug!(
-                    "npm not found directly, trying via cmd.exe (WSL/bash.exe)"
-                );
+                debug!("npm not found directly, trying via cmd.exe (WSL/bash.exe)");
                 Command::new("cmd.exe")
                     .args(["/c", "npm", "install"])
                     .current_dir(dir)
@@ -125,10 +108,7 @@ fn run_npm_install(dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn resolve_file_deps(
-    pkg_json: &str,
-    base_dir: &Path,
-) -> Vec<PathBuf> {
+fn resolve_file_deps(pkg_json: &str, base_dir: &Path) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     for line in pkg_json.lines() {

@@ -1,12 +1,7 @@
 //! TabBar component — horizontal list of closeable, reorderable tabs.
 use dioxus::prelude::*;
 
-use crate::components::{
-    CloseIcon,
-    ResizeDirection,
-    ResizeEdge,
-    ResizeHandle,
-};
+use crate::components::{CloseIcon, ResizeDirection, ResizeEdge, ResizeHandle};
 
 /// A single tab descriptor.
 #[derive(Clone, PartialEq)]
@@ -22,10 +17,7 @@ pub struct TabItem {
 }
 
 impl TabItem {
-    pub fn new(
-        id: impl Into<String>,
-        label: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, label: impl Into<String>) -> Self {
         TabItem {
             id: id.into(),
             label: label.into(),

@@ -62,11 +62,7 @@ pub fn ResizeHandle(
     #[cfg(target_arch = "wasm32")]
     {
         use self::wasm::{
-            cleanup_drag_states,
-            new_drag_state,
-            start_mouse_drag,
-            start_touch_drag,
-            DragState,
+            cleanup_drag_states, new_drag_state, start_mouse_drag, start_touch_drag, DragState,
         };
 
         let mouse_state: DragState = use_hook(new_drag_state);
@@ -84,12 +80,7 @@ pub fn ResizeHandle(
             let mouse_state = mouse_state.clone();
             let on_resize = on_resize.clone();
             move |evt: Event<MouseData>| {
-                start_mouse_drag(
-                    mouse_state.clone(),
-                    on_resize.clone(),
-                    is_horizontal,
-                    evt,
-                );
+                start_mouse_drag(mouse_state.clone(), on_resize.clone(), is_horizontal, evt);
             }
         };
 
@@ -97,12 +88,7 @@ pub fn ResizeHandle(
             let touch_state = touch_state.clone();
             let on_resize = on_resize.clone();
             move |evt: Event<TouchData>| {
-                start_touch_drag(
-                    touch_state.clone(),
-                    on_resize.clone(),
-                    is_horizontal,
-                    evt,
-                );
+                start_touch_drag(touch_state.clone(), on_resize.clone(), is_horizontal, evt);
             }
         };
 

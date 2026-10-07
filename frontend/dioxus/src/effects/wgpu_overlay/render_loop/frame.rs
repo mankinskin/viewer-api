@@ -1,42 +1,18 @@
-use js_sys::{
-    Array,
-    Float32Array,
-};
+use js_sys::{Array, Float32Array};
 use tracing::debug;
-use wasm_bindgen::{
-    JsCast,
-    JsValue,
-};
-use web_sys::{
-    HtmlCanvasElement,
-    Window,
-};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{HtmlCanvasElement, Window};
 
 use super::{
     super::{
-        element_scanner::scan_ui_rects,
-        element_types::*,
-        invoke_frame_callbacks,
-        live_effects,
-        mouse_pos,
-        settings::EffectSettings,
-        take_palette_dirty,
-        webgpu::*,
-        FrameContext,
+        element_scanner::scan_ui_rects, element_types::*, invoke_frame_callbacks, live_effects,
+        mouse_pos, settings::EffectSettings, take_palette_dirty, webgpu::*, FrameContext,
     },
-    uniforms::{
-        find_hovered_elem,
-        find_selected_elem,
-        pack_uniforms,
-    },
+    uniforms::{find_hovered_elem, find_selected_elem, pack_uniforms},
     GpuCtx,
 };
 
-pub(super) fn render_frame(
-    gpu: &mut GpuCtx,
-    ts_ms: f64,
-    win: &Window,
-) {
+pub(super) fn render_frame(gpu: &mut GpuCtx, ts_ms: f64, win: &Window) {
     let (time_s, dt_s) = update_frame_timing(gpu, ts_ms);
     let settings = live_effects();
 
@@ -64,20 +40,14 @@ pub(super) fn render_frame(
     let _ = &gpu.depth_tex;
 }
 
-fn update_frame_timing(
-    gpu: &mut GpuCtx,
-    ts_ms: f64,
-) -> (f32, f32) {
+fn update_frame_timing(gpu: &mut GpuCtx, ts_ms: f64) -> (f32, f32) {
     let dt_s = ((ts_ms - gpu.prev_time_ms) / 1000.0).min(0.1) as f32;
     gpu.prev_time_ms = ts_ms;
     let time_s = ((ts_ms - gpu.start_time_ms) / 1000.0) as f32;
     (time_s, dt_s)
 }
 
-fn maybe_upload_palette(
-    gpu: &GpuCtx,
-    settings: &EffectSettings,
-) {
+fn maybe_upload_palette(gpu: &GpuCtx, settings: &EffectSettings) {
     if !take_palette_dirty() {
         return;
     }
@@ -87,22 +57,16 @@ fn maybe_upload_palette(
     queue_write_f32(&gpu.queue, &gpu.buffers.palette_buf, 0, &view);
 }
 
-fn maybe_log_frame(
-    gpu: &GpuCtx,
-    time_s: f32,
-    dt_s: f32,
-    settings: &EffectSettings,
-) {
+fn maybe_log_frame(gpu: &GpuCtx, time_s: f32, dt_s: f32, settings: &EffectSettings) {
     thread_local! { static FRAME_NO: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
     FRAME_NO.with(|counter| {
         let frame_no = counter.get().wrapping_add(1);
         counter.set(frame_no);
         if frame_no == 1 || frame_no.is_multiple_of(120) {
-            let device_label =
-                js_sys::Reflect::get(&gpu.device, &"label".into())
-                    .ok()
-                    .and_then(|value| value.as_string())
-                    .unwrap_or_default();
+            let device_label = js_sys::Reflect::get(&gpu.device, &"label".into())
+                .ok()
+                .and_then(|value| value.as_string())
+                .unwrap_or_default();
             debug!(
                 target: "wgpu_overlay::frame",
                 frame_n = frame_no,
@@ -136,9 +100,7 @@ fn resize_canvas_and_depth(
     }
 
     if cw != gpu.depth_w || ch != gpu.depth_h {
-        if let Some((depth_tex, depth_view)) =
-            create_depth_texture(&gpu.device, cw, ch)
-        {
+        if let Some((depth_tex, depth_view)) = create_depth_texture(&gpu.device, cw, ch) {
             gpu.depth_tex = depth_tex;
             gpu.depth_view = depth_view;
             gpu.depth_w = cw;
@@ -149,24 +111,17 @@ fn resize_canvas_and_depth(
     Some((document, cw, ch))
 }
 
-fn upload_scanned_elements(
-    gpu: &mut GpuCtx,
-    document: &web_sys::Document,
-) -> (Vec<f32>, usize) {
+fn upload_scanned_elements(gpu: &mut GpuCtx, document: &web_sys::Document) -> (Vec<f32>, usize) {
     let (elem_data, elem_count) = scan_ui_rects(document);
     if gpu.buffers.ensure_elem_capacity(&gpu.device, elem_count) {
-        if let Some(bind_group) = super::mk_compute_bind_group(
-            &gpu.device,
-            &gpu.pipelines.compute_bgl,
-            &gpu.buffers,
-        ) {
+        if let Some(bind_group) =
+            super::mk_compute_bind_group(&gpu.device, &gpu.pipelines.compute_bgl, &gpu.buffers)
+        {
             gpu.compute_bg = bind_group;
         }
-        if let Some(bind_group) = super::mk_render_bind_group(
-            &gpu.device,
-            &gpu.pipelines.render_bgl,
-            &gpu.buffers,
-        ) {
+        if let Some(bind_group) =
+            super::mk_render_bind_group(&gpu.device, &gpu.pipelines.render_bgl, &gpu.buffers)
+        {
             gpu.render_bg = bind_group;
         }
     }
@@ -218,25 +173,20 @@ fn begin_frame(gpu: &GpuCtx) -> Option<(JsValue, JsValue)> {
     Some((frame_view, encoder))
 }
 
-fn run_compute_pass(
-    encoder: &JsValue,
-    gpu: &GpuCtx,
-    settings: &EffectSettings,
-) {
+fn run_compute_pass(encoder: &JsValue, gpu: &GpuCtx, settings: &EffectSettings) {
     if !settings.particles_enabled {
         return;
     }
 
-    let Some(pass) = get_fn(encoder, "beginComputePass")
-        .and_then(|function| function.call0(encoder).ok())
+    let Some(pass) =
+        get_fn(encoder, "beginComputePass").and_then(|function| function.call0(encoder).ok())
     else {
         return;
     };
 
     call_set_pipeline(&pass, &gpu.pipelines.compute_pipeline);
     call_set_bind_group(&pass, 0, &gpu.compute_bg);
-    let workgroups =
-        ((NUM_PARTICLES + COMPUTE_WORKGROUP - 1) / COMPUTE_WORKGROUP) as u32;
+    let workgroups = ((NUM_PARTICLES + COMPUTE_WORKGROUP - 1) / COMPUTE_WORKGROUP) as u32;
     call_dispatch(&pass, workgroups);
     call_end(&pass);
 }
@@ -267,12 +217,8 @@ fn run_render_pass(
     call_end(&pass);
 }
 
-fn submit_commands(
-    gpu: &GpuCtx,
-    encoder: &JsValue,
-) {
-    let Some(finish) = get_fn(encoder, "finish")
-        .and_then(|function| function.call0(encoder).ok())
+fn submit_commands(gpu: &GpuCtx, encoder: &JsValue) {
+    let Some(finish) = get_fn(encoder, "finish").and_then(|function| function.call0(encoder).ok())
     else {
         return;
     };

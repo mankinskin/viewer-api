@@ -14,16 +14,10 @@
 //! ```
 
 use crate::axum::http::HeaderMap;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    sync::{
-        Arc,
-        RwLock,
-    },
+    sync::{Arc, RwLock},
 };
 
 /// Session configuration for per-client behavior.
@@ -73,10 +67,7 @@ impl SessionStore {
     }
 
     /// Get or create a session by ID
-    pub fn get_or_create(
-        &self,
-        session_id: &str,
-    ) -> SessionConfig {
+    pub fn get_or_create(&self, session_id: &str) -> SessionConfig {
         // Try read first
         {
             let guard = self.sessions.read().unwrap();
@@ -95,20 +86,13 @@ impl SessionStore {
     }
 
     /// Get a session if it exists
-    pub fn get(
-        &self,
-        session_id: &str,
-    ) -> Option<SessionConfig> {
+    pub fn get(&self, session_id: &str) -> Option<SessionConfig> {
         let guard = self.sessions.read().unwrap();
         guard.get(session_id).cloned()
     }
 
     /// Update a session's configuration
-    pub fn update<F>(
-        &self,
-        session_id: &str,
-        f: F,
-    ) -> Option<SessionConfig>
+    pub fn update<F>(&self, session_id: &str, f: F) -> Option<SessionConfig>
     where
         F: FnOnce(&mut SessionConfig),
     {
@@ -122,12 +106,7 @@ impl SessionStore {
     }
 
     /// Set a data value for a session
-    pub fn set_data(
-        &self,
-        session_id: &str,
-        key: &str,
-        value: &str,
-    ) -> bool {
+    pub fn set_data(&self, session_id: &str, key: &str, value: &str) -> bool {
         let mut guard = self.sessions.write().unwrap();
         if let Some(config) = guard.get_mut(session_id) {
             config.data.insert(key.to_string(), value.to_string());
@@ -138,11 +117,7 @@ impl SessionStore {
     }
 
     /// Get a data value from a session
-    pub fn get_data(
-        &self,
-        session_id: &str,
-        key: &str,
-    ) -> Option<String> {
+    pub fn get_data(&self, session_id: &str, key: &str) -> Option<String> {
         let guard = self.sessions.read().unwrap();
         guard.get(session_id).and_then(|c| c.data.get(key).cloned())
     }
@@ -158,10 +133,7 @@ pub fn get_session_id(headers: &HeaderMap) -> Option<&str> {
 
 /// Get or create session config from headers.
 /// Returns None if no session ID header is present.
-pub fn get_session_config(
-    store: &SessionStore,
-    headers: &HeaderMap,
-) -> Option<SessionConfig> {
+pub fn get_session_config(store: &SessionStore, headers: &HeaderMap) -> Option<SessionConfig> {
     let session_id = get_session_id(headers)?;
     Some(store.get_or_create(session_id))
 }

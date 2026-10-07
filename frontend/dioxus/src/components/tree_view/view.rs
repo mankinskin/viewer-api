@@ -1,19 +1,10 @@
-use std::collections::{
-    BTreeSet,
-    HashSet,
-};
+use std::collections::{BTreeSet, HashSet};
 
 use dioxus::prelude::*;
 
-use super::{
-    item::TreeItem,
-    types::TreeNode,
-};
+use super::{item::TreeItem, types::TreeNode};
 
-fn collect_visible_ids(
-    nodes: &[TreeNode],
-    expanded_lookup: &HashSet<&str>,
-) -> Vec<String> {
+fn collect_visible_ids(nodes: &[TreeNode], expanded_lookup: &HashSet<&str>) -> Vec<String> {
     let mut result = Vec::with_capacity(nodes.len());
     for node in nodes {
         result.push(node.id.clone());
@@ -35,16 +26,14 @@ pub fn TreeView(
     #[props(default)] on_selection_change: EventHandler<BTreeSet<String>>,
 ) -> Element {
     let expanded_ids = use_signal(|| initially_expanded);
-    let mut multi_selected: Signal<BTreeSet<String>> =
-        use_signal(BTreeSet::new);
+    let mut multi_selected: Signal<BTreeSet<String>> = use_signal(BTreeSet::new);
     let mut focused_id: Signal<Option<String>> = use_signal(|| None);
     let last_clicked: Signal<Option<String>> = use_signal(|| None);
 
     let nodes_for_order = nodes.clone();
     let visible_order: Memo<Vec<String>> = use_memo(move || {
         let expanded = expanded_ids.read();
-        let expanded_lookup: HashSet<&str> =
-            expanded.iter().map(String::as_str).collect();
+        let expanded_lookup: HashSet<&str> = expanded.iter().map(String::as_str).collect();
         collect_visible_ids(&nodes_for_order, &expanded_lookup)
     });
 

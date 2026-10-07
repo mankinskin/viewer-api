@@ -8,25 +8,13 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Float32Array,
-    Function,
-    Object,
-    Reflect,
-};
-use wasm_bindgen::{
-    JsCast,
-    JsValue,
-};
+use js_sys::{Array, Float32Array, Function, Object, Reflect};
+use wasm_bindgen::{JsCast, JsValue};
 
 // ── Generic JS reflection ────────────────────────────────────────────────────
 
 /// Get a callable `Function` property from `obj`, or `None` if absent.
-pub(super) fn get_fn(
-    obj: &JsValue,
-    name: &str,
-) -> Option<Function> {
+pub(super) fn get_fn(obj: &JsValue, name: &str) -> Option<Function> {
     Reflect::get(obj, &name.into())
         .ok()?
         .dyn_into::<Function>()
@@ -34,19 +22,12 @@ pub(super) fn get_fn(
 }
 
 /// Set a property on `obj` via `Reflect.set`.
-pub(super) fn set_prop(
-    obj: &Object,
-    key: &str,
-    value: &JsValue,
-) {
+pub(super) fn set_prop(obj: &Object, key: &str, value: &JsValue) {
     let _ = Reflect::set(obj, &key.into(), value);
 }
 
 /// Read a numeric property and cast to `f32`.
-pub(super) fn prop_f32(
-    obj: &JsValue,
-    key: &str,
-) -> f32 {
+pub(super) fn prop_f32(obj: &JsValue, key: &str) -> f32 {
     Reflect::get(obj, &key.into())
         .ok()
         .and_then(|v| v.as_f64())
@@ -55,11 +36,7 @@ pub(super) fn prop_f32(
 
 // ── Shader / pipeline factories ──────────────────────────────────────────────
 
-pub(super) fn create_shader(
-    device: &JsValue,
-    label: &str,
-    code: &str,
-) -> Option<JsValue> {
+pub(super) fn create_shader(device: &JsValue, label: &str, code: &str) -> Option<JsValue> {
     let desc = Object::new();
     set_prop(&desc, "label", &label.into());
     set_prop(&desc, "code", &code.into());
@@ -70,11 +47,7 @@ pub(super) fn create_shader(
 
 /// Build a `GPUBindGroupLayoutEntry` for a buffer binding.
 /// `visibility` bitmask: `1=VERTEX`, `2=FRAGMENT`, `4=COMPUTE`.
-pub(super) fn bgl_buf(
-    binding: u32,
-    visibility: u32,
-    ty: &str,
-) -> JsValue {
+pub(super) fn bgl_buf(binding: u32, visibility: u32, ty: &str) -> JsValue {
     let entry = Object::new();
     set_prop(&entry, "binding", &binding.into());
     set_prop(&entry, "visibility", &visibility.into());
@@ -84,10 +57,7 @@ pub(super) fn bgl_buf(
     entry.into()
 }
 
-pub(super) fn create_bgl(
-    device: &JsValue,
-    entries: &Array,
-) -> Option<JsValue> {
+pub(super) fn create_bgl(device: &JsValue, entries: &Array) -> Option<JsValue> {
     let desc = Object::new();
     set_prop(&desc, "entries", entries);
     get_fn(device, "createBindGroupLayout")?
@@ -95,10 +65,7 @@ pub(super) fn create_bgl(
         .ok()
 }
 
-pub(super) fn create_pipeline_layout(
-    device: &JsValue,
-    bgls: &[&JsValue],
-) -> Option<JsValue> {
+pub(super) fn create_pipeline_layout(device: &JsValue, bgls: &[&JsValue]) -> Option<JsValue> {
     let arr = Array::new();
     for &bgl in bgls {
         arr.push(bgl);
@@ -199,11 +166,7 @@ pub(super) fn create_render_pipeline(
 
 // ── Buffer helpers ───────────────────────────────────────────────────────────
 
-pub(super) fn gpu_buffer(
-    device: &JsValue,
-    size: u32,
-    usage: u32,
-) -> Option<JsValue> {
+pub(super) fn gpu_buffer(device: &JsValue, size: u32, usage: u32) -> Option<JsValue> {
     let desc = Object::new();
     set_prop(&desc, "size", &(size as f64).into());
     set_prop(&desc, "usage", &usage.into());
@@ -231,10 +194,7 @@ pub(super) fn queue_write_f32(
 
 // ── Bind-group entry helpers ─────────────────────────────────────────────────
 
-pub(super) fn bg_binding_entry(
-    binding: u32,
-    resource: &JsValue,
-) -> JsValue {
+pub(super) fn bg_binding_entry(binding: u32, resource: &JsValue) -> JsValue {
     let entry = Object::new();
     set_prop(&entry, "binding", &binding.into());
     set_prop(&entry, "resource", resource);
@@ -253,11 +213,7 @@ pub(super) fn create_tex_view(texture: &JsValue) -> Option<JsValue> {
     get_fn(texture, "createView")?.call0(texture).ok()
 }
 
-pub(super) fn create_depth_texture(
-    device: &JsValue,
-    w: u32,
-    h: u32,
-) -> Option<(JsValue, JsValue)> {
+pub(super) fn create_depth_texture(device: &JsValue, w: u32, h: u32) -> Option<(JsValue, JsValue)> {
     let size = Object::new();
     set_prop(&size, "width", &(w as f64).into());
     set_prop(&size, "height", &(h as f64).into());
@@ -275,10 +231,7 @@ pub(super) fn create_depth_texture(
 
 // ── Render-pass encoding ─────────────────────────────────────────────────────
 
-pub(super) fn build_render_pass_desc(
-    color_view: &JsValue,
-    depth_view: &JsValue,
-) -> JsValue {
+pub(super) fn build_render_pass_desc(color_view: &JsValue, depth_view: &JsValue) -> JsValue {
     let ca = Object::new();
     set_prop(&ca, "view", color_view);
     set_prop(&ca, "loadOp", &"clear".into());
@@ -305,39 +258,25 @@ pub(super) fn build_render_pass_desc(
     desc.into()
 }
 
-pub(super) fn call_set_pipeline(
-    pass: &JsValue,
-    pipeline: &JsValue,
-) {
+pub(super) fn call_set_pipeline(pass: &JsValue, pipeline: &JsValue) {
     if let Some(f) = get_fn(pass, "setPipeline") {
         let _ = f.call1(pass, pipeline);
     }
 }
 
-pub(super) fn call_set_bind_group(
-    pass: &JsValue,
-    index: u32,
-    bg: &JsValue,
-) {
+pub(super) fn call_set_bind_group(pass: &JsValue, index: u32, bg: &JsValue) {
     if let Some(f) = get_fn(pass, "setBindGroup") {
         let _ = f.call2(pass, &index.into(), bg);
     }
 }
 
-pub(super) fn call_dispatch(
-    pass: &JsValue,
-    x: u32,
-) {
+pub(super) fn call_dispatch(pass: &JsValue, x: u32) {
     if let Some(f) = get_fn(pass, "dispatchWorkgroups") {
         let _ = f.call1(pass, &x.into());
     }
 }
 
-pub(super) fn call_draw(
-    pass: &JsValue,
-    vertices: u32,
-    instances: u32,
-) {
+pub(super) fn call_draw(pass: &JsValue, vertices: u32, instances: u32) {
     if let Some(f) = get_fn(pass, "draw") {
         let _ = f.call2(pass, &vertices.into(), &instances.into());
     }

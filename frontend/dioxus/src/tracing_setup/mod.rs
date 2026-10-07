@@ -23,11 +23,7 @@
 mod network_layer;
 
 use std::sync::OnceLock;
-use tracing_subscriber::{
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
-    EnvFilter,
-};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 static INSTALLED: OnceLock<()> = OnceLock::new();
 
@@ -35,8 +31,7 @@ static INSTALLED: OnceLock<()> = OnceLock::new();
 pub fn install() {
     INSTALLED.get_or_init(|| {
         let filter_str = resolve_filter();
-        let env_filter = EnvFilter::try_new(&filter_str)
-            .unwrap_or_else(|_| EnvFilter::new("info"));
+        let env_filter = EnvFilter::try_new(&filter_str).unwrap_or_else(|_| EnvFilter::new("info"));
 
         // Under `profile-browser`, mirror spans into the browser performance
         // timeline (`performance.measure`) so Chromium captures them under

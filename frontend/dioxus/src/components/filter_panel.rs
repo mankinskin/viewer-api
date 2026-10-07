@@ -14,12 +14,7 @@ use std::collections::BTreeMap;
 use dioxus::prelude::*;
 
 use crate::components::{
-    ChevronDownIcon,
-    ChevronRightIcon,
-    CloseIcon,
-    FilterIcon,
-    Spinner,
-    SpinnerSize,
+    ChevronDownIcon, ChevronRightIcon, CloseIcon, FilterIcon, Spinner, SpinnerSize,
 };
 
 /// Mutable filter state shared between the panel and its host.
@@ -61,10 +56,7 @@ pub struct FilterPreset {
 }
 
 impl FilterPreset {
-    pub fn new(
-        label: impl Into<String>,
-        jq: impl Into<String>,
-    ) -> Self {
+    pub fn new(label: impl Into<String>, jq: impl Into<String>) -> Self {
         Self {
             label: label.into(),
             jq: jq.into(),
@@ -81,10 +73,7 @@ pub struct FilterResult {
 }
 
 impl FilterResult {
-    pub fn new(
-        id: impl Into<String>,
-        title: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, title: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
@@ -92,10 +81,7 @@ impl FilterResult {
         }
     }
 
-    pub fn with_summary(
-        mut self,
-        summary: impl Into<String>,
-    ) -> Self {
+    pub fn with_summary(mut self, summary: impl Into<String>) -> Self {
         self.summary = Some(summary.into());
         self
     }

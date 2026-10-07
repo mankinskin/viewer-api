@@ -2,45 +2,19 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Function,
-    Reflect,
-};
-use wasm_bindgen::{
-    prelude::*,
-    JsCast,
-};
-use web_sys::{
-    Element,
-    HtmlElement,
-};
+use js_sys::{Array, Function, Reflect};
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys::{Element, HtmlElement};
 
 use super::{
     camera::{
-        animate_camera,
-        Camera,
-        CameraMode,
-        Projection,
-        CAMERA_FAR,
-        CAMERA_FOV,
-        CAMERA_NEAR,
+        animate_camera, Camera, CameraMode, Projection, CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR,
         CAM_UNIFORM_FLOATS,
     },
     data::{
-        anchor_zoom_scale_for_distance,
-        animate_layout_nodes,
-        apply_node_view_transform,
-        edge_color,
-        node_detail_dimensions_px,
-        node_detail_tier,
-        EdgeRef3D,
-        EdgeVisualState,
-        Layout3D,
-        NodeCardProfile,
-        NodeDetailTier,
-        NodeViewTransform,
-        EDGE_FLAG_SELECTED,
+        anchor_zoom_scale_for_distance, animate_layout_nodes, apply_node_view_transform,
+        edge_color, node_detail_dimensions_px, node_detail_tier, EdgeRef3D, EdgeVisualState,
+        Layout3D, NodeCardProfile, NodeDetailTier, NodeViewTransform, EDGE_FLAG_SELECTED,
     },
     gpu::GpuResources,
     interop::*,
@@ -105,12 +79,7 @@ impl NodeScreenRect {
     }
 }
 
-fn rects_overlap(
-    a: NodeScreenRect,
-    b: NodeScreenRect,
-    pad_x: f32,
-    pad_y: f32,
-) -> bool {
+fn rects_overlap(a: NodeScreenRect, b: NodeScreenRect, pad_x: f32, pad_y: f32) -> bool {
     (a.center_x - b.center_x).abs() < (a.half_w + b.half_w + pad_x)
         && (a.center_y - b.center_y).abs() < (a.half_h + b.half_h + pad_y)
 }
@@ -187,12 +156,7 @@ fn resolve_viewport_rect(
     (clamped_left, clamped_top, width, height)
 }
 
-fn world_to_screen(
-    pos: [f32; 3],
-    vp: &[f32; 16],
-    vw: f32,
-    vh: f32,
-) -> ScreenPos {
+fn world_to_screen(pos: [f32; 3], vp: &[f32; 16], vw: f32, vh: f32) -> ScreenPos {
     let x = vp[0] * pos[0] + vp[4] * pos[1] + vp[8] * pos[2] + vp[12];
     let y = vp[1] * pos[0] + vp[5] * pos[1] + vp[9] * pos[2] + vp[13];
     let z = vp[2] * pos[0] + vp[6] * pos[1] + vp[10] * pos[2] + vp[14];
@@ -238,12 +202,7 @@ fn compute_node_screen_rects(
     let margin = 300.0;
 
     for (idx, node) in layout.nodes.iter().enumerate() {
-        let screen = world_to_screen(
-            [node.x, node.y, node.z],
-            vp,
-            viewport_w,
-            viewport_h,
-        );
+        let screen = world_to_screen([node.x, node.y, node.z], vp, viewport_w, viewport_h);
 
         let dx = eye[0] - node.x;
         let dy = eye[1] - node.y;
@@ -263,19 +222,11 @@ fn compute_node_screen_rects(
             continue;
         }
 
-        let is_focus = state.selected_node_id.as_deref()
-            == Some(node.id.as_str())
+        let is_focus = state.selected_node_id.as_deref() == Some(node.id.as_str())
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let is_hover =
-            state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let detail_tier = node_detail_tier(
-            pixel_scale,
-            is_focus,
-            is_hover,
-            &state.graph_theme,
-        );
-        let [card_w, card_h] =
-            node_detail_dimensions_px(detail_tier, layout.node_card_profile);
+        let is_hover = state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover, &state.graph_theme);
+        let [card_w, card_h] = node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 
         rects[idx] = Some(NodeScreenRect {
             center_x: viewport_x + screen.x,
@@ -288,11 +239,7 @@ fn compute_node_screen_rects(
     rects
 }
 
-fn clip_edge_endpoint(
-    rect: NodeScreenRect,
-    toward: (f32, f32),
-    padding: f32,
-) -> (f32, f32) {
+fn clip_edge_endpoint(rect: NodeScreenRect, toward: (f32, f32), padding: f32) -> (f32, f32) {
     let dx = toward.0 - rect.center_x;
     let dy = toward.1 - rect.center_y;
     if dx.abs() < 0.001 && dy.abs() < 0.001 {
@@ -314,20 +261,12 @@ fn clip_edge_endpoint(
     (rect.center_x + dx * t, rect.center_y + dy * t)
 }
 
-fn parse_attr_f32(
-    html_el: &HtmlElement,
-    name: &str,
-) -> Option<f32> {
+fn parse_attr_f32(html_el: &HtmlElement, name: &str) -> Option<f32> {
     let raw = html_el.get_attribute(name)?;
     raw.parse::<f32>().ok()
 }
 
-fn anchor_transform(
-    local_x: f32,
-    local_y: f32,
-    origin: &str,
-    scale: f32,
-) -> String {
+fn anchor_transform(local_x: f32, local_y: f32, origin: &str, scale: f32) -> String {
     let translate = match origin {
         "center-bottom" => format!(
             "translate(-50%, -100%) translate({:.1}px, {:.1}px)",
@@ -354,11 +293,7 @@ fn anchor_transform(
     }
 }
 
-fn anchor_zoom_scale(
-    state: &RenderState,
-    origin: &str,
-    anchor: [f32; 3],
-) -> f32 {
+fn anchor_zoom_scale(state: &RenderState, origin: &str, anchor: [f32; 3]) -> f32 {
     let distance = match state.projection {
         // Orthographic overlay size should follow camera zoom, not shrink
         // just because an anchor sits farther from the target in world space.
@@ -366,13 +301,10 @@ fn anchor_zoom_scale(
         Projection::Perspective => {
             let eye = state.camera.eye();
             let forward = state.camera.forward();
-            let to_anchor =
-                [anchor[0] - eye[0], anchor[1] - eye[1], anchor[2] - eye[2]];
-            (to_anchor[0] * forward[0]
-                + to_anchor[1] * forward[1]
-                + to_anchor[2] * forward[2])
+            let to_anchor = [anchor[0] - eye[0], anchor[1] - eye[1], anchor[2] - eye[2]];
+            (to_anchor[0] * forward[0] + to_anchor[1] * forward[1] + to_anchor[2] * forward[2])
                 .max(0.1)
-        },
+        }
     };
 
     anchor_zoom_scale_for_distance(origin, distance, &state.graph_theme)
@@ -391,10 +323,9 @@ fn position_dom_layout_anchors(
 ) {
     let margin = 320.0;
 
-    if let Ok(anchor_nodes) = doc.query_selector_all(&format!(
-        "#{} [data-layout-anchor-x]",
-        state.container_id
-    )) {
+    if let Ok(anchor_nodes) =
+        doc.query_selector_all(&format!("#{} [data-layout-anchor-x]", state.container_id))
+    {
         for index in 0..anchor_nodes.length() {
             let Some(node) = anchor_nodes.item(index) else {
                 continue;
@@ -410,13 +341,11 @@ fn position_dom_layout_anchors(
                 continue;
             };
 
-            let screen =
-                world_to_screen([x, y, z], &vp, viewport_w, viewport_h);
+            let screen = world_to_screen([x, y, z], &vp, viewport_w, viewport_h);
             let origin = html_el
                 .get_attribute("data-layout-anchor-origin")
                 .unwrap_or_else(|| "center".to_string());
-            let behind_camera =
-                !screen.visible && screen.x == 0.0 && screen.y == 0.0;
+            let behind_camera = !screen.visible && screen.x == 0.0 && screen.y == 0.0;
 
             let (screen_x, screen_y, hide) = match origin.as_str() {
                 // Keep column headers visible at the top edge even when the
@@ -430,19 +359,18 @@ fn position_dom_layout_anchors(
                         screen.y.clamp(56.0, (viewport_h - 20.0).max(56.0)),
                         hide,
                     )
-                },
+                }
                 // Keep row labels readable near the left edge while still
                 // allowing extra clearance from enlarged visible node cards.
                 "right-center" => {
-                    let hide = behind_camera
-                        || screen.y < -margin
-                        || screen.y > viewport_h + margin;
+                    let hide =
+                        behind_camera || screen.y < -margin || screen.y > viewport_h + margin;
                     (
                         screen.x,
                         screen.y.clamp(18.0, (viewport_h - 18.0).max(18.0)),
                         hide,
                     )
-                },
+                }
                 _ => (
                     screen.x,
                     screen.y,
@@ -486,10 +414,9 @@ fn position_dom_layout_anchors(
         }
     }
 
-    if let Ok(line_nodes) = doc.query_selector_all(&format!(
-        "#{} [data-layout-line-x1]",
-        state.container_id
-    )) {
+    if let Ok(line_nodes) =
+        doc.query_selector_all(&format!("#{} [data-layout-line-x1]", state.container_id))
+    {
         for index in 0..line_nodes.length() {
             let Some(node) = line_nodes.item(index) else {
                 continue;
@@ -508,13 +435,10 @@ fn position_dom_layout_anchors(
                 continue;
             };
 
-            let start =
-                world_to_screen([x1, y1, z1], &vp, viewport_w, viewport_h);
-            let end =
-                world_to_screen([x2, y2, z2], &vp, viewport_w, viewport_h);
+            let start = world_to_screen([x1, y1, z1], &vp, viewport_w, viewport_h);
+            let end = world_to_screen([x2, y2, z2], &vp, viewport_w, viewport_h);
             if (!start.visible && !end.visible)
-                || ((start.x - end.x).abs() < 1.0
-                    && (start.y - end.y).abs() < 1.0)
+                || ((start.x - end.x).abs() < 1.0 && (start.y - end.y).abs() < 1.0)
             {
                 let _ = html_el.style().set_property("display", "none");
                 continue;
@@ -562,10 +486,8 @@ fn position_dom_nodes(
 ) {
     let eye = state.camera.eye();
 
-    let Ok(node_list) = doc.query_selector_all(&format!(
-        "#{} [data-node-idx]",
-        state.container_id
-    )) else {
+    let Ok(node_list) = doc.query_selector_all(&format!("#{} [data-node-idx]", state.container_id))
+    else {
         return;
     };
     for i in 0..node_list.length() {
@@ -585,31 +507,18 @@ fn position_dom_nodes(
             continue;
         };
 
-        let screen = world_to_screen(
-            [node.x, node.y, node.z],
-            &vp,
-            viewport_w,
-            viewport_h,
-        );
+        let screen = world_to_screen([node.x, node.y, node.z], &vp, viewport_w, viewport_h);
 
         let dx = eye[0] - node.x;
         let dy = eye[1] - node.y;
         let dz = eye[2] - node.z;
         let dist = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
         let pixel_scale = (22.0 / dist).clamp(0.14, 3.5);
-        let is_focus = state.selected_node_id.as_deref()
-            == Some(node.id.as_str())
+        let is_focus = state.selected_node_id.as_deref() == Some(node.id.as_str())
             || state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let is_hover =
-            state.hovered_node_id.as_deref() == Some(node.id.as_str());
-        let detail_tier = node_detail_tier(
-            pixel_scale,
-            is_focus,
-            is_hover,
-            &state.graph_theme,
-        );
-        let [card_w, card_h] =
-            node_detail_dimensions_px(detail_tier, layout.node_card_profile);
+        let is_hover = state.hovered_node_id.as_deref() == Some(node.id.as_str());
+        let detail_tier = node_detail_tier(pixel_scale, is_focus, is_hover, &state.graph_theme);
+        let [card_w, card_h] = node_detail_dimensions_px(detail_tier, layout.node_card_profile);
 
         let margin = 300.0;
         if !screen.visible
@@ -661,10 +570,7 @@ fn position_dom_nodes(
     }
 }
 
-fn sync_node_detail_tier(
-    html_el: &HtmlElement,
-    tier: NodeDetailTier,
-) {
+fn sync_node_detail_tier(html_el: &HtmlElement, tier: NodeDetailTier) {
     let tier_name = tier.as_str();
     // Skip the nested query + per-child display writes when the card is
     // already on this LOD tier. During orbit/pan the tier is stable for most
@@ -673,9 +579,7 @@ fn sync_node_detail_tier(
         return;
     }
     let _ = html_el.set_attribute("data-node-lod", tier_name);
-    let Ok(detail_nodes) =
-        html_el.query_selector_all("[data-node-detail-tier]")
-    else {
+    let Ok(detail_nodes) = html_el.query_selector_all("[data-node-detail-tier]") else {
         return;
     };
 
@@ -687,8 +591,7 @@ fn sync_node_detail_tier(
             continue;
         };
         let matches_tier =
-            detail_el.get_attribute("data-node-detail-tier").as_deref()
-                == Some(tier_name);
+            detail_el.get_attribute("data-node-detail-tier").as_deref() == Some(tier_name);
         let display = if matches_tier {
             detail_el
                 .get_attribute("data-node-detail-display")
@@ -734,18 +637,14 @@ fn position_dom_edges(
     let _ = svg.set_attribute("display", "block");
     let _ = svg.set_attribute("width", &format!("{container_w:.1}"));
     let _ = svg.set_attribute("height", &format!("{container_h:.1}"));
-    let _ = svg.set_attribute(
-        "viewBox",
-        &format!("0 0 {container_w:.1} {container_h:.1}"),
-    );
+    let _ = svg.set_attribute("viewBox", &format!("0 0 {container_w:.1} {container_h:.1}"));
 
     let eye = state.camera.eye();
     let active_focus = edge_visual_state(state).active_focus(&layout.nodes);
 
-    let Ok(edge_nodes) = doc.query_selector_all(&format!(
-        "#{} [data-edge-idx]",
-        state.container_id
-    )) else {
+    let Ok(edge_nodes) =
+        doc.query_selector_all(&format!("#{} [data-edge-idx]", state.container_id))
+    else {
         return;
     };
 
@@ -769,13 +668,10 @@ fn position_dom_edges(
             continue;
         };
 
-        let screen_a =
-            world_to_screen([a.x, a.y, a.z], vp, viewport_w, viewport_h);
-        let screen_b =
-            world_to_screen([b.x, b.y, b.z], vp, viewport_w, viewport_h);
+        let screen_a = world_to_screen([a.x, a.y, a.z], vp, viewport_w, viewport_h);
+        let screen_b = world_to_screen([b.x, b.y, b.z], vp, viewport_w, viewport_h);
         if (!screen_a.visible && !screen_b.visible)
-            || (screen_a.x - screen_b.x).abs() < 1.0
-                && (screen_a.y - screen_b.y).abs() < 1.0
+            || (screen_a.x - screen_b.x).abs() < 1.0 && (screen_a.y - screen_b.y).abs() < 1.0
         {
             let _ = line.set_attribute("display", "none");
             continue;
@@ -787,17 +683,11 @@ fn position_dom_edges(
         let dz_a = eye[2] - a.z;
         let dist_a = (dx_a * dx_a + dy_a * dy_a + dz_a * dz_a).sqrt().max(0.1);
         let pixel_scale_a = (22.0 / dist_a).clamp(0.14, 3.5);
-        let is_focus_a = state.selected_node_id.as_deref()
-            == Some(a.id.as_str())
+        let is_focus_a = state.selected_node_id.as_deref() == Some(a.id.as_str())
             || state.hovered_node_id.as_deref() == Some(a.id.as_str());
-        let is_hover_a =
-            state.hovered_node_id.as_deref() == Some(a.id.as_str());
-        let detail_tier_a = node_detail_tier(
-            pixel_scale_a,
-            is_focus_a,
-            is_hover_a,
-            &state.graph_theme,
-        );
+        let is_hover_a = state.hovered_node_id.as_deref() == Some(a.id.as_str());
+        let detail_tier_a =
+            node_detail_tier(pixel_scale_a, is_focus_a, is_hover_a, &state.graph_theme);
         let [card_w_a, card_h_a] =
             node_detail_dimensions_px(detail_tier_a, layout.node_card_profile);
 
@@ -814,17 +704,11 @@ fn position_dom_edges(
         let dz_b = eye[2] - b.z;
         let dist_b = (dx_b * dx_b + dy_b * dy_b + dz_b * dz_b).sqrt().max(0.1);
         let pixel_scale_b = (22.0 / dist_b).clamp(0.14, 3.5);
-        let is_focus_b = state.selected_node_id.as_deref()
-            == Some(b.id.as_str())
+        let is_focus_b = state.selected_node_id.as_deref() == Some(b.id.as_str())
             || state.hovered_node_id.as_deref() == Some(b.id.as_str());
-        let is_hover_b =
-            state.hovered_node_id.as_deref() == Some(b.id.as_str());
-        let detail_tier_b = node_detail_tier(
-            pixel_scale_b,
-            is_focus_b,
-            is_hover_b,
-            &state.graph_theme,
-        );
+        let is_hover_b = state.hovered_node_id.as_deref() == Some(b.id.as_str());
+        let detail_tier_b =
+            node_detail_tier(pixel_scale_b, is_focus_b, is_hover_b, &state.graph_theme);
         let [card_w_b, card_h_b] =
             node_detail_dimensions_px(detail_tier_b, layout.node_card_profile);
 
@@ -840,22 +724,15 @@ fn position_dom_edges(
         let (x1, y1) = clip_edge_endpoint(rect_a, center_b, 0.0);
         let (x2, y2) = clip_edge_endpoint(rect_b, center_a, 0.0);
 
-        let (stroke_width, stroke_opacity) = edge_overlay_style(
-            layout,
-            active_focus,
-            edge,
-            a.id.as_str(),
-            b.id.as_str(),
-        );
-        let Some(path_d) = edge_overlay_path(x1, y1, x2, y2, stroke_width)
-        else {
+        let (stroke_width, stroke_opacity) =
+            edge_overlay_style(layout, active_focus, edge, a.id.as_str(), b.id.as_str());
+        let Some(path_d) = edge_overlay_path(x1, y1, x2, y2, stroke_width) else {
             let _ = line.set_attribute("display", "none");
             continue;
         };
         let (r, g, blue, _alpha) = edge_color(&edge.kind, &state.graph_theme);
-        let stroke_alpha = (stroke_opacity
-            * state.graph_theme.edge_overlay_opacity)
-            .clamp(0.0, 1.0);
+        let stroke_alpha =
+            (stroke_opacity * state.graph_theme.edge_overlay_opacity).clamp(0.0, 1.0);
         let _ = line.set_attribute("display", "block");
         let _ = line.set_attribute("d", &path_d);
         let _ = line.set_attribute(
@@ -877,13 +754,7 @@ fn position_dom_edges(
     }
 }
 
-fn edge_overlay_path(
-    x1: f32,
-    y1: f32,
-    x2: f32,
-    y2: f32,
-    stroke_width: f32,
-) -> Option<String> {
+fn edge_overlay_path(x1: f32, y1: f32, x2: f32, y2: f32, stroke_width: f32) -> Option<String> {
     let dx = x2 - x1;
     let dy = y2 - y1;
     let length = (dx * dx + dy * dy).sqrt();
@@ -966,11 +837,10 @@ fn edge_overlay_style(
     } else {
         false
     };
-    let (long_width, long_opacity, short_width, short_opacity) =
-        match layout.node_card_profile {
-            NodeCardProfile::Compact => (2.4, 0.82, 1.9, 0.64),
-            NodeCardProfile::TicketWide => (2.6, 0.78, 2.1, 0.60),
-        };
+    let (long_width, long_opacity, short_width, short_opacity) = match layout.node_card_profile {
+        NodeCardProfile::Compact => (2.4, 0.82, 1.9, 0.64),
+        NodeCardProfile::TicketWide => (2.6, 0.78, 2.1, 0.60),
+    };
     if long_edge {
         (long_width, long_opacity)
     } else {
@@ -978,10 +848,7 @@ fn edge_overlay_style(
     }
 }
 
-pub(crate) fn render_frame(
-    state: &mut RenderState,
-    frame: &crate::effects::FrameContext,
-) {
+pub(crate) fn render_frame(state: &mut RenderState, frame: &crate::effects::FrameContext) {
     crate::profile_scope!("graph3d::render_frame");
     let window = web_sys::window();
     let Some(doc) = window.as_ref().and_then(|w| w.document()) else {
@@ -995,8 +862,7 @@ pub(crate) fn render_frame(
     state.last_frame_time = Some(frame.time_s);
 
     if let Some(goal) = state.camera_goal.clone() {
-        if !animate_camera(&mut state.camera, &goal, dt, CAMERA_ANIMATION_SPEED)
-        {
+        if !animate_camera(&mut state.camera, &goal, dt, CAMERA_ANIMATION_SPEED) {
             state.camera_goal = None;
         }
     }
@@ -1019,14 +885,8 @@ pub(crate) fn render_frame(
         .unwrap_or(1.0) as f32;
     let css_w = (frame.canvas_w as f32) / dpr;
     let css_h = (frame.canvas_h as f32) / dpr;
-    if frame.canvas_w != state.gpu.canvas_w
-        || frame.canvas_h != state.gpu.canvas_h
-    {
-        state.gpu.depth_view = create_depth_view(
-            &state.gpu.device,
-            frame.canvas_w,
-            frame.canvas_h,
-        );
+    if frame.canvas_w != state.gpu.canvas_w || frame.canvas_h != state.gpu.canvas_h {
+        state.gpu.depth_view = create_depth_view(&state.gpu.device, frame.canvas_w, frame.canvas_h);
         state.gpu.canvas_w = frame.canvas_w;
         state.gpu.canvas_h = frame.canvas_h;
     }
@@ -1044,9 +904,7 @@ pub(crate) fn render_frame(
                 "data-camera-target",
                 &format!(
                     "{:.4},{:.4},{:.4}",
-                    state.camera.target[0],
-                    state.camera.target[1],
-                    state.camera.target[2],
+                    state.camera.target[0], state.camera.target[1], state.camera.target[2],
                 ),
             );
             let r = el.get_bounding_client_rect();
@@ -1065,8 +923,7 @@ pub(crate) fn render_frame(
     let vp_y = ((cont_y_css + viewport_y_css) * dpr).round() as u32;
     let vp_w = ((viewport_w_css * dpr).round() as u32).max(1);
     let vp_h = ((viewport_h_css * dpr).round() as u32).max(1);
-    let render_layout =
-        current_render_layout(state, viewport_w_css, viewport_h_css);
+    let render_layout = current_render_layout(state, viewport_w_css, viewport_h_css);
     let uses_dynamic_layout = render_layout.is_some();
 
     // Re-upload per-instance buffers if a node moved this frame.
@@ -1097,12 +954,11 @@ pub(crate) fn render_frame(
     let eye = state.camera.eye();
     let aspect = viewport_w_css / viewport_h_css.max(1.0);
     let proj = match state.projection {
-        Projection::Perspective =>
-            math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
+        Projection::Perspective => math::perspective(CAMERA_FOV, aspect, CAMERA_NEAR, CAMERA_FAR),
         Projection::Orthographic => {
             let half_h = state.camera.distance * (CAMERA_FOV * 0.5).tan();
             math::orthographic(half_h, aspect, CAMERA_NEAR, CAMERA_FAR)
-        },
+        }
     };
     let view = math::look_at(eye, state.camera.target, [0.0, 1.0, 0.0]);
     let vp_mat = math::mul(proj, view);
@@ -1148,10 +1004,8 @@ pub(crate) fn render_frame(
 
     let encoder = gpu.device.create_command_encoder();
     let encoder_js: JsValue = encoder.into();
-    let pass_desc =
-        web_sys::GpuRenderPassDescriptor::from(JsValue::from(rp_desc));
-    let enc_typed: web_sys::GpuCommandEncoder =
-        encoder_js.clone().dyn_into().unwrap();
+    let pass_desc = web_sys::GpuRenderPassDescriptor::from(JsValue::from(rp_desc));
+    let enc_typed: web_sys::GpuCommandEncoder = encoder_js.clone().dyn_into().unwrap();
     let Ok(pass_enc) = enc_typed.begin_render_pass(&pass_desc) else {
         return;
     };
@@ -1160,9 +1014,8 @@ pub(crate) fn render_frame(
     // Restrict GPU rendering to the container region so edges and node quads
     // don't bleed into the content panel on the right.
     // setViewport(x, y, width, height, minDepth, maxDepth) — 6 args.
-    if let Ok(f) =
-        js_sys::Reflect::get(&pass, &super::interop::js_str("setViewport"))
-            .and_then(|v| v.dyn_into::<js_sys::Function>())
+    if let Ok(f) = js_sys::Reflect::get(&pass, &super::interop::js_str("setViewport"))
+        .and_then(|v| v.dyn_into::<js_sys::Function>())
     {
         let vp_args = Array::new();
         vp_args.push(&js_f64(vp_x as f64));
@@ -1174,9 +1027,8 @@ pub(crate) fn render_frame(
         let _ = f.apply(&pass, &vp_args);
     }
     // setScissorRect(x, y, width, height) — 4 args.
-    if let Ok(f) =
-        js_sys::Reflect::get(&pass, &super::interop::js_str("setScissorRect"))
-            .and_then(|v| v.dyn_into::<js_sys::Function>())
+    if let Ok(f) = js_sys::Reflect::get(&pass, &super::interop::js_str("setScissorRect"))
+        .and_then(|v| v.dyn_into::<js_sys::Function>())
     {
         let sc_args = Array::new();
         sc_args.push(&js_f64(vp_x as f64));

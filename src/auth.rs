@@ -1,25 +1,15 @@
 //! Bearer token authentication primitives shared across viewer tools.
 
-use std::{
-    collections::HashSet,
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
 use axum::{
     body::Body,
-    http::{
-        HeaderMap,
-        Request,
-        StatusCode,
-    },
+    http::{HeaderMap, Request, StatusCode},
     middleware::Next,
     response::Response,
 };
 
-use crate::error::{
-    ApiError,
-    RequestIdExt,
-};
+use crate::error::{ApiError, RequestIdExt};
 
 /// A set of valid bearer tokens for in-memory validation.
 ///
@@ -46,10 +36,7 @@ impl TokenSet {
     }
 
     /// Returns `true` if `token` is a member of this set.
-    pub fn contains(
-        &self,
-        token: &str,
-    ) -> bool {
+    pub fn contains(&self, token: &str) -> bool {
         self.tokens.contains(token)
     }
 
@@ -94,12 +81,10 @@ pub async fn bearer_auth_mw(
 
     match extract_bearer_token(request.headers()) {
         Some(token) if token_set.contains(token) => next.run(request).await,
-        Some(_) => ApiError::unauthorized(
-            "auth.invalid_token",
-            "Bearer token is invalid",
-            &request_id,
-        )
-        .into_response_with_status(StatusCode::UNAUTHORIZED),
+        Some(_) => {
+            ApiError::unauthorized("auth.invalid_token", "Bearer token is invalid", &request_id)
+                .into_response_with_status(StatusCode::UNAUTHORIZED)
+        }
         None => ApiError::unauthorized(
             "auth.missing_token",
             "Authorization header required",

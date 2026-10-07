@@ -1,9 +1,5 @@
 use dioxus::prelude::*;
-use viewer_api_dioxus::{
-    clear_session,
-    get_session_id,
-    with_session,
-};
+use viewer_api_dioxus::{clear_session, get_session_id, with_session};
 
 #[component]
 pub(super) fn SessionDemo() -> Element {

@@ -32,12 +32,7 @@ pub enum SourceBackend {
 
 impl SourceBackend {
     /// Create a `Remote` backend pointing at a GitHub repository.
-    pub fn github(
-        owner: &str,
-        repo: &str,
-        commit: &str,
-        source_tree_path: Option<String>,
-    ) -> Self {
+    pub fn github(owner: &str, repo: &str, commit: &str, source_tree_path: Option<String>) -> Self {
         let raw_base_url = format!(
             "https://raw.githubusercontent.com/{}/{}/{}",
             owner, repo, commit
@@ -61,10 +56,7 @@ impl SourceBackend {
                 std::env::var("GITHUB_REPOSITORY"),
                 std::env::var("GITHUB_SHA"),
             ) {
-                let raw_base_url = format!(
-                    "https://raw.githubusercontent.com/{}/{}",
-                    repo, sha
-                );
+                let raw_base_url = format!("https://raw.githubusercontent.com/{}/{}", repo, sha);
                 return Self::Remote {
                     raw_base_url,
                     source_tree_path: None,
@@ -77,15 +69,12 @@ impl SourceBackend {
     /// Build the URL (remote) or absolute path (local) for a given relative source path.
     ///
     /// Returns `Err` if the path is invalid (traversal attempt, etc.).
-    pub fn resolve_url_or_path(
-        &self,
-        path: &str,
-    ) -> Result<SourceLocation, String> {
+    pub fn resolve_url_or_path(&self, path: &str) -> Result<SourceLocation, String> {
         match self {
             Self::Local { workspace_root } => {
                 let full_path = resolve_source_path(workspace_root, path)?;
                 Ok(SourceLocation::Path(full_path))
-            },
+            }
             Self::Remote {
                 raw_base_url,
                 source_tree_path,
@@ -97,17 +86,12 @@ impl SourceBackend {
                     return Err("Path traversal not allowed".to_string());
                 }
                 let url = if let Some(tree) = source_tree_path {
-                    format!(
-                        "{}/{}/{}",
-                        raw_base_url,
-                        tree.trim_end_matches('/'),
-                        clean
-                    )
+                    format!("{}/{}/{}", raw_base_url, tree.trim_end_matches('/'), clean)
                 } else {
                     format!("{}/{}", raw_base_url, clean)
                 };
                 Ok(SourceLocation::Url(url))
-            },
+            }
         }
     }
 }
@@ -143,10 +127,7 @@ pub fn detect_language(path: &str) -> String {
 ///
 /// Normalizes path separators, strips leading slashes, and checks for
 /// path traversal attacks.
-pub fn resolve_source_path(
-    workspace_root: &PathBuf,
-    path: &str,
-) -> Result<PathBuf, String> {
+pub fn resolve_source_path(workspace_root: &PathBuf, path: &str) -> Result<PathBuf, String> {
     // Normalize path separators
     let normalized = path.replace('\\', "/");
 
@@ -172,11 +153,7 @@ pub fn resolve_source_path(
 ///
 /// Returns (snippet, start_line, end_line) where lines are 1-based.
 /// `context` is the number of lines to include above and below `line`.
-pub fn extract_snippet(
-    content: &str,
-    line: usize,
-    context: usize,
-) -> (String, usize, usize) {
+pub fn extract_snippet(content: &str, line: usize, context: usize) -> (String, usize, usize) {
     let lines: Vec<&str> = content.lines().collect();
     let total_lines = lines.len();
 
@@ -274,8 +251,7 @@ mod tests {
             workspace_root: root,
         };
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
-            SourceLocation::Path(p) =>
-                assert_eq!(p, Path::new("/workspace/src/main.rs")),
+            SourceLocation::Path(p) => assert_eq!(p, Path::new("/workspace/src/main.rs")),
             SourceLocation::Url(_) => panic!("expected local path"),
         }
     }
@@ -292,14 +268,16 @@ mod tests {
     #[test]
     fn test_source_backend_remote_builds_url() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
-                .to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
             source_tree_path: None,
         };
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
             SourceLocation::Url(url) => {
-                assert_eq!(url, "https://raw.githubusercontent.com/owner/repo/abc123/src/main.rs");
-            },
+                assert_eq!(
+                    url,
+                    "https://raw.githubusercontent.com/owner/repo/abc123/src/main.rs"
+                );
+            }
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }
@@ -307,14 +285,13 @@ mod tests {
     #[test]
     fn test_source_backend_remote_with_tree_path() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
-                .to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
             source_tree_path: Some("crates/my-crate".to_string()),
         };
         match backend.resolve_url_or_path("src/lib.rs").unwrap() {
             SourceLocation::Url(url) => {
                 assert_eq!(url, "https://raw.githubusercontent.com/owner/repo/abc123/crates/my-crate/src/lib.rs");
-            },
+            }
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }
@@ -322,8 +299,7 @@ mod tests {
     #[test]
     fn test_source_backend_remote_rejects_traversal() {
         let backend = SourceBackend::Remote {
-            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123"
-                .to_string(),
+            raw_base_url: "https://raw.githubusercontent.com/owner/repo/abc123".to_string(),
             source_tree_path: None,
         };
         assert!(backend.resolve_url_or_path("../etc/passwd").is_err());
@@ -331,16 +307,15 @@ mod tests {
 
     #[test]
     fn test_source_backend_github_helper() {
-        let backend = SourceBackend::github(
-            "myowner",
-            "myrepo",
-            "deadbeef",
-            Some("subdir".to_string()),
-        );
+        let backend =
+            SourceBackend::github("myowner", "myrepo", "deadbeef", Some("subdir".to_string()));
         match backend.resolve_url_or_path("src/main.rs").unwrap() {
             SourceLocation::Url(url) => {
-                assert_eq!(url, "https://raw.githubusercontent.com/myowner/myrepo/deadbeef/subdir/src/main.rs");
-            },
+                assert_eq!(
+                    url,
+                    "https://raw.githubusercontent.com/myowner/myrepo/deadbeef/subdir/src/main.rs"
+                );
+            }
             SourceLocation::Path(_) => panic!("expected URL"),
         }
     }

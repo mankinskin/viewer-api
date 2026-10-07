@@ -11,17 +11,9 @@ mod types;
 mod view;
 
 pub use self::{
-    explorer_shell::{
-        ExplorerShell,
-        SidebarSearch,
-    },
+    explorer_shell::{ExplorerShell, SidebarSearch},
     file_tree::FileTree,
     filter_toggle_button::FilterToggleButton,
-    types::{
-        FilterDef,
-        NodeIcon,
-        SortKey,
-        TreeNode,
-    },
+    types::{FilterDef, NodeIcon, SortKey, TreeNode},
     view::TreeView,
 };

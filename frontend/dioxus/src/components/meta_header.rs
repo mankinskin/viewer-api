@@ -63,10 +63,7 @@ pub fn Chip(
 
 /// Inline horizontal row of [`Chip`]s with consistent spacing.
 #[component]
-pub fn ChipRow(
-    children: Element,
-    #[props(default)] class: String,
-) -> Element {
+pub fn ChipRow(children: Element, #[props(default)] class: String) -> Element {
     let combined = if class.is_empty() {
         "chip-row".to_string()
     } else {

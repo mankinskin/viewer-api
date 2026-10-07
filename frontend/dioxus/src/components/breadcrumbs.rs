@@ -40,10 +40,7 @@ pub struct BreadcrumbItem {
 
 impl BreadcrumbItem {
     /// Construct a clickable breadcrumb segment.
-    pub fn link(
-        label: impl Into<String>,
-        on_click: EventHandler<()>,
-    ) -> Self {
+    pub fn link(label: impl Into<String>, on_click: EventHandler<()>) -> Self {
         Self {
             label: label.into(),
             on_click: Some(on_click),
@@ -61,10 +58,7 @@ impl BreadcrumbItem {
     }
 
     /// Attach an `href` to a clickable segment for proper anchor semantics.
-    pub fn with_href(
-        mut self,
-        href: impl Into<String>,
-    ) -> Self {
+    pub fn with_href(mut self, href: impl Into<String>) -> Self {
         self.href = Some(href.into());
         self
     }
@@ -115,10 +109,7 @@ pub fn Breadcrumbs(
 }
 
 #[component]
-fn BreadcrumbSegment(
-    item: BreadcrumbItem,
-    is_last: bool,
-) -> Element {
+fn BreadcrumbSegment(item: BreadcrumbItem, is_last: bool) -> Element {
     let mut class_str = String::from("breadcrumbs__item");
     if item.on_click.is_some() && !is_last {
         class_str.push_str(" breadcrumbs__item--clickable");

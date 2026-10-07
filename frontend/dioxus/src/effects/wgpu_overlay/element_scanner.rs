@@ -7,18 +7,11 @@
 #![cfg(target_arch = "wasm32")]
 
 use wasm_bindgen::JsCast;
-use web_sys::{
-    Document,
-    Element,
-    NodeList,
-};
+use web_sys::{Document, Element, NodeList};
 
 use super::{
     element_types::*,
-    webgpu::{
-        get_fn,
-        prop_f32,
-    },
+    webgpu::{get_fn, prop_f32},
 };
 
 /// Scan `#ui-root` (and the rest of the document) for elements matching
@@ -45,8 +38,8 @@ pub(super) fn scan_ui_rects(doc: &Document) -> (Vec<f32>, usize) {
 
             // Reflect into el.getBoundingClientRect() — avoids the DomRect
             // web-sys feature.
-            let Some(rect_val) = get_fn(&el, "getBoundingClientRect")
-                .and_then(|f| f.call0(&el).ok())
+            let Some(rect_val) =
+                get_fn(&el, "getBoundingClientRect").and_then(|f| f.call0(&el).ok())
             else {
                 continue;
             };

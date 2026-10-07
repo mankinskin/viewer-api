@@ -55,17 +55,8 @@ pub mod source;
 pub use axum;
 pub use rmcp;
 pub use runtime::{
-    default_cors,
-    display_host,
-    init_tracing,
-    init_tracing_full,
-    run_server,
-    shutdown_signal,
-    with_static_files,
-    McpServerFactory,
-    ServerArgs,
-    ServerConfig,
-    TracingConfig,
+    default_cors, display_host, init_tracing, init_tracing_full, run_server, shutdown_signal,
+    with_static_files, McpServerFactory, ServerArgs, ServerConfig, TracingConfig,
 };
 pub use tokio;
 pub use tower_http;
@@ -96,9 +87,6 @@ mod tests {
         assert_eq!(config.name, "test");
         assert_eq!(config.default_port, 3000);
         assert_eq!(config.host, "0.0.0.0");
-        assert_eq!(
-            config.static_dir,
-            Some(std::path::PathBuf::from("/static"))
-        );
+        assert_eq!(config.static_dir, Some(std::path::PathBuf::from("/static")));
     }
 }

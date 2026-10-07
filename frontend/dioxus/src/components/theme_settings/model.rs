@@ -152,8 +152,7 @@ pub(super) const CUSTOM_THEMES_KEY: &str = "viewer-api-custom-themes";
 
 #[cfg(target_arch = "wasm32")]
 pub(super) fn load_custom_themes() -> Vec<CustomTheme> {
-    let Some(storage) = web_sys::window()
-        .and_then(|window| window.local_storage().ok().flatten())
+    let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
     else {
         return vec![];
     };
@@ -170,8 +169,8 @@ pub(super) fn load_custom_themes() -> Vec<CustomTheme> {
 
 #[cfg(target_arch = "wasm32")]
 pub(super) fn save_custom_themes_storage(themes: &[CustomTheme]) {
-    if let Some(storage) = web_sys::window()
-        .and_then(|window| window.local_storage().ok().flatten())
+    if let Some(storage) =
+        web_sys::window().and_then(|window| window.local_storage().ok().flatten())
     {
         let json = serialize_custom_themes(themes);
         let _ = storage.set_item(CUSTOM_THEMES_KEY, &json);
@@ -207,10 +206,7 @@ fn parse_custom_themes_json(json: &str) -> Vec<CustomTheme> {
     themes
 }
 
-fn extract_json_value(
-    json: &str,
-    key: &str,
-) -> Option<String> {
+fn extract_json_value(json: &str, key: &str) -> Option<String> {
     let needle = format!("\"{}\":\"", key);
     let start = json.find(&needle)? + needle.len();
     let rest = &json[start..];
@@ -228,8 +224,8 @@ fn find_json_block_end(json: &str) -> Option<usize> {
                 if depth == 0 {
                     return Some(index + 1);
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     None

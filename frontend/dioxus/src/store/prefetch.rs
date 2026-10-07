@@ -15,10 +15,7 @@
 
 use std::{
     cell::RefCell,
-    collections::{
-        HashMap,
-        VecDeque,
-    },
+    collections::{HashMap, VecDeque},
     future::Future,
     hash::Hash,
     rc::Rc,
@@ -80,10 +77,7 @@ where
     }
 
     /// Returns the cached value for `key`, marking it as most-recently-used.
-    pub fn get(
-        &self,
-        key: &K,
-    ) -> Option<V> {
+    pub fn get(&self, key: &K) -> Option<V> {
         let mut inner = self.inner.borrow_mut();
         let value = inner.map.get(key).cloned()?;
         // Bump LRU order.
@@ -96,11 +90,7 @@ where
 
     /// Inserts `value` for `key`, evicting the least-recently-used entry
     /// if capacity is exceeded.
-    pub fn insert(
-        &self,
-        key: K,
-        value: V,
-    ) {
+    pub fn insert(&self, key: K, value: V) {
         let mut inner = self.inner.borrow_mut();
         if inner.capacity == 0 {
             return;
@@ -124,10 +114,7 @@ where
     }
 
     /// Removes the entry for `key` if present, returning the value.
-    pub fn remove(
-        &self,
-        key: &K,
-    ) -> Option<V> {
+    pub fn remove(&self, key: &K) -> Option<V> {
         let mut inner = self.inner.borrow_mut();
         if let Some(pos) = inner.order.iter().position(|k| k == key) {
             inner.order.remove(pos);
@@ -144,11 +131,7 @@ where
     /// `fetcher(key)`, caches the result, and returns it.
     ///
     /// See the module-level docs for single-flight caveats.
-    pub async fn get_or_fetch<E, Fut, F>(
-        &self,
-        key: K,
-        fetcher: F,
-    ) -> Result<V, E>
+    pub async fn get_or_fetch<E, Fut, F>(&self, key: K, fetcher: F) -> Result<V, E>
     where
         F: FnOnce(K) -> Fut,
         Fut: Future<Output = Result<V, E>>,
@@ -233,8 +216,7 @@ mod tests {
     fn get_or_fetch_caches_miss() {
         // Use a tiny ad-hoc executor: futures with no `await` resolve in poll().
         let p: Prefetcher<String, u32> = Prefetcher::with_capacity(4);
-        let fut = p
-            .get_or_fetch::<(), _, _>("k".to_string(), |_| async { Ok(42u32) });
+        let fut = p.get_or_fetch::<(), _, _>("k".to_string(), |_| async { Ok(42u32) });
         let v = futures_test_util::block_on(fut).unwrap();
         assert_eq!(v, 42);
         assert_eq!(p.get(&"k".into()), Some(42));
@@ -255,13 +237,7 @@ mod tests {
         use std::{
             future::Future,
             pin::Pin,
-            task::{
-                Context,
-                Poll,
-                RawWaker,
-                RawWakerVTable,
-                Waker,
-            },
+            task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
         };
 
         pub fn block_on<F: Future>(mut fut: F) -> F::Output {
@@ -271,8 +247,7 @@ mod tests {
                 fn clone(_: *const ()) -> RawWaker {
                     raw()
                 }
-                static VTABLE: RawWakerVTable =
-                    RawWakerVTable::new(clone, no_op, no_op, no_op);
+                static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, no_op, no_op, no_op);
                 RawWaker::new(std::ptr::null(), &VTABLE)
             }
             let waker = unsafe { Waker::from_raw(raw()) };
@@ -281,8 +256,7 @@ mod tests {
             let fut = unsafe { Pin::new_unchecked(&mut fut) };
             match fut.poll(&mut cx) {
                 Poll::Ready(v) => v,
-                Poll::Pending =>
-                    panic!("test future yielded; expected immediate resolution"),
+                Poll::Pending => panic!("test future yielded; expected immediate resolution"),
             }
         }
     }

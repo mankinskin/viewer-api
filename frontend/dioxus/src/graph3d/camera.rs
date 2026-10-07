@@ -1,9 +1,6 @@
 //! Orbit camera + mouse interaction state.
 
-use std::f32::consts::{
-    PI,
-    TAU,
-};
+use std::f32::consts::{PI, TAU};
 
 /// Which layout algorithm the caller is using.  Stored here (in viewer-api)
 /// so the built-in settings panel can display and trigger layout changes.
@@ -134,49 +131,28 @@ impl Camera {
 
     /// Frame the camera so a sphere of radius `radius` around `centre` is
     /// fully visible.
-    pub fn frame(
-        &mut self,
-        centre: [f32; 3],
-        radius: f32,
-    ) {
+    pub fn frame(&mut self, centre: [f32; 3], radius: f32) {
         self.target = centre;
         self.distance = frame_distance(radius);
     }
 
     /// Retarget the orbit camera and zoom to a closer distance.
-    pub fn focus(
-        &mut self,
-        target: [f32; 3],
-        distance: f32,
-    ) {
+    pub fn focus(&mut self, target: [f32; 3], distance: f32) {
         self.target = target;
-        self.distance =
-            distance.clamp(CAMERA_MIN_FOCUS_DISTANCE, CAMERA_MAX_DISTANCE);
+        self.distance = distance.clamp(CAMERA_MIN_FOCUS_DISTANCE, CAMERA_MAX_DISTANCE);
     }
 
-    pub fn zoom_by_factor(
-        &mut self,
-        factor: f32,
-    ) {
-        self.distance = (self.distance * factor)
-            .clamp(CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE);
+    pub fn zoom_by_factor(&mut self, factor: f32) {
+        self.distance = (self.distance * factor).clamp(CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE);
     }
 
-    pub fn orbit_by(
-        &mut self,
-        dx: f32,
-        dy: f32,
-    ) {
+    pub fn orbit_by(&mut self, dx: f32, dy: f32) {
         self.yaw -= dx * CAMERA_ROTATE_SENSITIVITY;
         self.pitch = (self.pitch + dy * CAMERA_ROTATE_SENSITIVITY)
             .clamp(-CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
     }
 
-    pub fn set_orientation_in_place(
-        &mut self,
-        yaw: f32,
-        pitch: f32,
-    ) {
+    pub fn set_orientation_in_place(&mut self, yaw: f32, pitch: f32) {
         let eye = self.eye();
         self.yaw = yaw;
         self.pitch = pitch.clamp(-CAMERA_PITCH_LIMIT, CAMERA_PITCH_LIMIT);
@@ -188,30 +164,19 @@ impl Camera {
         ];
     }
 
-    pub fn rotate_in_place(
-        &mut self,
-        dx: f32,
-        dy: f32,
-    ) {
+    pub fn rotate_in_place(&mut self, dx: f32, dy: f32) {
         let next_yaw = self.yaw - dx * CAMERA_ROTATE_SENSITIVITY;
         let next_pitch = self.pitch + dy * CAMERA_ROTATE_SENSITIVITY;
         self.set_orientation_in_place(next_yaw, next_pitch);
     }
 
-    pub fn translate(
-        &mut self,
-        delta: [f32; 3],
-    ) {
+    pub fn translate(&mut self, delta: [f32; 3]) {
         for (target_axis, delta_axis) in self.target.iter_mut().zip(delta) {
             *target_axis += delta_axis;
         }
     }
 
-    pub fn pan_screen_plane(
-        &mut self,
-        dx: f32,
-        dy: f32,
-    ) {
+    pub fn pan_screen_plane(&mut self, dx: f32, dy: f32) {
         let speed = self.distance * CAMERA_SCREEN_PAN_SPEED;
         let right = self.right();
         let up = self.up();
@@ -222,10 +187,7 @@ impl Camera {
         ]);
     }
 
-    pub fn move_forward(
-        &mut self,
-        distance: f32,
-    ) {
+    pub fn move_forward(&mut self, distance: f32) {
         let forward = self.forward();
         self.translate([
             forward[0] * distance,
@@ -241,11 +203,7 @@ impl Camera {
     /// "reset perspective" gesture does not also undo the user's zoom
     /// or pan. Some commands operate on a specific target instead of the
     /// layout bounds, so `_bounds` remains optional context.
-    pub fn apply_command(
-        &mut self,
-        cmd: &CameraCommand,
-        _bounds: ([f32; 3], f32),
-    ) {
+    pub fn apply_command(&mut self, cmd: &CameraCommand, _bounds: ([f32; 3], f32)) {
         self.apply_command_for_mode(cmd, CameraMode::Orbit, _bounds);
     }
 
@@ -264,7 +222,7 @@ impl Camera {
                     self.yaw = def.yaw;
                     self.pitch = def.pitch;
                 }
-            },
+            }
             CameraCommand::ResetTo { yaw, pitch } => {
                 if mode == CameraMode::Free {
                     self.set_orientation_in_place(yaw, pitch);
@@ -272,9 +230,8 @@ impl Camera {
                     self.yaw = yaw;
                     self.pitch = pitch;
                 }
-            },
-            CameraCommand::FocusOn { target, distance } =>
-                self.focus(target, distance),
+            }
+            CameraCommand::FocusOn { target, distance } => self.focus(target, distance),
         }
     }
 }
@@ -303,12 +260,7 @@ pub fn frame_distance(radius: f32) -> f32 {
     ((radius / half_fov_tan) * 1.3).clamp(12.0, CAMERA_MAX_DISTANCE)
 }
 
-pub fn animate_camera(
-    camera: &mut Camera,
-    goal: &Camera,
-    dt: f32,
-    lerp_speed: f32,
-) -> bool {
+pub fn animate_camera(camera: &mut Camera, goal: &Camera, dt: f32, lerp_speed: f32) -> bool {
     let alpha = 1.0 - (-lerp_speed * dt.max(0.0)).exp();
     let epsilon = 0.0001;
 
@@ -347,25 +299,16 @@ pub fn animate_camera(
     !done
 }
 
-fn shortest_angle_delta(
-    current: f32,
-    target: f32,
-) -> f32 {
+fn shortest_angle_delta(current: f32, target: f32) -> f32 {
     (target - current + PI).rem_euclid(TAU) - PI
 }
 
-fn forward_from_angles(
-    yaw: f32,
-    pitch: f32,
-) -> [f32; 3] {
+fn forward_from_angles(yaw: f32, pitch: f32) -> [f32; 3] {
     let cp = pitch.cos();
     normalise([-cp * yaw.sin(), -pitch.sin(), -cp * yaw.cos()])
 }
 
-fn cross(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> [f32; 3] {
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -374,8 +317,7 @@ fn cross(
 }
 
 fn length(vector: [f32; 3]) -> f32 {
-    (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2])
-        .sqrt()
+    (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]).sqrt()
 }
 
 fn normalise(vector: [f32; 3]) -> [f32; 3] {
@@ -397,18 +339,9 @@ pub struct MouseState {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        animate_camera,
-        frame_distance,
-        Camera,
-        CameraCommand,
-        CameraMode,
-    };
+    use super::{animate_camera, frame_distance, Camera, CameraCommand, CameraMode};
 
-    fn assert_vec3_close(
-        actual: [f32; 3],
-        expected: [f32; 3],
-    ) {
+    fn assert_vec3_close(actual: [f32; 3], expected: [f32; 3]) {
         for axis in 0..3 {
             assert!((actual[axis] - expected[axis]).abs() < 1e-4);
         }

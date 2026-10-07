@@ -10,10 +10,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use std::{
-    cell::{
-        Cell,
-        RefCell,
-    },
+    cell::{Cell, RefCell},
     rc::Rc,
 };
 
@@ -22,10 +19,7 @@ use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 
 use super::{
-    camera::{
-        Camera,
-        MouseState,
-    },
+    camera::{Camera, MouseState},
     data::Layout3D,
     render::RenderState,
 };
@@ -33,10 +27,7 @@ use super::{
 mod handlers;
 
 use self::handlers::{
-    contextmenu_listener,
-    mouse_down_listener,
-    mouse_move_listener,
-    mouse_up_listener,
+    contextmenu_listener, mouse_down_listener, mouse_move_listener, mouse_up_listener,
     wheel_listener,
 };
 
@@ -63,10 +54,7 @@ struct DragState {
     px_per_world: f32,
 }
 
-fn cross(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> [f32; 3] {
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -105,9 +93,7 @@ fn target_is_passthrough_blocked(evt: &web_sys::Event) -> bool {
     };
 
     matches!(
-        el.closest(
-            ".graph-settings-overlay, [data-graph-passthrough=\"false\"]",
-        ),
+        el.closest(".graph-settings-overlay, [data-graph-passthrough=\"false\"]",),
         Ok(Some(_))
     )
 }
@@ -121,8 +107,7 @@ pub(crate) fn install(
     on_camera_change: Option<EventHandler<Camera>>,
     on_deselect: Option<EventHandler<()>>,
 ) -> Vec<EventListener> {
-    let Some(document) = web_sys::window().and_then(|window| window.document())
-    else {
+    let Some(document) = web_sys::window().and_then(|window| window.document()) else {
         return Vec::new();
     };
     let container = document.get_element_by_id(container_id);

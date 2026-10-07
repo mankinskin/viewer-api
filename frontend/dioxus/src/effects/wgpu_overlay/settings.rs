@@ -24,11 +24,7 @@ pub const PALETTE_LEN: usize = 24;
 /// RGBA colour stored as floats in 0..1.  Mirrors WGSL `vec4f`.
 pub type PaletteColor = [f32; 4];
 
-pub use self::palette::{
-    hex_to_rgba,
-    rgba_to_hex,
-    PALETTE_LABELS,
-};
+pub use self::palette::{hex_to_rgba, rgba_to_hex, PALETTE_LABELS};
 
 use self::palette::default_palette;
 
@@ -164,11 +160,9 @@ impl EffectSettings {
     pub fn save(&self) {
         #[cfg(target_arch = "wasm32")]
         {
-            if let Some(storage) =
-                web_sys::window().and_then(|w| w.local_storage().ok().flatten())
+            if let Some(storage) = web_sys::window().and_then(|w| w.local_storage().ok().flatten())
             {
-                let _ =
-                    storage.set_item(STORAGE_KEY, &self.to_storage_string());
+                let _ = storage.set_item(STORAGE_KEY, &self.to_storage_string());
             }
         }
     }
@@ -204,10 +198,7 @@ impl EffectSettings {
         kv!("crt_line_width", self.crt_line_width);
         out.push_str(&format!(
             "crt_color={},{},{},{}\n",
-            self.crt_color[0],
-            self.crt_color[1],
-            self.crt_color[2],
-            self.crt_color[3]
+            self.crt_color[0], self.crt_color[1], self.crt_color[2], self.crt_color[3]
         ));
 
         kv!("grain_intensity", self.grain_intensity);
@@ -259,19 +250,13 @@ impl EffectSettings {
     }
 }
 
-fn parse_into(
-    v: &str,
-    dst: &mut f32,
-) {
+fn parse_into(v: &str, dst: &mut f32) {
     if let Ok(f) = v.parse() {
         *dst = f;
     }
 }
 
-fn apply_storage_line(
-    settings: &mut EffectSettings,
-    line: &str,
-) {
+fn apply_storage_line(settings: &mut EffectSettings, line: &str) {
     let Some((key, value)) = line.split_once('=') else {
         return;
     };
@@ -291,11 +276,7 @@ fn apply_storage_line(
     let _ = apply_palette_setting(settings, key, value);
 }
 
-fn apply_flag_setting(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_flag_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "smoke_enabled" => settings.smoke_enabled = value == "true",
         "particles_enabled" => settings.particles_enabled = value == "true",
@@ -307,11 +288,7 @@ fn apply_flag_setting(
     true
 }
 
-fn apply_smoke_setting(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_smoke_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "smoke_intensity" => parse_into(value, &mut settings.smoke_intensity),
         "smoke_speed" => parse_into(value, &mut settings.smoke_speed),
@@ -323,11 +300,7 @@ fn apply_smoke_setting(
     true
 }
 
-fn apply_crt_setting(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_crt_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "crt_scanlines_h" => parse_into(value, &mut settings.crt_scanlines_h),
         "crt_scanlines_v" => parse_into(value, &mut settings.crt_scanlines_v),
@@ -340,29 +313,19 @@ fn apply_crt_setting(
     true
 }
 
-fn apply_post_processing_setting(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_post_processing_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "grain_intensity" => parse_into(value, &mut settings.grain_intensity),
         "grain_coarseness" => parse_into(value, &mut settings.grain_coarseness),
         "grain_size" => parse_into(value, &mut settings.grain_size),
-        "vignette_strength" =>
-            parse_into(value, &mut settings.vignette_strength),
-        "underglow_strength" =>
-            parse_into(value, &mut settings.underglow_strength),
+        "vignette_strength" => parse_into(value, &mut settings.vignette_strength),
+        "underglow_strength" => parse_into(value, &mut settings.underglow_strength),
         _ => return false,
     }
     true
 }
 
-fn apply_particle_setting_group_a(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_particle_setting_group_a(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "spark_speed" => parse_into(value, &mut settings.spark_speed),
         "spark_size" => parse_into(value, &mut settings.spark_size),
@@ -376,11 +339,7 @@ fn apply_particle_setting_group_a(
     true
 }
 
-fn apply_particle_setting_group_b(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_particle_setting_group_b(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     match key {
         "beam_size" => parse_into(value, &mut settings.beam_size),
         "beam_count" => parse_into(value, &mut settings.beam_count),
@@ -395,11 +354,7 @@ fn apply_particle_setting_group_b(
     true
 }
 
-fn apply_palette_setting(
-    settings: &mut EffectSettings,
-    key: &str,
-    value: &str,
-) -> bool {
+fn apply_palette_setting(settings: &mut EffectSettings, key: &str, value: &str) -> bool {
     let Some(index) = key
         .strip_prefix("palette_")
         .and_then(|suffix| suffix.parse::<usize>().ok())
@@ -414,10 +369,7 @@ fn apply_palette_setting(
     true
 }
 
-fn parse_color(
-    v: &str,
-    dst: &mut PaletteColor,
-) {
+fn parse_color(v: &str, dst: &mut PaletteColor) {
     let parts: Vec<&str> = v.split(',').collect();
     for (i, p) in parts.iter().take(4).enumerate() {
         if let Ok(f) = p.trim().parse::<f32>() {

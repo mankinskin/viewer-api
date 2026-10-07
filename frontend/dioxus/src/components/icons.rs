@@ -9,39 +9,12 @@ mod specialized;
 mod status;
 
 pub use self::{
-    actions::{
-        CloseIcon,
-        FilterIcon,
-        MinusIcon,
-        PlusIcon,
-        RefreshIcon,
-        SearchIcon,
-    },
-    files::{
-        DocumentIcon,
-        FileIcon,
-        FolderIcon,
-        FolderOpenIcon,
-    },
-    navigation::{
-        ChevronDownIcon,
-        ChevronRightIcon,
-    },
+    actions::{CloseIcon, FilterIcon, MinusIcon, PlusIcon, RefreshIcon, SearchIcon},
+    files::{DocumentIcon, FileIcon, FolderIcon, FolderOpenIcon},
+    navigation::{ChevronDownIcon, ChevronRightIcon},
     specialized::{
-        CodeIcon,
-        CrateIcon,
-        GraphIcon,
-        HamburgerIcon,
-        HomeIcon,
-        LogIcon,
-        ModuleIcon,
-        SourceFileIcon,
-        StatsIcon,
-        ThemeIcon,
+        CodeIcon, CrateIcon, GraphIcon, HamburgerIcon, HomeIcon, LogIcon, ModuleIcon,
+        SourceFileIcon, StatsIcon, ThemeIcon,
     },
-    status::{
-        AlertIcon,
-        CheckIcon,
-        InfoIcon,
-    },
+    status::{AlertIcon, CheckIcon, InfoIcon},
 };

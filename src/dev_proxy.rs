@@ -23,38 +23,20 @@
 use axum::{
     body::Body,
     extract::Request,
-    response::{
-        IntoResponse,
-        Response,
-    },
+    response::{IntoResponse, Response},
     Router,
 };
 use hyper::StatusCode;
-use hyper_util::{
-    client::legacy::Client,
-    rt::TokioExecutor,
-};
-use std::{
-    path::Path,
-    process::Child,
-    time::Duration,
-};
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
+use std::{path::Path, process::Child, time::Duration};
 use tokio::time::sleep;
-use tracing::{
-    debug,
-    error,
-    info,
-    warn,
-};
+use tracing::{debug, error, info, warn};
 
 mod process;
 mod websocket;
 
 use self::{
-    process::{
-        ensure_npm_installed,
-        spawn_vite_process,
-    },
+    process::{ensure_npm_installed, spawn_vite_process},
     websocket::proxy_websocket,
 };
 
@@ -75,10 +57,7 @@ impl DevServer {
     ///
     /// # Returns
     /// A `DevServer` handle that kills the process on drop.
-    pub async fn start(
-        frontend_dir: &Path,
-        port: u16,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn start(frontend_dir: &Path, port: u16) -> Result<Self, Box<dyn std::error::Error>> {
         info!(dir = %frontend_dir.display(), port, "Starting Vite dev server");
 
         // Ensure npm dependencies are installed before starting Vite
@@ -100,9 +79,7 @@ impl DevServer {
     }
 
     /// Poll until the Vite server responds to HTTP requests.
-    async fn wait_until_ready(
-        &mut self
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn wait_until_ready(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let url = format!("http://localhost:{}", self.port);
         let max_attempts = 50; // 50 * 200ms = 10 seconds max
         let delay = Duration::from_millis(200);
@@ -117,8 +94,7 @@ impl DevServer {
                     .take()
                     .and_then(|mut err| {
                         let mut buf = String::new();
-                        std::io::Read::read_to_string(&mut err, &mut buf)
-                            .ok()?;
+                        std::io::Read::read_to_string(&mut err, &mut buf).ok()?;
                         Some(buf)
                     })
                     .unwrap_or_default();
@@ -129,56 +105,37 @@ impl DevServer {
                     .take()
                     .and_then(|mut out| {
                         let mut buf = String::new();
-                        std::io::Read::read_to_string(&mut out, &mut buf)
-                            .ok()?;
+                        std::io::Read::read_to_string(&mut out, &mut buf).ok()?;
                         Some(buf)
                     })
                     .unwrap_or_default();
 
-                let mut msg = format!(
-                    "Vite process exited early with status: {}",
-                    status
-                );
+                let mut msg = format!("Vite process exited early with status: {}", status);
                 if !stdout_output.trim().is_empty() {
-                    msg.push_str(&format!(
-                        "\n\n--- stdout ---\n{}",
-                        stdout_output.trim()
-                    ));
+                    msg.push_str(&format!("\n\n--- stdout ---\n{}", stdout_output.trim()));
                 }
                 if !stderr_output.trim().is_empty() {
-                    msg.push_str(&format!(
-                        "\n\n--- stderr ---\n{}",
-                        stderr_output.trim()
-                    ));
+                    msg.push_str(&format!("\n\n--- stderr ---\n{}", stderr_output.trim()));
                 }
                 return Err(msg.into());
             }
 
             // Try connecting
-            match tokio::net::TcpStream::connect(format!(
-                "localhost:{}",
-                self.port
-            ))
-            .await
-            {
+            match tokio::net::TcpStream::connect(format!("localhost:{}", self.port)).await {
                 Ok(_) => {
                     debug!(attempt, url, "Vite dev server responded");
                     return Ok(());
-                },
+                }
                 Err(_) => {
                     if attempt % 10 == 0 {
                         debug!(attempt, "Waiting for Vite dev server...");
                     }
                     sleep(delay).await;
-                },
+                }
             }
         }
 
-        Err(format!(
-            "Vite dev server did not start within 10 seconds on {}",
-            url
-        )
-        .into())
+        Err(format!("Vite dev server did not start within 10 seconds on {}", url).into())
     }
 
     /// Get the port the dev server is running on.
@@ -203,28 +160,21 @@ impl Drop for DevServer {
 ///
 /// Handles both regular HTTP requests and WebSocket upgrades (for HMR).
 pub fn dev_proxy_fallback(vite_port: u16) -> Router {
-    Router::new().fallback(move |req: Request| async move {
-        proxy_request(req, vite_port).await
-    })
+    Router::new().fallback(move |req: Request| async move { proxy_request(req, vite_port).await })
 }
 
 /// Proxy a single request to the Vite dev server.
 ///
 /// Dispatches to either HTTP or WebSocket proxy based on the request headers.
-async fn proxy_request(
-    req: Request,
-    vite_port: u16,
-) -> Response {
+async fn proxy_request(req: Request, vite_port: u16) -> Response {
     let is_upgrade = is_websocket_upgrade(&req);
 
     // Build the proxied URI
     let uri = req.uri();
-    let path_and_query =
-        uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
-    let upstream_uri: hyper::Uri =
-        format!("http://localhost:{}{}", vite_port, path_and_query)
-            .parse()
-            .unwrap();
+    let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+    let upstream_uri: hyper::Uri = format!("http://localhost:{}{}", vite_port, path_and_query)
+        .parse()
+        .unwrap();
 
     debug!(
         upstream = %upstream_uri,
@@ -250,10 +200,7 @@ fn is_websocket_upgrade(req: &Request) -> bool {
 }
 
 /// Proxy a regular HTTP request.
-async fn proxy_http(
-    req: Request,
-    upstream_uri: hyper::Uri,
-) -> Response {
+async fn proxy_http(req: Request, upstream_uri: hyper::Uri) -> Response {
     let client = Client::builder(TokioExecutor::new()).build_http::<Body>();
 
     // Rebuild the request with the upstream URI
@@ -269,8 +216,7 @@ async fn proxy_http(
         Ok(resp) => resp.into_response(),
         Err(e) => {
             error!(error = %e, "Failed to proxy request to Vite");
-            (StatusCode::BAD_GATEWAY, format!("Dev proxy error: {}", e))
-                .into_response()
-        },
+            (StatusCode::BAD_GATEWAY, format!("Dev proxy error: {}", e)).into_response()
+        }
     }
 }

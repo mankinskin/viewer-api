@@ -6,20 +6,9 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Function,
-    Object,
-    Reflect,
-};
-use wasm_bindgen::{
-    JsCast,
-    JsValue,
-};
-use web_sys::{
-    GpuBuffer,
-    GpuDevice,
-};
+use js_sys::{Array, Function, Object, Reflect};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{GpuBuffer, GpuDevice};
 
 pub(crate) const USAGE_VERTEX: u32 = 0x0020;
 pub(crate) const USAGE_UNIFORM: u32 = 0x0040;
@@ -29,11 +18,7 @@ pub(crate) fn obj() -> Object {
     Object::new()
 }
 
-pub(crate) fn set(
-    o: &Object,
-    key: &str,
-    val: &JsValue,
-) {
+pub(crate) fn set(o: &Object, key: &str, val: &JsValue) {
     Reflect::set(o, &JsValue::from_str(key), val).ok();
 }
 
@@ -59,11 +44,7 @@ pub(crate) fn preferred_format() -> String {
 }
 
 /// Call a method on a JS object with 0–3 arguments via Reflect.
-pub(crate) fn js_call(
-    target: &JsValue,
-    method: &str,
-    args: &[&JsValue],
-) {
+pub(crate) fn js_call(target: &JsValue, method: &str, args: &[&JsValue]) {
     let Ok(f_val) = Reflect::get(target, &js_str(method)) else {
         return;
     };
@@ -73,39 +54,30 @@ pub(crate) fn js_call(
     match args.len() {
         0 => {
             f.call0(target).ok();
-        },
+        }
         1 => {
             f.call1(target, args[0]).ok();
-        },
+        }
         2 => {
             f.call2(target, args[0], args[1]).ok();
-        },
+        }
         3 => {
             f.call3(target, args[0], args[1], args[2]).ok();
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }
 
-pub(crate) fn write_buffer(
-    device: &GpuDevice,
-    buf: &GpuBuffer,
-    data: &[f32],
-) {
-    let bytes: &[u8] = unsafe {
-        std::slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * 4)
-    };
+pub(crate) fn write_buffer(device: &GpuDevice, buf: &GpuBuffer, data: &[f32]) {
+    let bytes: &[u8] =
+        unsafe { std::slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * 4) };
     let uint8 = js_sys::Uint8Array::from(bytes);
     let _ = device
         .queue()
         .write_buffer_with_u32_and_u8_array(buf, 0, &uint8);
 }
 
-pub(crate) fn create_buf(
-    device: &GpuDevice,
-    size: usize,
-    usage: u32,
-) -> GpuBuffer {
+pub(crate) fn create_buf(device: &GpuDevice, size: usize, usage: u32) -> GpuBuffer {
     let desc = obj();
     set(&desc, "size", &js_f64(size as f64));
     set(&desc, "usage", &js_f64(usage as f64));
@@ -114,22 +86,14 @@ pub(crate) fn create_buf(
         .expect("create_buffer")
 }
 
-pub(crate) fn create_buf_init(
-    device: &GpuDevice,
-    data: &[f32],
-    usage: u32,
-) -> GpuBuffer {
+pub(crate) fn create_buf_init(device: &GpuDevice, data: &[f32], usage: u32) -> GpuBuffer {
     let buf = create_buf(device, data.len() * 4, usage | USAGE_COPY_DST);
     write_buffer(device, &buf, data);
     buf
 }
 
 /// Create a depth texture and return its default view.
-pub(crate) fn create_depth_view(
-    device: &GpuDevice,
-    w: u32,
-    h: u32,
-) -> JsValue {
+pub(crate) fn create_depth_view(device: &GpuDevice, w: u32, h: u32) -> JsValue {
     let desc = obj();
     let size = Array::new();
     size.push(&js_f64(w as f64));
@@ -150,10 +114,7 @@ pub(crate) fn create_depth_view(
         .expect("createView call")
 }
 
-pub(crate) fn make_shader(
-    device: &GpuDevice,
-    code: &str,
-) -> web_sys::GpuShaderModule {
+pub(crate) fn make_shader(device: &GpuDevice, code: &str) -> web_sys::GpuShaderModule {
     let desc = web_sys::GpuShaderModuleDescriptor::new(code);
     device.create_shader_module(&desc)
 }

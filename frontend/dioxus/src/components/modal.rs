@@ -21,11 +21,7 @@ use dioxus::prelude::*;
 use super::ScreenSpacePanel;
 
 #[cfg(target_arch = "wasm32")]
-use {
-    gloo_events::EventListener,
-    wasm_bindgen::JsCast,
-    web_sys::KeyboardEvent,
-};
+use {gloo_events::EventListener, wasm_bindgen::JsCast, web_sys::KeyboardEvent};
 
 /// Full-screen overlay with backdrop dismiss + Escape-to-close.
 ///
@@ -51,8 +47,7 @@ pub fn Overlay(
     // unmounts.  We keep at most one listener alive at a time.
     #[cfg(target_arch = "wasm32")]
     {
-        let mut listener_slot: Signal<Option<EventListener>> =
-            use_signal(|| None);
+        let mut listener_slot: Signal<Option<EventListener>> = use_signal(|| None);
         let on_close_for_effect = on_close;
         use_effect(move || {
             if !open {

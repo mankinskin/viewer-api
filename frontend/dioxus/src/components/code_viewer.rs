@@ -3,10 +3,7 @@ use dioxus::prelude::*;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
-    html::{
-        styled_line_to_highlighted_html,
-        IncludeBackground,
-    },
+    html::{styled_line_to_highlighted_html, IncludeBackground},
     parsing::SyntaxSet,
     util::LinesWithEndings,
 };
@@ -65,9 +62,8 @@ fn highlight_code(
         let line_no = idx + 1;
         let is_highlighted = highlighted_line.map_or(false, |hl| hl == line_no);
         let regions = h.highlight_line(line, &ps).unwrap_or_default();
-        let html =
-            styled_line_to_highlighted_html(&regions, IncludeBackground::No)
-                .unwrap_or_else(|_| html_escape(line));
+        let html = styled_line_to_highlighted_html(&regions, IncludeBackground::No)
+            .unwrap_or_else(|_| html_escape(line));
 
         let cls = if is_highlighted {
             "code-line highlight"
@@ -117,14 +113,7 @@ pub fn CodeViewer(
     let html = use_memo({
         let filename = filename.clone();
         let language = language.clone();
-        move || {
-            highlight_code(
-                &content,
-                &filename,
-                language.as_deref(),
-                highlighted_line,
-            )
-        }
+        move || highlight_code(&content, &filename, language.as_deref(), highlighted_line)
     });
 
     let outer_css = if class.is_empty() {

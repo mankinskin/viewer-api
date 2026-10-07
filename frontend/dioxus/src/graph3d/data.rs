@@ -8,10 +8,7 @@
 use std::collections::HashSet;
 
 use super::{
-    camera::{
-        Camera,
-        CAMERA_FOV,
-    },
+    camera::{Camera, CAMERA_FOV},
     theme::GraphThemeSettings,
 };
 
@@ -92,10 +89,7 @@ impl NodeViewTransform {
         Self::camera_plane_with_strength(screen_fill, 1.0)
     }
 
-    pub fn camera_plane_with_strength(
-        screen_fill: f32,
-        strength: f32,
-    ) -> Self {
+    pub fn camera_plane_with_strength(screen_fill: f32, strength: f32) -> Self {
         Self {
             mode: NodeViewTransformMode::CameraPlane,
             screen_fill: screen_fill.clamp(0.55, 0.96),
@@ -104,10 +98,7 @@ impl NodeViewTransform {
         }
     }
 
-    pub fn camera_plane_view_direction(
-        screen_fill: f32,
-        strength: f32,
-    ) -> Self {
+    pub fn camera_plane_view_direction(screen_fill: f32, strength: f32) -> Self {
         Self {
             mode: NodeViewTransformMode::CameraPlaneViewDirection,
             screen_fill: screen_fill.clamp(0.55, 3.0),
@@ -117,8 +108,7 @@ impl NodeViewTransform {
     }
 
     pub fn is_active(self) -> bool {
-        !matches!(self.mode, NodeViewTransformMode::Disabled)
-            && self.strength > 0.001
+        !matches!(self.mode, NodeViewTransformMode::Disabled) && self.strength > 0.001
     }
 }
 
@@ -173,19 +163,14 @@ pub(crate) struct EdgeVisualState<'a> {
 }
 
 impl<'a> EdgeVisualState<'a> {
-    pub(crate) fn active_focus(
-        self,
-        nodes: &[Node3D],
-    ) -> Option<(&'a str, f32)> {
+    pub(crate) fn active_focus(self, nodes: &[Node3D]) -> Option<(&'a str, f32)> {
         self.selected_node_id
             .map(|node_id| (node_id, EDGE_FLAG_SELECTED))
             .or_else(|| {
                 self.hovered_node_id
                     .map(|node_id| (node_id, EDGE_FLAG_HOVERED))
             })
-            .filter(|(focus_id, _)| {
-                nodes.iter().any(|node| node.id == *focus_id)
-            })
+            .filter(|(focus_id, _)| nodes.iter().any(|node| node.id == *focus_id))
     }
 }
 
@@ -200,9 +185,7 @@ fn grid_line_color(coord: f32) -> (f32, f32, f32, f32) {
         return (0.28, 0.34, 0.46, 0.18);
     }
     // Major gridline every 5 units: mid alpha.
-    if (coord.rem_euclid(5.0)).abs() < 0.01
-        || (coord.rem_euclid(5.0) - 5.0).abs() < 0.01
-    {
+    if (coord.rem_euclid(5.0)).abs() < 0.01 || (coord.rem_euclid(5.0) - 5.0).abs() < 0.01 {
         return (0.22, 0.26, 0.36, 0.10);
     }
     // Minor: dim.
@@ -210,10 +193,7 @@ fn grid_line_color(coord: f32) -> (f32, f32, f32, f32) {
 }
 
 impl Layout3D {
-    pub fn new(
-        nodes: Vec<Node3D>,
-        edges: Vec<EdgeRef3D>,
-    ) -> Self {
+    pub fn new(nodes: Vec<Node3D>, edges: Vec<EdgeRef3D>) -> Self {
         Self {
             nodes,
             edges,
@@ -221,10 +201,7 @@ impl Layout3D {
         }
     }
 
-    pub fn with_node_card_profile(
-        mut self,
-        node_card_profile: NodeCardProfile,
-    ) -> Self {
+    pub fn with_node_card_profile(mut self, node_card_profile: NodeCardProfile) -> Self {
         self.node_card_profile = node_card_profile;
         self
     }
@@ -274,9 +251,7 @@ impl Layout3D {
         visuals: EdgeVisualState<'_>,
         theme: &GraphThemeSettings,
     ) -> (Vec<f32>, u32) {
-        let mut data = Vec::with_capacity(
-            (self.edges.len() + GRID_LINE_COUNT) * EDGE_INST_FLOATS,
-        );
+        let mut data = Vec::with_capacity((self.edges.len() + GRID_LINE_COUNT) * EDGE_INST_FLOATS);
         let mut count = append_grid_edge_instances(&mut data);
         let graph_edge_type = match self.node_card_profile {
             NodeCardProfile::Compact => 1.0,
@@ -293,8 +268,7 @@ impl Layout3D {
                 continue;
             };
             let (r, g, bl, alpha) = edge_color(&edge.kind, theme);
-            let flag =
-                edge_visual_flag(a.id.as_str(), b.id.as_str(), active_focus);
+            let flag = edge_visual_flag(a.id.as_str(), b.id.as_str(), active_focus);
             data.extend_from_slice(&[
                 a.x,
                 a.y,
@@ -327,15 +301,14 @@ impl Layout3D {
     }
 }
 
-pub(crate) fn layout_nodes_match(
-    current: &Layout3D,
-    target: &Layout3D,
-) -> bool {
+pub(crate) fn layout_nodes_match(current: &Layout3D, target: &Layout3D) -> bool {
     current.node_card_profile == target.node_card_profile
         && current.nodes.len() == target.nodes.len()
-        && current.nodes.iter().zip(target.nodes.iter()).all(
-            |(current_node, target_node)| current_node.id == target_node.id,
-        )
+        && current
+            .nodes
+            .iter()
+            .zip(target.nodes.iter())
+            .all(|(current_node, target_node)| current_node.id == target_node.id)
 }
 
 fn append_grid_edge_instances(data: &mut Vec<f32>) -> u32 {
@@ -348,18 +321,14 @@ fn append_grid_edge_instances(data: &mut Vec<f32>) -> u32 {
     let mut z = -half;
     while z <= half + 0.0001 {
         let (r, g, b, a) = grid_line_color(z);
-        data.extend_from_slice(&[
-            -half, 0.0, z, half, 0.0, z, r, g, b, a, 0.0, 0.0,
-        ]);
+        data.extend_from_slice(&[-half, 0.0, z, half, 0.0, z, r, g, b, a, 0.0, 0.0]);
         count += 1;
         z += step;
     }
     let mut x = -half;
     while x <= half + 0.0001 {
         let (r, g, b, a) = grid_line_color(x);
-        data.extend_from_slice(&[
-            x, 0.0, -half, x, 0.0, half, r, g, b, a, 0.0, 0.0,
-        ]);
+        data.extend_from_slice(&[x, 0.0, -half, x, 0.0, half, r, g, b, a, 0.0, 0.0]);
         count += 1;
         x += step;
     }
@@ -380,9 +349,7 @@ pub(crate) fn animate_layout_nodes(
     let alpha = 1.0 - (-lerp_speed * dt.max(0.0)).exp();
     let epsilon = 0.0001;
     let mut any_moved = false;
-    for (current_node, target_node) in
-        current.nodes.iter_mut().zip(target.nodes.iter())
-    {
+    for (current_node, target_node) in current.nodes.iter_mut().zip(target.nodes.iter()) {
         let dx = (target_node.x - current_node.x) * alpha;
         let dy = (target_node.y - current_node.y) * alpha;
         let dz = (target_node.z - current_node.z) * alpha;
@@ -395,9 +362,7 @@ pub(crate) fn animate_layout_nodes(
     }
 
     if !any_moved {
-        for (current_node, target_node) in
-            current.nodes.iter_mut().zip(target.nodes.iter())
-        {
+        for (current_node, target_node) in current.nodes.iter_mut().zip(target.nodes.iter()) {
             current_node.x = target_node.x;
             current_node.y = target_node.y;
             current_node.z = target_node.z;
@@ -416,9 +381,9 @@ pub(crate) fn apply_selected_node_auto_layout(
         return layout.clone();
     }
 
-    let Some(selected_idx) = selected_node_id.and_then(|selected_id| {
-        layout.nodes.iter().position(|node| node.id == selected_id)
-    }) else {
+    let Some(selected_idx) = selected_node_id
+        .and_then(|selected_id| layout.nodes.iter().position(|node| node.id == selected_id))
+    else {
         return layout.clone();
     };
 
@@ -488,8 +453,7 @@ pub(crate) fn apply_node_view_transform(
             let plane_depth = (camera.distance * transform.plane_depth_factor)
                 .clamp(3.5, 72.0)
                 .min(camera_plane_max_readable_depth());
-            let plane_half_height =
-                (CAMERA_FOV * 0.5).tan() * plane_depth * transform.screen_fill;
+            let plane_half_height = (CAMERA_FOV * 0.5).tan() * plane_depth * transform.screen_fill;
             let plane_half_width = plane_half_height * aspect.max(0.2);
 
             let mut camera_space = Vec::with_capacity(layout.nodes.len());
@@ -499,8 +463,7 @@ pub(crate) fn apply_node_view_transform(
             let mut max_y = f32::NEG_INFINITY;
 
             for node in &layout.nodes {
-                let position =
-                    world_to_camera_space([node.x, node.y, node.z], &basis);
+                let position = world_to_camera_space([node.x, node.y, node.z], &basis);
                 min_x = min_x.min(position[0]);
                 max_x = max_x.max(position[0]);
                 min_y = min_y.min(position[1]);
@@ -548,24 +511,19 @@ pub(crate) fn apply_node_view_transform(
             );
 
             let mut transformed = layout.clone();
-            for (node, plane_position) in
-                transformed.nodes.iter_mut().zip(plane_positions.iter())
-            {
+            for (node, plane_position) in transformed.nodes.iter_mut().zip(plane_positions.iter()) {
                 let base_position = [node.x, node.y, node.z];
                 let world = camera_to_world_space(
                     [plane_position[0], plane_position[1], plane_depth],
                     &basis,
                 );
-                node.x = base_position[0]
-                    + (world[0] - base_position[0]) * transform.strength;
-                node.y = base_position[1]
-                    + (world[1] - base_position[1]) * transform.strength;
-                node.z = base_position[2]
-                    + (world[2] - base_position[2]) * transform.strength;
+                node.x = base_position[0] + (world[0] - base_position[0]) * transform.strength;
+                node.y = base_position[1] + (world[1] - base_position[1]) * transform.strength;
+                node.z = base_position[2] + (world[2] - base_position[2]) * transform.strength;
             }
 
             transformed
-        },
+        }
         NodeViewTransformMode::CameraPlaneViewDirection => {
             let basis = camera_plane_view_direction_basis(
                 layout,
@@ -576,8 +534,7 @@ pub(crate) fn apply_node_view_transform(
             );
             let aspect = viewport_width / viewport_height.max(1.0);
             let plane_depth = basis.plane_depth;
-            let plane_half_height =
-                (CAMERA_FOV * 0.5).tan() * plane_depth * transform.screen_fill;
+            let plane_half_height = (CAMERA_FOV * 0.5).tan() * plane_depth * transform.screen_fill;
             let plane_half_width = plane_half_height * aspect.max(0.2);
 
             let mut camera_space = Vec::with_capacity(layout.nodes.len());
@@ -587,10 +544,7 @@ pub(crate) fn apply_node_view_transform(
             let mut max_y = f32::NEG_INFINITY;
 
             for node in &layout.nodes {
-                let position = world_to_camera_space(
-                    [node.x, node.y, node.z],
-                    &basis.camera,
-                );
+                let position = world_to_camera_space([node.x, node.y, node.z], &basis.camera);
                 min_x = min_x.min(position[0]);
                 max_x = max_x.max(position[0]);
                 min_y = min_y.min(position[1]);
@@ -638,24 +592,19 @@ pub(crate) fn apply_node_view_transform(
             );
 
             let mut transformed = layout.clone();
-            for (node, plane_position) in
-                transformed.nodes.iter_mut().zip(plane_positions.iter())
-            {
+            for (node, plane_position) in transformed.nodes.iter_mut().zip(plane_positions.iter()) {
                 let base_position = [node.x, node.y, node.z];
                 let world = camera_to_world_space(
                     [plane_position[0], plane_position[1], plane_depth],
                     &basis.camera,
                 );
-                node.x = base_position[0]
-                    + (world[0] - base_position[0]) * transform.strength;
-                node.y = base_position[1]
-                    + (world[1] - base_position[1]) * transform.strength;
-                node.z = base_position[2]
-                    + (world[2] - base_position[2]) * transform.strength;
+                node.x = base_position[0] + (world[0] - base_position[0]) * transform.strength;
+                node.y = base_position[1] + (world[1] - base_position[1]) * transform.strength;
+                node.z = base_position[2] + (world[2] - base_position[2]) * transform.strength;
             }
 
             transformed
-        },
+        }
     }
 }
 
@@ -681,22 +630,20 @@ fn camera_plane_view_direction_basis(
     let mut min_forward = f32::INFINITY;
 
     for node in &layout.nodes {
-        let delta =
-            [node.x - center[0], node.y - center[1], node.z - center[2]];
+        let delta = [node.x - center[0], node.y - center[1], node.z - center[2]];
         max_right = max_right.max(dot(delta, basis.right).abs());
         max_up = max_up.max(dot(delta, basis.up).abs());
         min_forward = min_forward.min(dot(delta, basis.forward));
     }
 
-    let plane_depth_x =
-        max_right / (fit_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
+    let plane_depth_x = max_right / (fit_fill * tan_half_fov * aspect.max(0.2)).max(0.001);
     let plane_depth_y = max_up / (fit_fill * tan_half_fov).max(0.001);
     let plane_depth = plane_depth_x
         .max(plane_depth_y)
         .clamp(3.5, 72.0)
         .min(camera_plane_max_readable_depth());
-    let eye_distance = (plane_depth / transform.plane_depth_factor.max(0.05))
-        .max((-min_forward).max(0.0) + 1.0);
+    let eye_distance =
+        (plane_depth / transform.plane_depth_factor.max(0.05)).max((-min_forward).max(0.0) + 1.0);
     basis.eye = [
         center[0] - basis.forward[0] * eye_distance,
         center[1] - basis.forward[1] * eye_distance,
@@ -732,8 +679,7 @@ fn relax_camera_plane_clearance(
         let mut had_overlap = false;
 
         for i in 0..plane_positions.len() {
-            let camera_i =
-                [plane_positions[i][0], plane_positions[i][1], depth];
+            let camera_i = [plane_positions[i][0], plane_positions[i][1], depth];
             let screen_i = camera_plane_to_screen_px(
                 plane_positions[i],
                 depth,
@@ -742,18 +688,12 @@ fn relax_camera_plane_clearance(
                 tan_half_fov,
                 aspect,
             );
-            let weight_i = camera_plane_view_center_weight(
-                screen_i,
-                viewport_width,
-                viewport_height,
-            );
-            let required_i = required_camera_plane_half_extents_px(
-                camera_i, profile, weight_i,
-            );
+            let weight_i =
+                camera_plane_view_center_weight(screen_i, viewport_width, viewport_height);
+            let required_i = required_camera_plane_half_extents_px(camera_i, profile, weight_i);
 
             for j in (i + 1)..plane_positions.len() {
-                let camera_j =
-                    [plane_positions[j][0], plane_positions[j][1], depth];
+                let camera_j = [plane_positions[j][0], plane_positions[j][1], depth];
                 let screen_j = camera_plane_to_screen_px(
                     plane_positions[j],
                     depth,
@@ -762,14 +702,9 @@ fn relax_camera_plane_clearance(
                     tan_half_fov,
                     aspect,
                 );
-                let weight_j = camera_plane_view_center_weight(
-                    screen_j,
-                    viewport_width,
-                    viewport_height,
-                );
-                let required_j = required_camera_plane_half_extents_px(
-                    camera_j, profile, weight_j,
-                );
+                let weight_j =
+                    camera_plane_view_center_weight(screen_j, viewport_width, viewport_height);
+                let required_j = required_camera_plane_half_extents_px(camera_j, profile, weight_j);
                 let dx = screen_j[0] - screen_i[0];
                 let dy = screen_j[1] - screen_i[1];
                 let overlap_x = required_i[0] + required_j[0] - dx.abs();
@@ -781,26 +716,12 @@ fn relax_camera_plane_clearance(
 
                 had_overlap = true;
                 let pair_strength = 0.6 + 1.0 * weight_i.max(weight_j);
-                let direction_x = camera_plane_pair_axis_direction(
-                    dx,
-                    screen_i[0],
-                    screen_j[0],
-                    i,
-                    j,
-                );
-                let direction_y = camera_plane_pair_axis_direction(
-                    dy,
-                    screen_i[1],
-                    screen_j[1],
-                    i,
-                    j,
-                );
-                let push_x = overlap_x.min(CAMERA_PLANE_MAX_PUSH_PX)
-                    * 0.38
-                    * pair_strength;
-                let push_y = overlap_y.min(CAMERA_PLANE_MAX_PUSH_PX)
-                    * 0.38
-                    * pair_strength;
+                let direction_x =
+                    camera_plane_pair_axis_direction(dx, screen_i[0], screen_j[0], i, j);
+                let direction_y =
+                    camera_plane_pair_axis_direction(dy, screen_i[1], screen_j[1], i, j);
+                let push_x = overlap_x.min(CAMERA_PLANE_MAX_PUSH_PX) * 0.38 * pair_strength;
+                let push_y = overlap_y.min(CAMERA_PLANE_MAX_PUSH_PX) * 0.38 * pair_strength;
 
                 pixel_offsets[i][0] -= direction_x * push_x;
                 pixel_offsets[j][0] += direction_x * push_x;
@@ -814,28 +735,23 @@ fn relax_camera_plane_clearance(
         }
 
         let mut max_adjustment = 0.0_f32;
-        for (plane_position, pixel_offset) in
-            plane_positions.iter_mut().zip(pixel_offsets.iter())
-        {
+        for (plane_position, pixel_offset) in plane_positions.iter_mut().zip(pixel_offsets.iter()) {
             let delta_x = screen_px_to_camera_plane_x(
-                pixel_offset[0]
-                    .clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
+                pixel_offset[0].clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
                 depth,
                 viewport_width,
                 tan_half_fov,
                 aspect,
             );
             let delta_y = screen_px_to_camera_plane_y(
-                pixel_offset[1]
-                    .clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
+                pixel_offset[1].clamp(-CAMERA_PLANE_MAX_PUSH_PX, CAMERA_PLANE_MAX_PUSH_PX),
                 depth,
                 viewport_height,
                 tan_half_fov,
             );
             plane_position[0] += delta_x;
             plane_position[1] += delta_y;
-            max_adjustment =
-                max_adjustment.max(delta_x.abs()).max(delta_y.abs());
+            max_adjustment = max_adjustment.max(delta_x.abs()).max(delta_y.abs());
         }
         recenter_camera_plane_positions(plane_positions);
 
@@ -894,11 +810,8 @@ fn stabilize_camera_plane_center_cells(
             tan_half_fov,
             aspect,
         );
-        let weight = camera_plane_view_center_weight(
-            screen_position,
-            viewport_width,
-            viewport_height,
-        );
+        let weight =
+            camera_plane_view_center_weight(screen_position, viewport_width, viewport_height);
         if weight < 0.35 {
             continue;
         }
@@ -906,11 +819,7 @@ fn stabilize_camera_plane_center_cells(
         center_cells.push((
             index,
             screen_position,
-            required_camera_plane_half_extents_px(
-                camera_position,
-                profile,
-                weight,
-            ),
+            required_camera_plane_half_extents_px(camera_position, profile, weight),
             weight,
         ));
     }
@@ -937,12 +846,10 @@ fn stabilize_camera_plane_center_cells(
             for (other_screen, other_required_half_extents) in settled.iter() {
                 let dx = screen_position[0] - other_screen[0];
                 let dy = screen_position[1] - other_screen[1];
-                let overlap_x = required_half_extents[0]
-                    + other_required_half_extents[0]
-                    - dx.abs();
-                let overlap_y = required_half_extents[1]
-                    + other_required_half_extents[1]
-                    - dy.abs();
+                let overlap_x =
+                    required_half_extents[0] + other_required_half_extents[0] - dx.abs();
+                let overlap_y =
+                    required_half_extents[1] + other_required_half_extents[1] - dy.abs();
 
                 if overlap_x <= 0.0 || overlap_y <= 0.0 {
                     continue;
@@ -962,8 +869,7 @@ fn stabilize_camera_plane_center_cells(
                     },
                 ]);
                 if direction[0].abs() < 0.001 && direction[1].abs() < 0.001 {
-                    let angle =
-                        attempt as f32 * 1.618_034 + index as f32 * 0.73;
+                    let angle = attempt as f32 * 1.618_034 + index as f32 * 0.73;
                     direction = [angle.cos(), angle.sin()];
                 }
 
@@ -981,19 +887,14 @@ fn stabilize_camera_plane_center_cells(
             screen_position[1] += clamped[1];
         }
 
-        if screen_overlaps_settled(
-            screen_position,
-            required_half_extents,
-            settled.as_slice(),
-        ) {
+        if screen_overlaps_settled(screen_position, required_half_extents, settled.as_slice()) {
             let base_radius = length_2d(screen_position).max(24.0);
             'search: for radius_step in 1..=18 {
                 let radius = base_radius + radius_step as f32 * 34.0;
                 for angle_step in 0..16 {
-                    let angle = index as f32 * 0.11
-                        + angle_step as f32 * (std::f32::consts::TAU / 16.0);
-                    let candidate =
-                        [radius * angle.cos(), radius * angle.sin()];
+                    let angle =
+                        index as f32 * 0.11 + angle_step as f32 * (std::f32::consts::TAU / 16.0);
+                    let candidate = [radius * angle.cos(), radius * angle.sin()];
                     if !screen_overlaps_settled(
                         candidate,
                         required_half_extents,
@@ -1013,12 +914,8 @@ fn stabilize_camera_plane_center_cells(
             tan_half_fov,
             aspect,
         );
-        plane_positions[index][1] = screen_px_to_camera_plane_y(
-            screen_position[1],
-            depth,
-            viewport_height,
-            tan_half_fov,
-        );
+        plane_positions[index][1] =
+            screen_px_to_camera_plane_y(screen_position[1], depth, viewport_height, tan_half_fov);
         settled.push((screen_position, required_half_extents));
     }
 
@@ -1079,8 +976,7 @@ fn camera_plane_view_center_weight(
     viewport_width: f32,
     viewport_height: f32,
 ) -> f32 {
-    let radius = ((screen_position[0] / (viewport_width * 0.5).max(1.0))
-        .powi(2)
+    let radius = ((screen_position[0] / (viewport_width * 0.5).max(1.0)).powi(2)
         + (screen_position[1] / (viewport_height * 0.5).max(1.0)).powi(2))
     .sqrt();
     let weight = (1.0 - radius / CAMERA_PLANE_CENTER_RADIUS).clamp(0.0, 1.0);
@@ -1096,8 +992,7 @@ fn camera_plane_to_screen_px(
     aspect: f32,
 ) -> [f32; 2] {
     [
-        plane_position[0] * viewport_width * 0.5
-            / (depth * tan_half_fov * aspect),
+        plane_position[0] * viewport_width * 0.5 / (depth * tan_half_fov * aspect),
         plane_position[1] * viewport_height * 0.5 / (depth * tan_half_fov),
     ]
 }
@@ -1121,10 +1016,7 @@ fn screen_px_to_camera_plane_y(
     (pixels * 2.0 / viewport_height) * depth * tan_half_fov
 }
 
-fn projected_card_half_extents_px(
-    camera_position: [f32; 3],
-    profile: NodeCardProfile,
-) -> [f32; 2] {
+fn projected_card_half_extents_px(camera_position: [f32; 3], profile: NodeCardProfile) -> [f32; 2] {
     let distance = length(camera_position).max(0.1);
     let pixel_scale = pixel_scale_for_distance(distance);
     let card_size = node_card_base_size_px(profile);
@@ -1153,9 +1045,7 @@ pub(crate) fn node_detail_tier(
     is_hover: bool,
     graph_theme: &GraphThemeSettings,
 ) -> NodeDetailTier {
-    let base_tier = if is_focus
-        || pixel_scale >= graph_theme.render_tuning.rich_detail_threshold
-    {
+    let base_tier = if is_focus || pixel_scale >= graph_theme.render_tuning.rich_detail_threshold {
         NodeDetailTier::Rich
     } else if pixel_scale >= 0.48 {
         NodeDetailTier::Compact
@@ -1184,14 +1074,13 @@ pub(crate) fn anchor_zoom_scale_for_distance(
         * graph_theme.render_tuning.row_label_boost_factor;
 
     match origin {
-        "center-bottom" => ((26.0 / distance).clamp(0.42, 1.0)
-            + close_boost * 0.18)
-            .clamp(0.42, 1.08),
-        "right-center" =>
-            ((graph_theme.render_tuning.row_label_scale_numerator / distance)
-                .clamp(0.10, 1.0)
-                + row_label_boost)
-                .clamp(0.10, 0.62),
+        "center-bottom" => {
+            ((26.0 / distance).clamp(0.42, 1.0) + close_boost * 0.18).clamp(0.42, 1.08)
+        }
+        "right-center" => ((graph_theme.render_tuning.row_label_scale_numerator / distance)
+            .clamp(0.10, 1.0)
+            + row_label_boost)
+            .clamp(0.10, 0.62),
         _ => 1.0,
     }
 }
@@ -1200,15 +1089,16 @@ pub(crate) fn node_detail_dimensions_px(
     profile: NodeCardProfile,
 ) -> [f32; 2] {
     match tier {
-        NodeDetailTier::Minimal =>
-            [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
+        NodeDetailTier::Minimal => [MINIMAL_NODE_WIDTH_PX, MINIMAL_NODE_HEIGHT_PX],
         NodeDetailTier::Icon => [64.0, 64.0],
         NodeDetailTier::Label => [128.0, 48.0],
         NodeDetailTier::Compact => match profile {
-            NodeCardProfile::Compact =>
-                [COMPACT_SHARED_NODE_WIDTH_PX, COMPACT_SHARED_NODE_HEIGHT_PX],
-            NodeCardProfile::TicketWide =>
-                [COMPACT_TICKET_NODE_WIDTH_PX, COMPACT_TICKET_NODE_HEIGHT_PX],
+            NodeCardProfile::Compact => {
+                [COMPACT_SHARED_NODE_WIDTH_PX, COMPACT_SHARED_NODE_HEIGHT_PX]
+            }
+            NodeCardProfile::TicketWide => {
+                [COMPACT_TICKET_NODE_WIDTH_PX, COMPACT_TICKET_NODE_HEIGHT_PX]
+            }
         },
         NodeDetailTier::Rich => node_card_base_size_px(profile),
     }
@@ -1218,11 +1108,7 @@ fn pixel_scale_for_distance(distance: f32) -> f32 {
     (22.0 / distance).clamp(0.14, 3.5)
 }
 
-fn lerp(
-    start: f32,
-    end: f32,
-    t: f32,
-) -> f32 {
+fn lerp(start: f32, end: f32, t: f32) -> f32 {
     start + (end - start) * t.clamp(0.0, 1.0)
 }
 
@@ -1235,10 +1121,7 @@ fn normalize_2d(vector: [f32; 2]) -> [f32; 2] {
     }
 }
 
-fn clamp_2d(
-    vector: [f32; 2],
-    max_len: f32,
-) -> [f32; 2] {
+fn clamp_2d(vector: [f32; 2], max_len: f32) -> [f32; 2] {
     let len = (vector[0] * vector[0] + vector[1] * vector[1]).sqrt();
     if len <= max_len || len < 0.0001 {
         vector
@@ -1263,24 +1146,16 @@ fn screen_overlaps_settled(
             let dx = (screen_position[0] - other_screen[0]).abs();
             let dy = (screen_position[1] - other_screen[1]).abs();
             dx < required_half_extents[0] + other_required_half_extents[0]
-                && dy
-                    < required_half_extents[1] + other_required_half_extents[1]
+                && dy < required_half_extents[1] + other_required_half_extents[1]
         })
 }
 
-pub(crate) fn edge_color(
-    kind: &str,
-    theme: &GraphThemeSettings,
-) -> (f32, f32, f32, f32) {
+pub(crate) fn edge_color(kind: &str, theme: &GraphThemeSettings) -> (f32, f32, f32, f32) {
     let color = theme.edge_color(kind);
     (color[0], color[1], color[2], color[3])
 }
 
-fn edge_visual_flag(
-    from_id: &str,
-    to_id: &str,
-    active_focus: Option<(&str, f32)>,
-) -> f32 {
+fn edge_visual_flag(from_id: &str, to_id: &str, active_focus: Option<(&str, f32)>) -> f32 {
     let Some((focus_id, focus_flag)) = active_focus else {
         return EDGE_FLAG_DEFAULT;
     };
@@ -1324,10 +1199,7 @@ impl CameraBasis {
     }
 }
 
-fn world_to_camera_space(
-    world: [f32; 3],
-    basis: &CameraBasis,
-) -> [f32; 3] {
+fn world_to_camera_space(world: [f32; 3], basis: &CameraBasis) -> [f32; 3] {
     let delta = [
         world[0] - basis.eye[0],
         world[1] - basis.eye[1],
@@ -1340,10 +1212,7 @@ fn world_to_camera_space(
     ]
 }
 
-fn camera_to_world_space(
-    camera_space: [f32; 3],
-    basis: &CameraBasis,
-) -> [f32; 3] {
+fn camera_to_world_space(camera_space: [f32; 3], basis: &CameraBasis) -> [f32; 3] {
     [
         basis.eye[0]
             + basis.right[0] * camera_space[0]
@@ -1360,17 +1229,11 @@ fn camera_to_world_space(
     ]
 }
 
-fn dot(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> f32 {
+fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
-fn cross(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> [f32; 3] {
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],

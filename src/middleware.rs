@@ -4,12 +4,7 @@ pub mod request_id {
     //! Middleware that generates a `X-Request-Id` header per request and
     //! injects a `REQUEST_ID_EXT` extension for downstream handlers to reuse.
 
-    use axum::{
-        body::Body,
-        http::Request,
-        middleware::Next,
-        response::Response,
-    };
+    use axum::{body::Body, http::Request, middleware::Next, response::Response};
     use uuid::Uuid;
 
     use crate::error::RequestIdExt;
@@ -24,10 +19,7 @@ pub mod request_id {
     ///     .route("/api/tickets", get(handler))
     ///     .layer(axum::middleware::from_fn(add_request_id));
     /// ```
-    pub async fn add_request_id(
-        mut request: Request<Body>,
-        next: Next,
-    ) -> Response {
+    pub async fn add_request_id(mut request: Request<Body>, next: Next) -> Response {
         let id = Uuid::new_v4().to_string();
         request.extensions_mut().insert(RequestIdExt(id.clone()));
 

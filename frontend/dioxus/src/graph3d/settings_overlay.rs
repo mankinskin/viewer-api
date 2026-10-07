@@ -2,21 +2,13 @@ use dioxus::prelude::*;
 
 use crate::{
     components::ScreenSpacePanel,
-    effects::wgpu_overlay::{
-        hex_to_rgba,
-        rgba_to_hex,
-        PaletteColor,
-    },
+    effects::wgpu_overlay::{hex_to_rgba, rgba_to_hex, PaletteColor},
     store::ThemeStore,
 };
 
 use super::{
-    theme::{
-        GraphEdgeBlendMode,
-        GraphThemeSettings,
-    },
-    LayoutMode,
-    Projection,
+    theme::{GraphEdgeBlendMode, GraphThemeSettings},
+    LayoutMode, Projection,
 };
 
 #[derive(Props, Clone, PartialEq)]
@@ -82,11 +74,7 @@ fn SliderRow(
 }
 
 #[component]
-fn ColorRow(
-    label: String,
-    value: PaletteColor,
-    on_change: EventHandler<PaletteColor>,
-) -> Element {
+fn ColorRow(label: String, value: PaletteColor, on_change: EventHandler<PaletteColor>) -> Element {
     let hex = rgba_to_hex(value);
     rsx! {
         label {
@@ -109,19 +97,14 @@ fn ColorRow(
     }
 }
 
-fn update_graph_theme(
-    mut store: ThemeStore,
-    mutate: impl FnOnce(&mut GraphThemeSettings),
-) {
+fn update_graph_theme(mut store: ThemeStore, mutate: impl FnOnce(&mut GraphThemeSettings)) {
     let mut next = store.graph_theme();
     mutate(&mut next);
     store.set_graph_theme(next);
 }
 
 #[component]
-pub(super) fn GraphSettingsOverlay(
-    props: GraphSettingsOverlayProps
-) -> Element {
+pub(super) fn GraphSettingsOverlay(props: GraphSettingsOverlayProps) -> Element {
     let mut open: Signal<bool> = use_hook(|| Signal::new(false));
     let theme_store = use_context::<ThemeStore>();
     let graph_theme = theme_store.graph_theme();

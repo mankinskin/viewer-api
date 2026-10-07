@@ -1,35 +1,19 @@
 use std::{
-    cell::{
-        Cell,
-        RefCell,
-    },
+    cell::{Cell, RefCell},
     rc::Rc,
 };
 
 use dioxus::prelude::EventHandler;
 use gloo_events::EventListener;
-use wasm_bindgen::{
-    closure::Closure,
-    JsCast,
-    JsValue,
-};
+use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 
 use super::{
     super::{
-        camera::{
-            Camera,
-            CameraMode,
-            MouseState,
-            CAMERA_FOV,
-        },
+        camera::{Camera, CameraMode, MouseState, CAMERA_FOV},
         data::Layout3D,
         render::RenderState,
     },
-    cross,
-    normalise,
-    target_is_passthrough_blocked,
-    DragState,
-    DRAG_THRESHOLD_PX,
+    cross, normalise, target_is_passthrough_blocked, DragState, DRAG_THRESHOLD_PX,
 };
 
 pub(super) fn mouse_down_listener(
@@ -55,13 +39,7 @@ pub(super) fn mouse_down_listener(
 
             if let Some(card_idx) = find_card_index(event) {
                 if event.button() == 0 {
-                    record_drag_candidate(
-                        &drag_state,
-                        &state_rc,
-                        card_idx,
-                        cursor_x,
-                        cursor_y,
-                    );
+                    record_drag_candidate(&drag_state, &state_rc, card_idx, cursor_x, cursor_y);
                     return;
                 }
             } else if event.button() == 0 {
@@ -194,14 +172,13 @@ pub(super) fn wheel_listener(
                     CameraMode::Orbit => {
                         let factor = if delta < 0.0 { 0.92 } else { 1.08 };
                         state.camera.zoom_by_factor(factor);
-                    },
+                    }
                     CameraMode::Free => {
                         let magnitude = (delta.abs() / 120.0).clamp(0.5, 4.0);
-                        let step = (state.camera.distance * 0.16 * magnitude)
-                            .clamp(0.75, 24.0);
+                        let step = (state.camera.distance * 0.16 * magnitude).clamp(0.75, 24.0);
                         let amount = if delta < 0.0 { step } else { -step };
                         state.camera.move_forward(amount);
-                    },
+                    }
                 }
                 if let Some(handler) = on_camera_change.as_ref() {
                     handler.call(state.camera.clone());
@@ -240,15 +217,10 @@ fn find_card_index(event: &web_sys::MouseEvent) -> Option<usize> {
 /// hovered node changes so the next frame re-emphasises the connected edges.
 /// This is the imperative replacement for the old Dioxus `on_hover` signal
 /// path, which re-rendered the whole graph component on every pointer move.
-fn update_hover(
-    state_rc: &Rc<RefCell<RenderState>>,
-    event: &web_sys::MouseEvent,
-) {
+fn update_hover(state_rc: &Rc<RefCell<RenderState>>, event: &web_sys::MouseEvent) {
     let idx = find_card_index(event);
     if let Ok(mut state) = state_rc.try_borrow_mut() {
-        let hovered_id = idx.and_then(|i| {
-            state.layout.nodes.get(i).map(|node| node.id.clone())
-        });
+        let hovered_id = idx.and_then(|i| state.layout.nodes.get(i).map(|node| node.id.clone()));
         if state.hovered_node_id != hovered_id {
             state.hovered_node_id = hovered_id;
             state.dirty_edges = true;
@@ -279,8 +251,7 @@ fn record_drag_candidate(
     drag.anchor = [node.x, node.y, node.z];
     let eye = state.camera.eye();
     let target = state.camera.target;
-    let forward =
-        normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
+    let forward = normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
     let right = normalise(cross(forward, [0.0, 1.0, 0.0]));
     let up = normalise(cross(right, forward));
     drag.cam_right = right;
@@ -291,9 +262,7 @@ fn record_drag_candidate(
         drag.anchor[1] - eye[1],
         drag.anchor[2] - eye[2],
     ];
-    let depth = (to_node[0] * forward[0]
-        + to_node[1] * forward[1]
-        + to_node[2] * forward[2])
+    let depth = (to_node[0] * forward[0] + to_node[1] * forward[1] + to_node[2] * forward[2])
         .abs()
         .max(0.1);
     let dpr = web_sys::window()
@@ -459,11 +428,7 @@ fn update_camera_motion(
     }
 }
 
-fn apply_screen_plane_pan(
-    camera: &mut Camera,
-    dx: f32,
-    dy: f32,
-) {
+fn apply_screen_plane_pan(camera: &mut Camera, dx: f32, dy: f32) {
     camera.pan_screen_plane(dx, dy);
 }
 
@@ -489,26 +454,23 @@ fn clear_interaction_state(
 }
 
 fn install_click_suppressor() {
-    let Some(document) = web_sys::window().and_then(|window| window.document())
-    else {
+    let Some(document) = web_sys::window().and_then(|window| window.document()) else {
         return;
     };
     let target: web_sys::EventTarget = document.into();
-    let callback_holder: Rc<
-        RefCell<Option<Closure<dyn FnMut(web_sys::Event)>>>,
-    > = Rc::new(RefCell::new(None));
+    let callback_holder: Rc<RefCell<Option<Closure<dyn FnMut(web_sys::Event)>>>> =
+        Rc::new(RefCell::new(None));
     let callback_holder_for_click = callback_holder.clone();
     let target_for_click = target.clone();
     let callback = Closure::wrap(Box::new(move |evt: web_sys::Event| {
         evt.stop_propagation();
         evt.prevent_default();
         if let Some(callback) = callback_holder_for_click.borrow_mut().take() {
-            let _ = target_for_click
-                .remove_event_listener_with_callback_and_bool(
-                    "click",
-                    callback.as_ref().unchecked_ref(),
-                    true,
-                );
+            let _ = target_for_click.remove_event_listener_with_callback_and_bool(
+                "click",
+                callback.as_ref().unchecked_ref(),
+                true,
+            );
             drop(callback);
         }
     }) as Box<dyn FnMut(web_sys::Event)>);
@@ -523,15 +485,12 @@ fn install_click_suppressor() {
         let target_for_timeout = target.clone();
         let callback_holder_for_timeout = callback_holder.clone();
         let timer = Closure::once_into_js(move || {
-            if let Some(callback) =
-                callback_holder_for_timeout.borrow_mut().take()
-            {
-                let _ = target_for_timeout
-                    .remove_event_listener_with_callback_and_bool(
-                        "click",
-                        callback.as_ref().unchecked_ref(),
-                        true,
-                    );
+            if let Some(callback) = callback_holder_for_timeout.borrow_mut().take() {
+                let _ = target_for_timeout.remove_event_listener_with_callback_and_bool(
+                    "click",
+                    callback.as_ref().unchecked_ref(),
+                    true,
+                );
             }
         });
         let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
@@ -548,17 +507,11 @@ mod tests {
     use crate::graph3d::camera::Camera;
 
     fn normalised(vector: [f32; 3]) -> [f32; 3] {
-        let length = (vector[0] * vector[0]
-            + vector[1] * vector[1]
-            + vector[2] * vector[2])
-            .sqrt();
+        let length = (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]).sqrt();
         [vector[0] / length, vector[1] / length, vector[2] / length]
     }
 
-    fn dot(
-        a: [f32; 3],
-        b: [f32; 3],
-    ) -> f32 {
+    fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
         a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
     }
 

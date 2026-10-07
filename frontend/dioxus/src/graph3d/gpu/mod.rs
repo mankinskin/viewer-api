@@ -4,7 +4,4 @@
 
 mod init;
 
-pub(crate) use init::{
-    init_gpu,
-    GpuResources,
-};
+pub(crate) use init::{init_gpu, GpuResources};

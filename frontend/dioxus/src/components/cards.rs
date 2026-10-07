@@ -73,10 +73,7 @@ pub fn Card(
 /// Responsive auto-fit grid of [`Card`]s.  Use as a parent of one or more
 /// cards.
 #[component]
-pub fn CardGrid(
-    children: Element,
-    #[props(default)] class: String,
-) -> Element {
+pub fn CardGrid(children: Element, #[props(default)] class: String) -> Element {
     let combined = if class.is_empty() {
         "card-grid".to_string()
     } else {

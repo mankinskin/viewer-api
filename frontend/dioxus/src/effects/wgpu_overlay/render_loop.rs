@@ -4,40 +4,23 @@
 #![cfg(target_arch = "wasm32")]
 
 use std::{
-    cell::{
-        Cell,
-        RefCell,
-    },
+    cell::{Cell, RefCell},
     rc::Rc,
 };
 
 use dioxus::prelude::*;
 use js_sys::Float32Array;
-use wasm_bindgen::{
-    closure::Closure,
-    JsCast,
-    JsValue,
-};
+use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::MouseEvent;
 
 use super::{
     element_types::*,
-    gpu_buffers::{
-        mk_compute_bind_group,
-        mk_render_bind_group,
-        GpuBuffers,
-    },
-    gpu_init::{
-        init_gpu,
-        GpuPipelines,
-    },
+    gpu_buffers::{mk_compute_bind_group, mk_render_bind_group, GpuBuffers},
+    gpu_init::{init_gpu, GpuPipelines},
     settings::EffectSettings,
     webgpu::*,
 };
-use tracing::{
-    info,
-    warn,
-};
+use tracing::{info, warn};
 
 mod frame;
 mod uniforms;
@@ -133,10 +116,10 @@ pub fn mount_overlay() {
                             Rc::clone(&ri_e),
                             Rc::clone(&rjv_e),
                         );
-                    },
+                    }
                     None => {
                         warn!(target: "wgpu_overlay", "WebGPU unavailable - overlay disabled");
-                    },
+                    }
                 }
             });
         });
@@ -160,21 +143,10 @@ async fn bootstrap_ctx() -> Option<GpuCtx> {
     install_mouse_listener();
 
     let buffers = GpuBuffers::new(&init.device, &init.queue)?;
-    let compute_bg = mk_compute_bind_group(
-        &init.device,
-        &init.pipelines.compute_bgl,
-        &buffers,
-    )?;
-    let render_bg = mk_render_bind_group(
-        &init.device,
-        &init.pipelines.render_bgl,
-        &buffers,
-    )?;
-    let (depth_tex, depth_view) = create_depth_texture(
-        &init.device,
-        init.canvas_width,
-        init.canvas_height,
-    )?;
+    let compute_bg = mk_compute_bind_group(&init.device, &init.pipelines.compute_bgl, &buffers)?;
+    let render_bg = mk_render_bind_group(&init.device, &init.pipelines.render_bgl, &buffers)?;
+    let (depth_tex, depth_view) =
+        create_depth_texture(&init.device, init.canvas_width, init.canvas_height)?;
 
     // Publish the GPU handles so secondary renderers (e.g. Graph3D) can
     // composite into the same swap-chain texture.
@@ -224,16 +196,14 @@ fn setup_raf_loop(
             return;
         }
         if let Some(win) = web_sys::window() {
-            let overlay_enabled =
-                crate::effects::wgpu_overlay::is_overlay_enabled();
+            let overlay_enabled = crate::effects::wgpu_overlay::is_overlay_enabled();
             if overlay_enabled {
                 if let Some(gpu) = ctx_loop.borrow_mut().as_mut() {
                     render_frame(gpu, ts_ms, &win);
                 }
             }
             if let Some(ref jv) = *raf_jv_loop.borrow() {
-                if let Ok(id) = win.request_animation_frame(jv.unchecked_ref())
-                {
+                if let Ok(id) = win.request_animation_frame(jv.unchecked_ref()) {
                     ri_loop.set(id);
                 }
             }
@@ -261,10 +231,8 @@ fn install_mouse_listener() {
     });
     if let Some(win) = web_sys::window() {
         if let Some(doc) = win.document() {
-            let _ = doc.add_event_listener_with_callback(
-                "mousemove",
-                closure.as_ref().unchecked_ref(),
-            );
+            let _ =
+                doc.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref());
         }
     }
     // Keep the closure alive — dropping it would silently unregister the listener.

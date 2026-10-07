@@ -12,22 +12,9 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use js_sys::{
-    Array,
-    Function,
-    Object,
-    Promise,
-    Reflect,
-};
-use tracing::{
-    error,
-    info,
-    warn,
-};
-use wasm_bindgen::{
-    JsCast,
-    JsValue,
-};
+use js_sys::{Array, Function, Object, Promise, Reflect};
+use tracing::{error, info, warn};
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
 
@@ -39,8 +26,7 @@ use super::webgpu::*;
 const PALETTE_WGSL: &str = include_str!("../shaders/palette.wgsl");
 const TYPES_WGSL: &str = include_str!("../shaders/types.wgsl");
 const NOISE_WGSL: &str = include_str!("../shaders/noise.wgsl");
-const PARTICLE_SHADING_WGSL: &str =
-    include_str!("../shaders/particle_shading.wgsl");
+const PARTICLE_SHADING_WGSL: &str = include_str!("../shaders/particle_shading.wgsl");
 const BACKGROUND_WGSL: &str = include_str!("../shaders/background.wgsl");
 const PARTICLES_WGSL: &str = include_str!("../shaders/particles.wgsl");
 const COMPUTE_WGSL: &str = include_str!("../shaders/compute.wgsl");
@@ -96,8 +82,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
 
     // ── requestAdapter() ────────────────────────────────────────────────────
     let request_adapter: Function = get_fn(&gpu_js, "requestAdapter")?;
-    let adapter_promise: Promise =
-        request_adapter.call0(&gpu_js).ok()?.dyn_into().ok()?;
+    let adapter_promise: Promise = request_adapter.call0(&gpu_js).ok()?.dyn_into().ok()?;
     let adapter = JsFuture::from(adapter_promise).await.ok()?;
     if adapter.is_null() || adapter.is_undefined() {
         return None;
@@ -125,8 +110,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
         use wasm_bindgen::closure::Closure;
         let label_for_err = dev_label.clone();
         let cb = Closure::<dyn FnMut(JsValue)>::new(move |ev: JsValue| {
-            let err =
-                Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
+            let err = Reflect::get(&ev, &"error".into()).unwrap_or(JsValue::NULL);
             let msg = Reflect::get(&err, &"message".into())
                 .ok()
                 .and_then(|v| v.as_string())
@@ -159,8 +143,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     info!(target: "wgpu_overlay::init", "context configured");
 
     // ── Shader modules ──────────────────────────────────────────────────────
-    let shared_code =
-        format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
+    let shared_code = format!("{}\n{}\n{}\n", PALETTE_WGSL, TYPES_WGSL, NOISE_WGSL);
     let render_shared = format!("{}{}\n", shared_code, PARTICLE_SHADING_WGSL);
 
     let bg_shader = create_shader(
@@ -217,8 +200,7 @@ pub(super) async fn init_gpu() -> Option<InitOutput> {
     let render_layout = create_pipeline_layout(&device, &[&render_bgl])?;
 
     // ── Pipelines ───────────────────────────────────────────────────────────
-    let compute_pipeline =
-        create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
+    let compute_pipeline = create_compute_pipeline(&device, &compute_layout, &compute_shader)?;
     info!(target: "wgpu_overlay::init", "compute pipeline built");
     let bg_pipeline = create_render_pipeline(
         &device,

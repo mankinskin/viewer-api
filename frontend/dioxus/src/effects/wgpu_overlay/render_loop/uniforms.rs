@@ -1,10 +1,7 @@
 use super::{
     super::{
         settings::EffectSettings,
-        webgpu::{
-            get_fn,
-            prop_f32,
-        },
+        webgpu::{get_fn, prop_f32},
     },
     GpuCtx,
 };
@@ -96,12 +93,7 @@ pub(super) fn pack_uniforms(
     }
 }
 
-pub(super) fn find_hovered_elem(
-    elem_data: &[f32],
-    elem_count: usize,
-    mx: f32,
-    my: f32,
-) -> f32 {
+pub(super) fn find_hovered_elem(elem_data: &[f32], elem_count: usize, mx: f32, my: f32) -> f32 {
     if mx < -999.0 {
         return -1.0;
     }
@@ -125,9 +117,7 @@ pub(super) fn find_selected_elem(
     document: &web_sys::Document,
 ) -> f32 {
     let selected_element = document
-        .query_selector(
-            ".log-entry.selected, .spec-card--selected, [aria-selected=true]",
-        )
+        .query_selector(".log-entry.selected, .spec-card--selected, [aria-selected=true]")
         .ok()
         .flatten();
     let selected_element = match selected_element {
@@ -155,10 +145,7 @@ pub(super) fn find_selected_elem(
     -1.0
 }
 
-fn ortho_vp(
-    w: f32,
-    h: f32,
-) -> [f32; 16] {
+fn ortho_vp(w: f32, h: f32) -> [f32; 16] {
     [
         2.0 / w,
         0.0,
@@ -179,10 +166,7 @@ fn ortho_vp(
     ]
 }
 
-fn ortho_inv_vp(
-    w: f32,
-    h: f32,
-) -> [f32; 16] {
+fn ortho_inv_vp(w: f32, h: f32) -> [f32; 16] {
     [
         w / 2.0,
         0.0,

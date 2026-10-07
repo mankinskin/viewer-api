@@ -112,19 +112,14 @@ impl GraphThemeSettings {
     pub(crate) fn save(&self) {
         #[cfg(target_arch = "wasm32")]
         {
-            if let Some(storage) =
-                web_sys::window().and_then(|w| w.local_storage().ok().flatten())
+            if let Some(storage) = web_sys::window().and_then(|w| w.local_storage().ok().flatten())
             {
-                let _ =
-                    storage.set_item(STORAGE_KEY, &self.to_storage_string());
+                let _ = storage.set_item(STORAGE_KEY, &self.to_storage_string());
             }
         }
     }
 
-    pub(crate) fn edge_color(
-        &self,
-        kind: &str,
-    ) -> PaletteColor {
+    pub(crate) fn edge_color(&self, kind: &str) -> PaletteColor {
         match kind {
             "depends_on" | "dep" | "code_ref" => self.edge_dependency,
             "blocks" => self.edge_blocking,
@@ -133,10 +128,7 @@ impl GraphThemeSettings {
         }
     }
 
-    pub(crate) fn with_render_tuning(
-        mut self,
-        render_tuning: Option<GraphRenderTuning>,
-    ) -> Self {
+    pub(crate) fn with_render_tuning(mut self, render_tuning: Option<GraphRenderTuning>) -> Self {
         if let Some(render_tuning) = render_tuning {
             self.render_tuning = render_tuning;
         }
@@ -168,10 +160,7 @@ impl GraphThemeSettings {
         ));
         out.push_str(&format!(
             "edge_default={},{},{},{}\n",
-            self.edge_default[0],
-            self.edge_default[1],
-            self.edge_default[2],
-            self.edge_default[3]
+            self.edge_default[0], self.edge_default[1], self.edge_default[2], self.edge_default[3]
         ));
         out.push_str(&format!(
             "edge_overlay_opacity={}\n",
@@ -183,29 +172,17 @@ impl GraphThemeSettings {
         ));
         out.push_str(&format!(
             "node_surface={},{},{},{}\n",
-            self.node_surface[0],
-            self.node_surface[1],
-            self.node_surface[2],
-            self.node_surface[3]
+            self.node_surface[0], self.node_surface[1], self.node_surface[2], self.node_surface[3]
         ));
         out.push_str(&format!(
             "node_border={},{},{},{}\n",
-            self.node_border[0],
-            self.node_border[1],
-            self.node_border[2],
-            self.node_border[3]
+            self.node_border[0], self.node_border[1], self.node_border[2], self.node_border[3]
         ));
         out.push_str(&format!(
             "node_text={},{},{},{}\n",
-            self.node_text[0],
-            self.node_text[1],
-            self.node_text[2],
-            self.node_text[3]
+            self.node_text[0], self.node_text[1], self.node_text[2], self.node_text[3]
         ));
-        out.push_str(&format!(
-            "node_shadow_alpha={}\n",
-            self.node_shadow_alpha
-        ));
+        out.push_str(&format!("node_shadow_alpha={}\n", self.node_shadow_alpha));
         out.push_str(&format!(
             "rich_detail_threshold={}\n",
             self.render_tuning.rich_detail_threshold
@@ -230,10 +207,7 @@ impl GraphThemeSettings {
     }
 }
 
-fn apply_storage_line(
-    settings: &mut GraphThemeSettings,
-    line: &str,
-) {
+fn apply_storage_line(settings: &mut GraphThemeSettings, line: &str) {
     let Some((key, value)) = line.split_once('=') else {
         return;
     };
@@ -247,44 +221,40 @@ fn apply_storage_line(
             if let Ok(value) = value.trim().parse::<f32>() {
                 settings.edge_overlay_opacity = value.clamp(0.0, 1.0);
             }
-        },
+        }
         "edge_blend_mode" => {
-            if let Some(value) =
-                GraphEdgeBlendMode::from_storage_key(value.trim())
-            {
+            if let Some(value) = GraphEdgeBlendMode::from_storage_key(value.trim()) {
                 settings.edge_blend_mode = value;
             }
-        },
+        }
         "node_surface" => parse_color(value, &mut settings.node_surface),
         "node_border" => parse_color(value, &mut settings.node_border),
         "node_text" => parse_color(value, &mut settings.node_text),
-        "node_shadow_alpha" =>
+        "node_shadow_alpha" => {
             if let Ok(value) = value.trim().parse::<f32>() {
                 settings.node_shadow_alpha = value.clamp(0.0, 1.0);
-            },
-        "rich_detail_threshold" =>
+            }
+        }
+        "rich_detail_threshold" => {
             if let Ok(value) = value.trim().parse::<f32>() {
-                settings.render_tuning.rich_detail_threshold =
-                    value.clamp(0.0, 3.5);
-            },
-        "row_label_scale_numerator" =>
+                settings.render_tuning.rich_detail_threshold = value.clamp(0.0, 3.5);
+            }
+        }
+        "row_label_scale_numerator" => {
             if let Ok(value) = value.trim().parse::<f32>() {
-                settings.render_tuning.row_label_scale_numerator =
-                    value.clamp(0.0, 100.0);
-            },
-        "row_label_boost_factor" =>
+                settings.render_tuning.row_label_scale_numerator = value.clamp(0.0, 100.0);
+            }
+        }
+        "row_label_boost_factor" => {
             if let Ok(value) = value.trim().parse::<f32>() {
-                settings.render_tuning.row_label_boost_factor =
-                    value.clamp(0.0, 1.0);
-            },
-        _ => {},
+                settings.render_tuning.row_label_boost_factor = value.clamp(0.0, 1.0);
+            }
+        }
+        _ => {}
     }
 }
 
-fn parse_color(
-    value: &str,
-    dst: &mut PaletteColor,
-) {
+fn parse_color(value: &str, dst: &mut PaletteColor) {
     for (index, part) in value.split(',').take(4).enumerate() {
         if let Ok(value) = part.trim().parse::<f32>() {
             dst[index] = value;
@@ -294,10 +264,7 @@ fn parse_color(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        GraphRenderTuning,
-        GraphThemeSettings,
-    };
+    use super::{GraphRenderTuning, GraphThemeSettings};
 
     #[test]
     fn storage_round_trip_preserves_render_tuning() {
@@ -309,17 +276,14 @@ mod tests {
         };
 
         assert_eq!(
-            GraphThemeSettings::from_storage_string(
-                &settings.to_storage_string()
-            ),
+            GraphThemeSettings::from_storage_string(&settings.to_storage_string()),
             settings
         );
     }
 
     #[test]
     fn legacy_storage_uses_default_render_tuning() {
-        let settings =
-            GraphThemeSettings::from_storage_string("node_shadow_alpha=0.4\n");
+        let settings = GraphThemeSettings::from_storage_string("node_shadow_alpha=0.4\n");
 
         assert_eq!(settings.render_tuning, GraphRenderTuning::default());
     }

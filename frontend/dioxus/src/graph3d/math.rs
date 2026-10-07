@@ -4,12 +4,7 @@
 //! z ∈ [0, 1].
 
 /// Perspective projection matrix (WebGPU clip-space z ∈ [0, 1]).
-pub fn perspective(
-    fov: f32,
-    aspect: f32,
-    near: f32,
-    far: f32,
-) -> [f32; 16] {
+pub fn perspective(fov: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
     let f = 1.0 / (fov * 0.5).tan();
     let nf = 1.0 / (near - far);
     let mut m = [0.0f32; 16];
@@ -25,12 +20,7 @@ pub fn perspective(
 ///
 /// `half_h` is the half-height of the visible world-space volume.  Use
 /// `camera.distance * (fov * 0.5).tan()` to obtain a matching scale.
-pub fn orthographic(
-    half_h: f32,
-    aspect: f32,
-    near: f32,
-    far: f32,
-) -> [f32; 16] {
+pub fn orthographic(half_h: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
     let half_w = half_h * aspect;
     let inv_depth = 1.0 / (near - far);
     let mut m = [0.0f32; 16];
@@ -43,13 +33,8 @@ pub fn orthographic(
 }
 
 /// Look-at view matrix (column-major, right-handed).
-pub fn look_at(
-    eye: [f32; 3],
-    target: [f32; 3],
-    up: [f32; 3],
-) -> [f32; 16] {
-    let fwd =
-        normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
+pub fn look_at(eye: [f32; 3], target: [f32; 3], up: [f32; 3]) -> [f32; 16] {
+    let fwd = normalise([target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]);
     let side = normalise(cross(fwd, up));
     let u = cross(side, fwd);
     let mut m = [0.0f32; 16];
@@ -70,10 +55,7 @@ pub fn look_at(
 }
 
 /// Column-major 4×4 multiply: out = a · b.
-pub fn mul(
-    a: [f32; 16],
-    b: [f32; 16],
-) -> [f32; 16] {
+pub fn mul(a: [f32; 16], b: [f32; 16]) -> [f32; 16] {
     let mut out = [0.0f32; 16];
     for col in 0..4 {
         for row in 0..4 {
@@ -95,10 +77,7 @@ fn normalise(v: [f32; 3]) -> [f32; 3] {
     [v[0] / len, v[1] / len, v[2] / len]
 }
 
-fn cross(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> [f32; 3] {
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [
         a[1] * b[2] - a[2] * b[1],
         a[2] * b[0] - a[0] * b[2],
@@ -106,9 +85,6 @@ fn cross(
     ]
 }
 
-fn dot(
-    a: [f32; 3],
-    b: [f32; 3],
-) -> f32 {
+fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }

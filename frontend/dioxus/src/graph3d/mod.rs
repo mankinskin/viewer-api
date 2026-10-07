@@ -40,34 +40,16 @@ mod interop;
 mod render;
 mod settings_overlay;
 
-pub use camera::{
-    Camera,
-    CameraCommand,
-    CameraMode,
-    LayoutMode,
-    Projection,
-};
-pub use data::{
-    EdgeRef3D,
-    Layout3D,
-    Node3D,
-    NodeCardProfile,
-    NodeViewTransform,
-};
+pub use camera::{Camera, CameraCommand, CameraMode, LayoutMode, Projection};
+pub use data::{EdgeRef3D, Layout3D, Node3D, NodeCardProfile, NodeViewTransform};
 pub use theme::GraphRenderTuning;
 
-use self::{
-    settings_overlay::GraphSettingsOverlay,
-    theme::GraphThemeSettings,
-};
+use self::{settings_overlay::GraphSettingsOverlay, theme::GraphThemeSettings};
 use dioxus::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(target_arch = "wasm32")]
-use std::{
-    cell::RefCell,
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 #[cfg(target_arch = "wasm32")]
 use gloo_events::EventListener;
@@ -81,29 +63,14 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::GpuDevice;
 
 #[cfg(target_arch = "wasm32")]
-use crate::effects::{
-    register_frame_callback,
-    shared_gpu,
-    FrameCallbackHandle,
-};
-use crate::{
-    effects::wgpu_overlay::PaletteColor,
-    store::ThemeStore,
-};
+use crate::effects::{register_frame_callback, shared_gpu, FrameCallbackHandle};
+use crate::{effects::wgpu_overlay::PaletteColor, store::ThemeStore};
 #[cfg(target_arch = "wasm32")]
 use gpu::init_gpu;
 #[cfg(target_arch = "wasm32")]
-use interop::{
-    create_buf,
-    create_buf_init,
-    USAGE_COPY_DST,
-    USAGE_VERTEX,
-};
+use interop::{create_buf, create_buf_init, USAGE_COPY_DST, USAGE_VERTEX};
 #[cfg(target_arch = "wasm32")]
-use render::{
-    render_frame,
-    RenderState,
-};
+use render::{render_frame, RenderState};
 
 /// Returns true if the browser exposes `navigator.gpu`.
 #[cfg(target_arch = "wasm32")]
@@ -113,8 +80,7 @@ pub fn can_use_webgpu() -> bool {
     web_sys::window()
         .map(|w| {
             let nav: JsValue = w.navigator().into();
-            let gpu = Reflect::get(&nav, &JsValue::from_str("gpu"))
-                .unwrap_or(JsValue::UNDEFINED);
+            let gpu = Reflect::get(&nav, &JsValue::from_str("gpu")).unwrap_or(JsValue::UNDEFINED);
             !gpu.is_undefined()
         })
         .unwrap_or(false)
@@ -217,8 +183,7 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let graph_theme = theme_store
         .graph_theme()
         .with_render_tuning(props.render_tuning);
-    let style =
-        graph_container_style(&props.container_style, false, &graph_theme);
+    let style = graph_container_style(&props.container_style, false, &graph_theme);
     let edge_count = props.layout.edges.len();
     let edge_overlay_style = "position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; mix-blend-mode:var(--graph-edge-blend-mode); isolation:isolate; background:transparent;";
     rsx! {
@@ -274,23 +239,18 @@ pub fn Graph3D(props: Graph3DProps) -> Element {
     let layout_mode = props.layout_mode;
     let on_layout_mode_change = props.on_layout_mode_change.clone();
     let on_projection_change = props.on_projection_change.clone();
-    let style =
-        graph_container_style(&props.container_style, true, &graph_theme);
+    let style = graph_container_style(&props.container_style, true, &graph_theme);
     let viewport_insets = props.viewport_insets;
-    let mut last_layout_mode: Signal<LayoutMode> =
-        use_hook(|| Signal::new(props.layout_mode));
+    let mut last_layout_mode: Signal<LayoutMode> = use_hook(|| Signal::new(props.layout_mode));
     let layout_mode_changed = *last_layout_mode.peek() != props.layout_mode;
     if layout_mode_changed {
         last_layout_mode.set(props.layout_mode);
     }
 
-    let status: Signal<String> =
-        use_signal(|| "Initialising WebGPU\u{2026}".to_string());
+    let status: Signal<String> = use_signal(|| "Initialising WebGPU\u{2026}".to_string());
     let listeners: Signal<Vec<EventListener>> = use_signal(Vec::new);
-    let render_rc: Signal<Option<Rc<RefCell<RenderState>>>> =
-        use_signal(|| None);
-    let frame_handle: Signal<Option<Rc<FrameCallbackHandle>>> =
-        use_signal(|| None);
+    let render_rc: Signal<Option<Rc<RefCell<RenderState>>>> = use_signal(|| None);
+    let frame_handle: Signal<Option<Rc<FrameCallbackHandle>>> = use_signal(|| None);
 
     use_effect(move || {
         let layout = layout.clone();
@@ -461,11 +421,10 @@ fn start_graph_bootstrap(
             }
             let promise = Promise::new(&mut |resolve, _reject| {
                 if let Some(window) = web_sys::window() {
-                    let _ = window
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            resolve.unchecked_ref(),
-                            16,
-                        );
+                    let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                        resolve.unchecked_ref(),
+                        16,
+                    );
                 }
             });
             let _ = JsFuture::from(promise).await;
@@ -476,7 +435,7 @@ fn start_graph_bootstrap(
             Err(_) => {
                 status.set("Shared GPU device cast failed".into());
                 return;
-            },
+            }
         };
 
         let label = js_sys::Reflect::get(&shared.device, &"label".into())
@@ -488,9 +447,7 @@ fn start_graph_bootstrap(
         let (init_w, init_h) = web_sys::window()
             .and_then(|window| window.document())
             .and_then(|document| document.get_element_by_id("webgpu-canvas"))
-            .and_then(|element| {
-                element.dyn_into::<web_sys::HtmlCanvasElement>().ok()
-            })
+            .and_then(|element| element.dyn_into::<web_sys::HtmlCanvasElement>().ok())
             .map(|canvas| (canvas.width().max(1), canvas.height().max(1)))
             .unwrap_or((1, 1));
 
@@ -499,7 +456,7 @@ fn start_graph_bootstrap(
             Err(error) => {
                 status.set(format!("GPU init failed: {error}"));
                 return;
-            },
+            }
         };
 
         let base_layout = layout.clone();
@@ -615,12 +572,9 @@ fn sync_render_state(
     );
 
     if state.interaction_active {
-        if state.base_layout != *layout || state.target_layout != target_layout
-        {
+        if state.base_layout != *layout || state.target_layout != target_layout {
             for node in &layout.nodes {
-                if let Some(target_node) =
-                    state.layout.nodes.iter_mut().find(|n| n.id == node.id)
-                {
+                if let Some(target_node) = state.layout.nodes.iter_mut().find(|n| n.id == node.id) {
                     target_node.label = node.label.clone();
                     target_node.state = node.state.clone();
                 }
@@ -735,10 +689,7 @@ fn sync_render_state(
                     .iter()
                     .find(|node| node.id == selected_id)
                 {
-                    let goal = selection_focus_goal(
-                        &state.camera,
-                        [node.x, node.y, node.z],
-                    );
+                    let goal = selection_focus_goal(&state.camera, [node.x, node.y, node.z]);
                     state.camera_goal = Some(goal.clone());
                     if let Some(handler) = on_camera_change {
                         handler.call(goal);
@@ -781,10 +732,7 @@ fn apply_camera_command_update(
     }
 }
 
-fn selection_focus_goal(
-    current_camera: &Camera,
-    target: [f32; 3],
-) -> Camera {
+fn selection_focus_goal(current_camera: &Camera, target: [f32; 3]) -> Camera {
     let mut goal = current_camera.clone();
     goal.target = target;
     goal
@@ -814,10 +762,7 @@ fn preserve_same_topology_layout(
     Some((preserved_base_layout, preserved_target_layout))
 }
 
-fn copy_node_positions(
-    source_layout: &Layout3D,
-    target_layout: &mut Layout3D,
-) {
+fn copy_node_positions(source_layout: &Layout3D, target_layout: &mut Layout3D) {
     let positions = source_layout
         .nodes
         .iter()
@@ -833,10 +778,7 @@ fn copy_node_positions(
     }
 }
 
-fn layout_topology_matches(
-    left: &Layout3D,
-    right: &Layout3D,
-) -> bool {
+fn layout_topology_matches(left: &Layout3D, right: &Layout3D) -> bool {
     left.node_card_profile == right.node_card_profile
         && left.nodes.len() == right.nodes.len()
         && left.edges.len() == right.edges.len()
@@ -867,17 +809,8 @@ fn edge_signatures(layout: &Layout3D) -> Option<Vec<(String, String, String)>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        preserve_same_topology_layout,
-        selection_focus_goal,
-    };
-    use crate::graph3d::{
-        Camera,
-        EdgeRef3D,
-        Layout3D,
-        Node3D,
-        NodeCardProfile,
-    };
+    use super::{preserve_same_topology_layout, selection_focus_goal};
+    use crate::graph3d::{Camera, EdgeRef3D, Layout3D, Node3D, NodeCardProfile};
 
     fn sample_layout() -> Layout3D {
         Layout3D {
@@ -921,19 +854,15 @@ mod tests {
         incoming_base_layout.nodes[0].label = Some("Updated Root".into());
         let incoming_target_layout = incoming_base_layout.clone();
 
-        let Some((preserved_base_layout, preserved_target_layout)) =
-            preserve_same_topology_layout(
-                &current_base_layout,
-                &current_visible_layout,
-                &incoming_base_layout,
-                &incoming_target_layout,
-                false,
-                false,
-            )
-        else {
-            panic!(
-                "expected same-topology layout refresh to preserve positions"
-            );
+        let Some((preserved_base_layout, preserved_target_layout)) = preserve_same_topology_layout(
+            &current_base_layout,
+            &current_visible_layout,
+            &incoming_base_layout,
+            &incoming_target_layout,
+            false,
+            false,
+        ) else {
+            panic!("expected same-topology layout refresh to preserve positions");
         };
 
         assert_eq!(preserved_base_layout.nodes[0].x, 18.0);
@@ -949,10 +878,10 @@ mod tests {
     #[test]
     fn preserve_same_topology_layout_skips_layout_mode_changes() {
         let layout = sample_layout();
-        assert!(preserve_same_topology_layout(
-            &layout, &layout, &layout, &layout, false, true,
-        )
-        .is_none());
+        assert!(
+            preserve_same_topology_layout(&layout, &layout, &layout, &layout, false, true,)
+                .is_none()
+        );
     }
 
     #[test]

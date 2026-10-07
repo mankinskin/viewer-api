@@ -1,32 +1,18 @@
 use axum::{
     body::Body,
     extract::Request,
-    response::{
-        IntoResponse,
-        Response,
-    },
+    response::{IntoResponse, Response},
 };
 use hyper::StatusCode;
 use hyper_util::{
     client::legacy::Client,
-    rt::{
-        TokioExecutor,
-        TokioIo,
-    },
+    rt::{TokioExecutor, TokioIo},
 };
-use tracing::{
-    debug,
-    error,
-    warn,
-};
+use tracing::{debug, error, warn};
 
-pub(super) async fn proxy_websocket(
-    mut req: Request,
-    upstream_uri: hyper::Uri,
-) -> Response {
+pub(super) async fn proxy_websocket(mut req: Request, upstream_uri: hyper::Uri) -> Response {
     let Some(browser_upgrade) = take_browser_upgrade(&mut req) else {
-        return (StatusCode::BAD_REQUEST, "Missing upgrade extension")
-            .into_response();
+        return (StatusCode::BAD_REQUEST, "Missing upgrade extension").into_response();
     };
 
     let vite_resp = match forward_websocket_upgrade(req, upstream_uri).await {
@@ -55,9 +41,7 @@ pub(super) async fn proxy_websocket(
     browser_response
 }
 
-fn take_browser_upgrade(
-    req: &mut Request
-) -> Option<hyper::upgrade::OnUpgrade> {
+fn take_browser_upgrade(req: &mut Request) -> Option<hyper::upgrade::OnUpgrade> {
     let upgrade = req.extensions_mut().remove::<hyper::upgrade::OnUpgrade>();
     if upgrade.is_none() {
         error!("WebSocket request missing OnUpgrade extension");
@@ -85,11 +69,8 @@ async fn forward_websocket_upgrade(
     })
 }
 
-fn build_upgrade_response(
-    headers: &hyper::HeaderMap
-) -> Result<Response, Response> {
-    let mut resp_builder =
-        Response::builder().status(StatusCode::SWITCHING_PROTOCOLS);
+fn build_upgrade_response(headers: &hyper::HeaderMap) -> Result<Response, Response> {
+    let mut resp_builder = Response::builder().status(StatusCode::SWITCHING_PROTOCOLS);
     for (name, value) in headers {
         resp_builder = resp_builder.header(name, value);
     }
@@ -113,7 +94,7 @@ async fn bridge_websocket_io(
         Err(error) => {
             error!(error = %error, "Vite WebSocket upgrade IO failed");
             return;
-        },
+        }
     };
 
     let browser_upgraded = match browser_upgrade.await {
@@ -121,7 +102,7 @@ async fn bridge_websocket_io(
         Err(error) => {
             error!(error = %error, "Browser WebSocket upgrade IO failed");
             return;
-        },
+        }
     };
 
     let mut vite_io = TokioIo::new(vite_upgraded);
@@ -133,9 +114,9 @@ async fn bridge_websocket_io(
                 browser_to_vite,
                 vite_to_browser, "WebSocket proxy connection closed"
             );
-        },
+        }
         Err(error) => {
             debug!(error = %error, "WebSocket proxy pipe ended");
-        },
+        }
     }
 }

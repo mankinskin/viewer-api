@@ -7,21 +7,11 @@
 //! and persists the active preset name to `localStorage`.
 use dioxus::prelude::*;
 
-use crate::{
-    effects::wgpu_overlay::EffectSettings,
-    graph3d::theme::GraphThemeSettings,
-};
+use crate::{effects::wgpu_overlay::EffectSettings, graph3d::theme::GraphThemeSettings};
 
 mod presets;
 
-pub use self::presets::{
-    ThemeColors,
-    ThemePreset,
-    ARCADIA,
-    DARK,
-    PAPER,
-    SCRATCHBOARD,
-};
+pub use self::presets::{ThemeColors, ThemePreset, ARCADIA, DARK, PAPER, SCRATCHBOARD};
 
 // ── CSS injection ─────────────────────────────────────────────────────────────
 
@@ -202,36 +192,25 @@ impl ThemeStore {
     }
 
     /// Enable or disable the WebGPU overlay. Persists to `localStorage`.
-    pub fn set_gpu_enabled(
-        &mut self,
-        enabled: bool,
-    ) {
+    pub fn set_gpu_enabled(&mut self, enabled: bool) {
         self.gpu_enabled.set(enabled);
         crate::effects::wgpu_overlay::set_gpu_overlay_enabled(enabled);
         #[cfg(target_arch = "wasm32")]
         {
-            if let Some(storage) =
-                web_sys::window().and_then(|w| w.local_storage().ok().flatten())
+            if let Some(storage) = web_sys::window().and_then(|w| w.local_storage().ok().flatten())
             {
-                let _ = storage.set_item(
-                    GPU_STORAGE_KEY,
-                    if enabled { "true" } else { "false" },
-                );
+                let _ = storage.set_item(GPU_STORAGE_KEY, if enabled { "true" } else { "false" });
             }
         }
     }
 
     /// Switch to a different preset, inject updated CSS, and persist the choice.
-    pub fn apply_preset(
-        &mut self,
-        p: ThemePreset,
-    ) {
+    pub fn apply_preset(&mut self, p: ThemePreset) {
         self.preset.set(p.clone());
         self.apply_css(p.clone());
         #[cfg(target_arch = "wasm32")]
         {
-            if let Some(storage) =
-                web_sys::window().and_then(|w| w.local_storage().ok().flatten())
+            if let Some(storage) = web_sys::window().and_then(|w| w.local_storage().ok().flatten())
             {
                 let _ = storage.set_item(STORAGE_KEY, p.key());
             }
@@ -249,20 +228,14 @@ impl ThemeStore {
     /// Push a draft snapshot to the live render loop for immediate preview.
     /// Does **not** persist to `localStorage` and does **not** mutate the
     /// committed snapshot — call [`commit_effects`] for that.
-    pub fn preview_effects(
-        &self,
-        draft: EffectSettings,
-    ) {
+    pub fn preview_effects(&self, draft: EffectSettings) {
         crate::effects::wgpu_overlay::set_live_effects(draft);
     }
 
     /// Persist a draft snapshot as the new committed value: writes to
     /// `localStorage`, updates the committed Signal, and pushes it live so
     /// the render loop and any subscribers see the same value.
-    pub fn commit_effects(
-        &mut self,
-        draft: EffectSettings,
-    ) {
+    pub fn commit_effects(&mut self, draft: EffectSettings) {
         draft.save();
         crate::effects::wgpu_overlay::set_live_effects(draft.clone());
         self.effects_committed.set(draft);
@@ -281,34 +254,24 @@ impl ThemeStore {
     }
 
     /// Persist and publish a new shared graph-theme snapshot.
-    pub(crate) fn set_graph_theme(
-        &mut self,
-        draft: GraphThemeSettings,
-    ) {
+    pub(crate) fn set_graph_theme(&mut self, draft: GraphThemeSettings) {
         draft.save();
         self.graph_theme_committed.set(draft);
     }
 
     // ── private ──
 
-    fn apply_css(
-        &self,
-        preset: ThemePreset,
-    ) {
+    fn apply_css(&self, preset: ThemePreset) {
         #[cfg(target_arch = "wasm32")]
         {
             let css = colors_to_css(preset.colors());
             if let Some(window) = web_sys::window() {
                 if let Some(doc) = window.document() {
                     // Reuse or create the style element.
-                    let style_el = if let Some(el) =
-                        doc.get_element_by_id(STYLE_ELEM_ID)
-                    {
+                    let style_el = if let Some(el) = doc.get_element_by_id(STYLE_ELEM_ID) {
                         el
                     } else {
-                        let el = doc
-                            .create_element("style")
-                            .expect("create_element style");
+                        let el = doc.create_element("style").expect("create_element style");
                         el.set_id(STYLE_ELEM_ID);
                         if let Some(head) = doc.head() {
                             let _ = head.append_child(&el);

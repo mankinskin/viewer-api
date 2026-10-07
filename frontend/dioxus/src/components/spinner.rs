@@ -29,10 +29,7 @@ impl Default for SpinnerSize {
 ///
 /// Animation is defined in `viewer-api.css` via the `va-spin` keyframe.
 #[component]
-pub fn Spinner(
-    #[props(default)] size: SpinnerSize,
-    #[props(default)] class: String,
-) -> Element {
+pub fn Spinner(#[props(default)] size: SpinnerSize, #[props(default)] class: String) -> Element {
     let px = size.px();
     let combined = if class.is_empty() {
         "spinner".to_string()

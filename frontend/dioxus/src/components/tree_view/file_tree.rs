@@ -4,17 +4,10 @@ use dioxus::prelude::*;
 
 use super::{
     filter_toggle_button::FilterToggleButton,
-    types::{
-        FilterDef,
-        SortKey,
-        TreeNode,
-    },
+    types::{FilterDef, SortKey, TreeNode},
     view::TreeView,
 };
-use crate::components::{
-    FilterIcon,
-    Spinner,
-};
+use crate::components::{FilterIcon, Spinner};
 
 #[component]
 pub fn FileTree(

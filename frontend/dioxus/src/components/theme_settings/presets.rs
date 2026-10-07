@@ -1,20 +1,9 @@
 use dioxus::prelude::*;
 
-use crate::store::{
-    ThemeColors,
-    ThemePreset,
-    ThemeStore,
-    ARCADIA,
-    DARK,
-    PAPER,
-    SCRATCHBOARD,
-};
+use crate::store::{ThemeColors, ThemePreset, ThemeStore, ARCADIA, DARK, PAPER, SCRATCHBOARD};
 
 use super::{
-    model::{
-        CustomTheme,
-        ThemeSnapshot,
-    },
+    model::{CustomTheme, ThemeSnapshot},
     preview::inject_preview_css,
 };
 

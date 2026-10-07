@@ -1,12 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::components::{
-    ChevronRightIcon,
-    CloseIcon,
-    HamburgerIcon,
-    ResizeDirection,
-    ResizeEdge,
-    ResizeHandle,
+    ChevronRightIcon, CloseIcon, HamburgerIcon, ResizeDirection, ResizeEdge, ResizeHandle,
 };
 
 pub const SIDEBAR_MOBILE_BREAKPOINT_PX: f64 = 768.0;
@@ -68,10 +63,7 @@ pub fn Sidebar(
         }
     };
 
-    #[cfg_attr(
-        not(target_arch = "wasm32"),
-        allow(unused_mut, unused_variables)
-    )]
+    #[cfg_attr(not(target_arch = "wasm32"), allow(unused_mut, unused_variables))]
     let mut touch_start_x: Signal<f64> = use_signal(|| 0.0);
 
     let on_touch_start = move |evt: Event<TouchData>| {

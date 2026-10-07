@@ -1,31 +1,12 @@
 use dioxus::prelude::*;
 use viewer_api_dioxus::{
-    FileTree,
-    FilterDef,
-    GlassPanel,
-    Header,
-    Layout,
-    NodeIcon,
-    Panel,
-    PanelPlacement,
-    Sidebar,
-    SortKey,
-    ThemeSettings,
-    TreeNode,
-    TreeView,
+    FileTree, FilterDef, GlassPanel, Header, Layout, NodeIcon, Panel, PanelPlacement, Sidebar,
+    SortKey, ThemeSettings, TreeNode, TreeView,
 };
 
-use crate::{
-    session_demo::SessionDemo,
-    url_state_demo::UrlStateDemo,
-};
+use crate::{session_demo::SessionDemo, url_state_demo::UrlStateDemo};
 
-fn demo_leaf(
-    id: &str,
-    label: &str,
-    kind: &str,
-    summary: &str,
-) -> TreeNode {
+fn demo_leaf(id: &str, label: &str, kind: &str, summary: &str) -> TreeNode {
     let mut node = TreeNode::leaf(id, label);
     let tooltip_label = label.to_string();
     let tooltip_kind = kind.to_string();
@@ -51,12 +32,7 @@ fn demo_leaf(
     })
 }
 
-fn demo_dir(
-    id: &str,
-    label: &str,
-    summary: &str,
-    children: Vec<TreeNode>,
-) -> TreeNode {
+fn demo_dir(id: &str, label: &str, summary: &str, children: Vec<TreeNode>) -> TreeNode {
     let child_count = children.len();
     let mut node = TreeNode::dir(id, label, children);
     let tooltip_label = label.to_string();

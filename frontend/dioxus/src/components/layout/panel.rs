@@ -1,10 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::components::{
-    ResizeDirection,
-    ResizeEdge,
-    ResizeHandle,
-};
+use crate::components::{ResizeDirection, ResizeEdge, ResizeHandle};
 
 #[derive(Clone, PartialEq, Default)]
 pub enum PanelPlacement {
@@ -36,10 +32,8 @@ impl PanelPlacement {
 
     fn resize_direction(&self) -> ResizeDirection {
         match self {
-            PanelPlacement::Left | PanelPlacement::Right =>
-                ResizeDirection::Horizontal,
-            PanelPlacement::Top | PanelPlacement::Bottom =>
-                ResizeDirection::Vertical,
+            PanelPlacement::Left | PanelPlacement::Right => ResizeDirection::Horizontal,
+            PanelPlacement::Top | PanelPlacement::Bottom => ResizeDirection::Vertical,
         }
     }
 

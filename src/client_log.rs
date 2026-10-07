@@ -34,19 +34,12 @@
 use axum::{
     body::Bytes,
     extract::State,
-    http::{
-        HeaderMap,
-        StatusCode,
-    },
+    http::{HeaderMap, StatusCode},
     routing::post,
     Router,
 };
 use serde::Deserialize;
-use std::{
-    io::Write,
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{io::Write, path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
 use tracing::warn;
 
@@ -132,9 +125,8 @@ async fn ingest(
                 .open(&path)?;
             for record in &records {
                 let record = with_session_id(record, session_id.as_deref());
-                let line = serde_json::to_string(&record).map_err(|e| {
-                    std::io::Error::new(std::io::ErrorKind::InvalidData, e)
-                })?;
+                let line = serde_json::to_string(&record)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
                 writeln!(file, "{line}")?;
             }
             Ok(())
@@ -154,10 +146,7 @@ async fn ingest(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn with_session_id(
-    record: &serde_json::Value,
-    session_id: Option<&str>,
-) -> serde_json::Value {
+fn with_session_id(record: &serde_json::Value, session_id: Option<&str>) -> serde_json::Value {
     let Some(session_id) = session_id else {
         return record.clone();
     };
@@ -165,11 +154,11 @@ fn with_session_id(
     match record {
         serde_json::Value::Object(map) => {
             let mut cloned = map.clone();
-            cloned.entry("session_id".to_string()).or_insert_with(|| {
-                serde_json::Value::String(session_id.to_string())
-            });
+            cloned
+                .entry("session_id".to_string())
+                .or_insert_with(|| serde_json::Value::String(session_id.to_string()));
             serde_json::Value::Object(cloned)
-        },
+        }
         _ => serde_json::json!({
             "session_id": session_id,
             "record": record,

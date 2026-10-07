@@ -9,18 +9,7 @@ mod panel;
 mod sidebar;
 
 pub use self::{
-    header::{
-        Header,
-        Layout,
-    },
-    panel::{
-        GlassPanel,
-        Panel,
-        PanelPlacement,
-    },
-    sidebar::{
-        is_mobile_sidebar_viewport,
-        Sidebar,
-        SIDEBAR_MOBILE_BREAKPOINT_PX,
-    },
+    header::{Header, Layout},
+    panel::{GlassPanel, Panel, PanelPlacement},
+    sidebar::{is_mobile_sidebar_viewport, Sidebar, SIDEBAR_MOBILE_BREAKPOINT_PX},
 };

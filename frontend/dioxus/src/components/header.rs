@@ -6,12 +6,7 @@
 use dioxus::prelude::*;
 
 use crate::components::{
-    icons::ThemeIcon,
-    layout::Header,
-    AlertIcon,
-    FilterIcon,
-    HomeIcon,
-    RefreshIcon,
+    icons::ThemeIcon, layout::Header, AlertIcon, FilterIcon, HomeIcon, RefreshIcon,
 };
 
 /// Shared page-level header shell for Dioxus viewers.

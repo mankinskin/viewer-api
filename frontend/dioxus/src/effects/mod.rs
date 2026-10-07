@@ -6,13 +6,6 @@ pub mod wgpu_overlay;
 pub use wgpu_overlay::set_gpu_canvas_owner;
 #[cfg(target_arch = "wasm32")]
 pub use wgpu_overlay::{
-    register_frame_callback,
-    shared_gpu,
-    FrameCallbackHandle,
-    FrameContext,
-    SharedGpu,
+    register_frame_callback, shared_gpu, FrameCallbackHandle, FrameContext, SharedGpu,
 };
-pub use wgpu_overlay::{
-    set_gpu_overlay_enabled,
-    WgpuOverlay,
-};
+pub use wgpu_overlay::{set_gpu_overlay_enabled, WgpuOverlay};
