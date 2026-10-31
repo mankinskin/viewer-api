@@ -4,8 +4,8 @@ viewer-api is the shared runtime repository for viewer servers, viewer lifecycle
 
 Direct child READMEs:
 
-- [viewer-api/README.md](viewer-api/README.md)
-- [viewer-api/frontend/dioxus/README.md](viewer-api/frontend/dioxus/README.md)
+- [viewer-api/README.md](README.md)
+- [viewer-api/frontend/dioxus/README.md](frontend/dioxus/README.md)
 
 Viewer lifecycle control now lives outside this submodule: `install-ctl` in the main `context-engine` repo at `tools/install/install-ctl/` absorbed the former `viewer-ctl` binary's full surface (`install-ctl viewer <list|status|build|install|start|stop|restart|task|prepare|static-dir>`, plus top-level `install-ctl start <server>` / `install-ctl prepare <server>` aliases). Installable content in this repository now centers on the reusable `viewer-api` and `viewer-api-dioxus` build targets consumed by viewer servers and frontends.
 
@@ -46,9 +46,9 @@ cargo install trunk
 
 After that, `install-ctl viewer prepare ...` can build the Dioxus frontends because the `trunk` command is on `PATH`.
 
-- `install-ctl viewer list`, `install-ctl start`, and `install-ctl prepare` are documented in the main repo's [tools/install/install-ctl/](../../tools/install/install-ctl/) README.
-- The shared backend runtime checked with `cargo check -p viewer-api` is documented in [viewer-api/README.md](viewer-api/README.md).
-- The frontend `trunk serve` and `cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus` flows are documented in [viewer-api/frontend/dioxus/README.md](viewer-api/frontend/dioxus/README.md).
+- `install-ctl viewer list`, `install-ctl start`, and `install-ctl prepare` are documented in the main repo's `../../tools/install/install-ctl/` README.
+- The shared backend runtime checked with `cargo check -p viewer-api` is documented in [viewer-api/README.md](README.md).
+- The frontend `trunk serve` and `cargo check --target wasm32-unknown-unknown -p viewer-api-dioxus` flows are documented in [viewer-api/frontend/dioxus/README.md](frontend/dioxus/README.md).
 
 ```bash
 install-ctl viewer list
